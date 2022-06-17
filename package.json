@@ -7,8 +7,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "clean": "test -d dist && rm -r dist || true",
-    "lint:format": "prettier --write .",
-    "lint:check": "prettier --check .",
+    "format": "prettier --write .",
+    "lint": "prettier --check .",
     "build": "tsc",
     "watch": "tsc --watch",
     "docs": "typedoc",
