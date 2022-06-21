@@ -7,6 +7,8 @@ import express, { NextFunction, Request } from 'express';
 import cookieParser from 'cookie-parser';
 
 import type { Adapter, AuthResponse } from './Adapter';
+import type { Options } from './Options';
+import { defaults } from './Options';
 import { EncodingNotSupportedError, ResourceNotFoundError } from './Errors';
 import { Resource } from './Resource';
 import { compressedMediaTypes } from './compressedMediaTypes';
@@ -29,7 +31,12 @@ const pkg = JSON.parse(
  * @copyright SciActive Inc
  * @see http://sciactive.com/
  */
-export default function createServer(adapter: Adapter) {
+export default function createServer(
+  adapter: Adapter,
+  options: Partial<Options>
+) {
+  options = Object.assign({}, defaults, options) as Options;
+
   const app = express();
   app.disable('etag');
   app.use(cookieParser());
@@ -185,7 +192,8 @@ export default function createServer(adapter: Adapter) {
           }
 
           const mediaType = await resource.getMediaType();
-          // TODO: Set encoding to "identity" if the media type is already compressed.
+          // TODO: Set encoding to "identity" if the media type is already
+          //       compressed, or if compression is disabled in options.
 
           response.set({
             'Cache-Control': 'private, no-cache',
