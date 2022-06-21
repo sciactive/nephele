@@ -12,7 +12,7 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "docs": "typedoc",
-    "prepare": "husky install && npm run lint:check && npm run clean && npm run build",
+    "prepare": "husky install && npm run lint && npm run clean && npm run build",
     "test": "jest",
     "test:watch": "jest --watch"
   },
