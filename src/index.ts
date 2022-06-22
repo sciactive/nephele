@@ -11,7 +11,7 @@ import type { Options } from './Options';
 import { defaults } from './Options';
 import { EncodingNotSupportedError, ResourceNotFoundError } from './Errors';
 import { Resource } from './Resource';
-import { compressedMediaTypes } from './compressedMediaTypes';
+import { isMediaTypeCompressed } from './compressedMediaTypes';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -35,7 +35,7 @@ export default function createServer(
   adapter: Adapter,
   options: Partial<Options>
 ) {
-  options = Object.assign({}, defaults, options) as Options;
+  const opts = Object.assign({}, defaults, options) as Options;
 
   const app = express();
   app.disable('etag');
@@ -149,7 +149,7 @@ export default function createServer(
   const getOrHead = (method: 'GET' | 'HEAD') => {
     return async (request: Request, response: AuthResponse) => {
       try {
-        const { url, encoding, cacheControl } = getRequestData(request);
+        let { url, encoding, cacheControl } = getRequestData(request);
 
         if (!(await adapter.isAuthorized(url, method, request, response))) {
           response.status(401); // Unauthorized
@@ -192,6 +192,10 @@ export default function createServer(
           }
 
           const mediaType = await resource.getMediaType();
+
+          if (!opts.compression || isMediaTypeCompressed(mediaType)) {
+            encoding = 'identity';
+          }
           // TODO: Set encoding to "identity" if the media type is already
           //       compressed, or if compression is disabled in options.
 
@@ -233,70 +237,69 @@ export default function createServer(
             Etag: JSON.stringify(etag),
             'Last-Modified': lastModified.toUTCString(),
           });
-          if (compressedMediaTypes[mediaType]) {
-            response.set({
-              'Content-Length': `${await resource.getLength()}`,
-            });
-          } else {
+          if (encoding !== 'identity') {
+            // Inform the client, even on a HEAD request, that this entity will be transmitted in
+            // chunks.
             response.set({
               'Transfer-Encoding': 'chunked',
             });
           }
           if (method === 'GET') {
             let stream: Readable = await resource.getStream();
-            switch (encoding) {
-              case 'gzip':
-              case 'x-gzip':
-                stream = pipeline(stream, zlib.createGzip(), (e: any) => {
-                  if (e) {
-                    throw new Error('Compression pipeline failed: ' + e);
-                  }
-                });
-                break;
-              case 'deflate':
-                stream = pipeline(stream, zlib.createDeflate(), (e: any) => {
-                  if (e) {
-                    throw new Error('Compression pipeline failed: ' + e);
-                  }
-                });
-                break;
-              case 'br':
-                stream = pipeline(
-                  stream,
-                  zlib.createBrotliCompress(),
-                  (e: any) => {
+            if (encoding === 'identity') {
+              response.set({
+                'Content-Length': `${await resource.getLength()}`, // how to do this with compressed encoding
+              });
+
+              stream.pipe(response);
+            } else {
+              switch (encoding) {
+                case 'gzip':
+                case 'x-gzip':
+                  stream = pipeline(stream, zlib.createGzip(), (e: any) => {
                     if (e) {
                       throw new Error('Compression pipeline failed: ' + e);
                     }
-                  }
-                );
-                break;
-              case 'identity':
-                response.set({
-                  'Content-Length': `${await resource.getLength()}`, // how to do this with compressed encoding
-                });
-                break;
-            }
-
-            // stream.pipe(response);
-
-            stream.on('data', (chunk) => {
-              response.write(
-                ('length' in chunk ? chunk.length : chunk.size).toString(16) +
-                  '\r\n'
-              );
-              response.write(chunk);
-              if (!response.write('\r\n')) {
-                stream.pause();
-
-                response.once('drain', () => stream.resume());
+                  });
+                  break;
+                case 'deflate':
+                  stream = pipeline(stream, zlib.createDeflate(), (e: any) => {
+                    if (e) {
+                      throw new Error('Compression pipeline failed: ' + e);
+                    }
+                  });
+                  break;
+                case 'br':
+                  stream = pipeline(
+                    stream,
+                    zlib.createBrotliCompress(),
+                    (e: any) => {
+                      if (e) {
+                        throw new Error('Compression pipeline failed: ' + e);
+                      }
+                    }
+                  );
+                  break;
               }
-            });
 
-            stream.on('end', () => {
-              response.write('0\r\n\r\n');
-              response.end();
-            });
+              stream.on('data', (chunk) => {
+                response.write(
+                  ('length' in chunk ? chunk.length : chunk.size).toString(16) +
+                    '\r\n'
+                );
+                response.write(chunk);
+                if (!response.write('\r\n')) {
+                  stream.pause();
+
+                  response.once('drain', () => stream.resume());
+                }
+              });
+
+              stream.on('end', () => {
+                response.write('0\r\n\r\n');
+                response.end();
+              });
+            }
           }
         } catch (e: any) {
           if (e instanceof ResourceNotFoundError) {
@@ -323,7 +326,7 @@ export default function createServer(
   app.get('*', getOrHead('GET'));
   app.head('*', getOrHead('HEAD'));
 
-  app.post('*', async (request, response: AuthResponse) => {
+  app.post('*', async (_request, _response: AuthResponse) => {
     // What does a POST do in WebDAV?
   });
 

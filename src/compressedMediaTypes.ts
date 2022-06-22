@@ -856,6 +856,22 @@ export const compressedMediaTypes: { [k: string]: boolean } = {
   'video/x-wmv': true,
 };
 
+export function isMediaTypeCompressed(mediaType: string) {
+  if (mediaType in compressedMediaTypes) {
+    return compressedMediaTypes[mediaType];
+  }
+
+  return null;
+}
+
+export function isMediaTypeUncompressed(mediaType: string) {
+  if (mediaType in compressedMediaTypes) {
+    return !compressedMediaTypes[mediaType];
+  }
+
+  return null;
+}
+
 // Use this to sort:
 // Object.fromEntries(Object.entries({/* put obj here */}).sort((a, b) => {
 //   let ac = a[0].replace(/\/(?:x-|vnd\.)/, '/');
