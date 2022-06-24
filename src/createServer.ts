@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import express, { NextFunction, Request } from 'express';
 import cookieParser from 'cookie-parser';
 
-import type { Adapter, AuthResponse } from './Adapter.js';
+import type { Adapter, AuthResponse, Resource } from './Interfaces/index.js';
 import type { Options } from './Options.js';
 import { defaults } from './Options.js';
 import {
@@ -15,7 +15,6 @@ import {
   ResourceNotFoundError,
   UnauthorizedError,
 } from './Errors/index.js';
-import { Resource } from './Resource.js';
 import { isMediaTypeCompressed } from './compressedMediaTypes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));

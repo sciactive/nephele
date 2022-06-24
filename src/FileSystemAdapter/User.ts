@@ -1,8 +1,8 @@
 import cp from 'node:child_process';
 import pam from 'authenticate-pam';
 
-import type { User as UserInterface } from '../User.js';
-import { UnauthorizedError } from '../Errors/index.js';
+import type { User as UserInterface } from '../index.js';
+import { UnauthorizedError } from '../index.js';
 
 import type Adapter from './Adapter.js';
 

@@ -1,4 +1,4 @@
-import type { Lock as LockInterface } from '../Lock';
+import type { Lock as LockInterface } from '../index.js';
 
 import Resource from './Resource.js';
 import User from './User.js';

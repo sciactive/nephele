@@ -1,4 +1,4 @@
-import type { Properties as PropertiesInterface } from '../Properties.js';
+import type { Properties as PropertiesInterface } from '../index.js';
 
 import Resource from './Resource.js';
 import User from './User.js';

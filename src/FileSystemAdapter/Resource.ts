@@ -5,7 +5,7 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import mmm, { Magic } from 'mmmagic';
 
-import type { Resource as ResourceInterface } from '../Resource.js';
+import type { Resource as ResourceInterface } from '../index.js';
 
 import type Adapter from './Adapter.js';
 import Properties from './Properties.js';

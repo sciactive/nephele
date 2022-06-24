@@ -6,8 +6,8 @@ import { fileURLToPath } from 'node:url';
 import type { Request, Response } from 'express';
 import basicAuth from 'basic-auth';
 
-import type { Adapter as AdapterInterface } from '../Adapter.js';
-import { ResourceNotFoundError } from '../Errors/index.js';
+import type { Adapter as AdapterInterface } from '../index.js';
+import { ResourceNotFoundError } from '../index.js';
 import User from './User.js';
 import Resource from './Resource.js';
 
