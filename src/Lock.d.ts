@@ -1,4 +1,4 @@
-import type { User } from './User';
+import type { User } from './User.js';
 
 export interface Lock {
   resource: Resource;
@@ -6,5 +6,7 @@ export interface Lock {
   date: Date;
   timeout: number;
 
-  remove(): Promise<boolean>;
+  save(): Promise<void>;
+
+  remove(): Promise<void>;
 }

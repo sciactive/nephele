@@ -1,5 +1,5 @@
-import type { Resource } from './Resource';
-import type { User } from './User';
+import type { Resource } from './Resource.js';
+import type { User } from './User.js';
 
 export interface Cache {
   get(key: string): Promise<string>;

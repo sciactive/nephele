@@ -1,17 +1,22 @@
 import zlib from 'node:zlib';
 import { pipeline, Readable } from 'node:stream';
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import path from 'node:path';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import express, { NextFunction, Request } from 'express';
 import cookieParser from 'cookie-parser';
 
-import type { Adapter, AuthResponse } from './Adapter';
-import type { Options } from './Options';
-import { defaults } from './Options';
-import { EncodingNotSupportedError, ResourceNotFoundError } from './Errors';
-import { Resource } from './Resource';
-import { isMediaTypeCompressed } from './compressedMediaTypes';
+import type { Adapter, AuthResponse } from './Adapter.js';
+import type { Options } from './Options.js';
+import { defaults } from './Options.js';
+import {
+  EncodingNotSupportedError,
+  ForbiddenError,
+  ResourceNotFoundError,
+  UnauthorizedError,
+} from './Errors/index.js';
+import { Resource } from './Resource.js';
+import { isMediaTypeCompressed } from './compressedMediaTypes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -33,7 +38,7 @@ const pkg = JSON.parse(
  */
 export default function createServer(
   adapter: Adapter,
-  options: Partial<Options>
+  options: Partial<Options> = {}
 ) {
   const opts = Object.assign({}, defaults, options) as Options;
 
@@ -49,6 +54,20 @@ export default function createServer(
     try {
       await adapter.authenticate(request, response);
     } catch (e: any) {
+      if (e instanceof UnauthorizedError) {
+        response.status(401);
+        response.set(
+          'WWW-Authenticate',
+          `Basic realm="${opts.realm}", charset="UTF-8"`
+        );
+        printDevModeError(response, e);
+        return;
+      }
+      if (e instanceof ForbiddenError) {
+        response.status(403);
+        printDevModeError(response, e);
+        return;
+      }
       response.status(500);
       printDevModeError(response, e);
       return;
@@ -140,7 +159,10 @@ export default function createServer(
   };
 
   const getRequestData = (request: Request) => {
-    const url = new URL(request.url, `http://${request.headers.host}`);
+    const url = new URL(
+      request.url,
+      `${request.protocol}://${request.headers.host}`
+    );
     const encoding = getRequestedEncoding(request);
     const cacheControl = getCacheControl(request);
     return { url, encoding, cacheControl };

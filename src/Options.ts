@@ -16,8 +16,17 @@ export interface Options {
    * off.
    */
   compression: boolean;
+  /**
+   * The realm is the name reported by the server when the user is prompted to
+   * authenticate.
+   *
+   * It should be HTTP header safe (shouldn't include double quotes or
+   * semicolon).
+   */
+  realm: string;
 }
 
 export const defaults: Options = {
   compression: false,
+  realm: 'Nephele WebDAV Service',
 };

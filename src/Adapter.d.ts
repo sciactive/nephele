@@ -1,6 +1,6 @@
-import type { Resource } from './Resource';
 import type { Request, Response } from 'express';
-import type { User } from './User';
+import type { Resource } from './Resource.js';
+import type { User } from './User.js';
 
 export type AuthResponse = Response<any, { user: User }>;
 
@@ -58,13 +58,26 @@ export interface Adapter {
   ): Promise<Resource>;
 
   /**
-   * Create a new resource object.
+   * Create a new non-collection resource object.
    *
    * @param url Resource URL.
    * @param request The server request.
    * @param response The authenticated server response.
    */
   newResource(
+    url: URL,
+    request: Request,
+    response: AuthResponse
+  ): Promise<Resource>;
+
+  /**
+   * Create a new collection resource object.
+   *
+   * @param url Resource URL.
+   * @param request The server request.
+   * @param response The authenticated server response.
+   */
+  newCollection(
     url: URL,
     request: Request,
     response: AuthResponse

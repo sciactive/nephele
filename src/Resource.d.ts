@@ -1,8 +1,8 @@
 import type { Readable } from 'node:stream';
 
-import type { Lock } from './Lock';
-import type { Properties } from './Properties';
-import type { User } from './User';
+import type { Lock } from './Lock.js';
+import type { Properties } from './Properties.js';
+import type { User } from './User.js';
 
 export interface Resource {
   getLockByUser(user: User): Promise<Lock | null>;
@@ -34,6 +34,8 @@ export interface Resource {
    * not have query parameters.
    */
   getCanonicalUrl(): Promise<URL>;
+
+  isCollection(): Promise<boolean>;
 }
 
 // Notes:
