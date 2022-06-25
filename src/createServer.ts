@@ -59,18 +59,18 @@ export default function createServer(
           'WWW-Authenticate',
           `Basic realm="${opts.realm}", charset="UTF-8"`
         );
-        printDevModeError(response, e);
+        opts.errorHandler(401, 'Unauthorized.', request, response, e);
         response.end();
         return;
       }
       if (e instanceof ForbiddenError) {
         response.status(403);
-        printDevModeError(response, e);
+        opts.errorHandler(403, 'Forbidden.', request, response, e);
         response.end();
         return;
       }
       response.status(500);
-      printDevModeError(response, e);
+      opts.errorHandler(500, 'Internal server error.', request, response, e);
       response.end();
       return;
     }
@@ -86,7 +86,7 @@ export default function createServer(
       await adapter.cleanAuthentication(request, response);
     } catch (e: any) {
       response.status(500);
-      printDevModeError(response, e);
+      opts.errorHandler(500, 'Internal server error.', request, response, e);
       response.end();
       return;
     }
@@ -329,6 +329,7 @@ export default function createServer(
         } catch (e: any) {
           if (e instanceof ResourceNotFoundError) {
             response.status(404); // Not Found
+            opts.errorHandler(404, 'Resource not found.', request, response, e);
             return;
           }
 
@@ -337,12 +338,18 @@ export default function createServer(
       } catch (e: any) {
         if (e instanceof EncodingNotSupportedError) {
           response.status(406); // Not Acceptable
-          response.send('Requested content encoding is not supported.');
+          opts.errorHandler(
+            406,
+            'Requested content encoding is not supported.',
+            request,
+            response,
+            e
+          );
           return;
         }
 
         response.status(500); // Internal Server Error
-        printDevModeError(response, e);
+        opts.errorHandler(500, 'Internal server error.', request, response, e);
         return;
       }
     };
@@ -361,6 +368,7 @@ export default function createServer(
 
       if (!(await adapter.isAuthorized(url, 'PUT', request, response))) {
         response.status(401); // Unauthorized
+        opts.errorHandler(401, 'Unauthorized.', request, response);
         return;
       }
 
@@ -383,6 +391,12 @@ export default function createServer(
         // It's a new resource, so any etag should fail.
         if (ifMatch != null) {
           response.status(412); // Precondition Failed
+          opts.errorHandler(
+            412,
+            'Etag precondition failed.',
+            request,
+            response
+          );
           return;
         }
       } else {
@@ -404,6 +418,12 @@ export default function createServer(
             );
           if (ifMatchEtags.indexOf(etag) === -1) {
             response.status(412); // Precondition Failed
+            opts.errorHandler(
+              412,
+              'Etag precondition failed.',
+              request,
+              response
+            );
             return;
           }
         }
@@ -415,14 +435,23 @@ export default function createServer(
           new Date(ifUnmodifiedSince) < lastModified
         ) {
           response.status(412); // Precondition Failed
+          opts.errorHandler(
+            412,
+            'Modified date precondition failed.',
+            request,
+            response
+          );
           return;
         }
 
         if (ifMatch == null && ifUnmodifiedSince == null) {
           // Require that PUT for an existing resource is conditional.
           response.status(428); // Precondition Required
-          response.send(
-            'Overwriting existing resources require the use of a conditional header, If-Match or If-Unmodified-Since.'
+          opts.errorHandler(
+            428,
+            'Overwriting existing resource requires the use of a conditional header, If-Match or If-Unmodified-Since.',
+            request,
+            response
           );
           return;
         }
@@ -433,12 +462,21 @@ export default function createServer(
         if (ifNoneMatch.trim() === '*') {
           if (!newResource) {
             response.status(412); // Precondition Failed
+            opts.errorHandler(
+              412,
+              'Etag precondition failed.',
+              request,
+              response
+            );
             return;
           }
         } else {
           response.status(400); // Bad Request
-          response.send(
-            'If-None-Match, if provided, must be "*" on a PUT request.'
+          opts.errorHandler(
+            400,
+            'If-None-Match, if provided, must be "*" on a PUT request.',
+            request,
+            response
           );
           return;
         }
@@ -486,13 +524,18 @@ export default function createServer(
         default:
           if (encoding != null) {
             response.status(415); // Unsupported Media Type
-            response.send('Provided content encoding is not supported.');
+            opts.errorHandler(
+              415,
+              'Provided content encoding is not supported.',
+              request,
+              response
+            );
             return;
           }
           break;
       }
 
-      await resource.setStream(stream);
+      await resource.setStream(stream, response.locals.user);
 
       response.status(newResource ? 201 : 204); // Created or No Content
       response.set({
@@ -502,12 +545,18 @@ export default function createServer(
     } catch (e: any) {
       if (e instanceof EncodingNotSupportedError) {
         response.status(406); // Not Acceptable
-        response.send('Requested content encoding is not supported.');
+        opts.errorHandler(
+          406,
+          'Requested content encoding is not supported.',
+          request,
+          response,
+          e
+        );
         return;
       }
 
       response.status(500); // Internal Server Error
-      printDevModeError(response, e);
+      opts.errorHandler(500, 'Internal server error.', request, response, e);
       return;
     }
   });
@@ -539,24 +588,6 @@ export default function createServer(
 
   // Unauthenticate after the request.
   app.use(unauthenticate);
-
-  /**
-   * Output information about an error in the response body if the server is not
-   * in production mode.
-   *
-   * @param response Response to print the error on.
-   * @param error Error object to print.
-   */
-  function printDevModeError(response: AuthResponse, error: Error) {
-    if (!response.headersSent) {
-      response.setHeader('Content-Type', 'application/json');
-    }
-    response.send({
-      message: error.message,
-      error,
-      ...(process.env.NODE_ENV !== 'production' ? { stack: error.stack } : {}),
-    });
-  }
 
   return app;
 }

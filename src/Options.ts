@@ -1,3 +1,7 @@
+import { Request } from 'express';
+
+import type { AuthResponse } from './Interfaces/index.js';
+
 export interface Options {
   /**
    * Use compression while transferring files from the server to the client.
@@ -24,9 +28,50 @@ export interface Options {
    * semicolon).
    */
   realm: string;
+  /**
+   * The error handler is used to send a human readable error message back to
+   * the user. When called, the response code will have already been set, but no
+   * body content will have been sent.
+   */
+  errorHandler: (
+    code: number,
+    message: string,
+    request: Request,
+    response: AuthResponse,
+    error?: Error
+  ) => Promise<void>;
 }
 
 export const defaults: Options = {
   compression: false,
   realm: 'Nephele WebDAV Service',
+  errorHandler: async (
+    code: number,
+    message: string,
+    _request: Request,
+    response: AuthResponse,
+    error?: Error
+  ) => {
+    if (process.env.NODE_ENV !== 'production') {
+      if (!response.headersSent) {
+        response.setHeader('Content-Type', 'application/json');
+      }
+      response.send({
+        code,
+        message,
+        ...(error
+          ? {
+              errorMessage: error.message,
+              stack: error.stack,
+              error,
+            }
+          : {}),
+      });
+    } else {
+      if (!response.headersSent) {
+        response.setHeader('Content-Type', 'text/plain');
+      }
+      response.send(`Error ${code}: ${message}`);
+    }
+  },
 };
