@@ -58,7 +58,15 @@ export default class Resource implements ResourceInterface {
     return stream;
   }
 
-  async setStream(input: Readable) {
+  async setStream(input: Readable, user: User) {
+    let exists = true;
+
+    try {
+      await fsp.access(this.absolutePath, constants.W_OK);
+    } catch (e: any) {
+      exists = false;
+    }
+
     const handle = await fsp.open(this.absolutePath, 'w');
 
     const stream = handle.createWriteStream();
@@ -66,7 +74,15 @@ export default class Resource implements ResourceInterface {
     input.pipe(stream);
 
     return new Promise<void>((resolve, reject) => {
-      stream.on('close', () => {
+      stream.on('close', async () => {
+        if (!exists) {
+          await fsp.chown(
+            this.absolutePath,
+            await user.getUid(),
+            await user.getGid()
+          );
+        }
+
         resolve();
       });
 

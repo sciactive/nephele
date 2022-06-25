@@ -16,7 +16,7 @@ export interface Resource {
   // setBody(input: Buffer | string): Promise<void>;
 
   getStream(): Promise<Readable>;
-  setStream(input: Readable): Promise<void>;
+  setStream(input: Readable, user: User): Promise<void>;
 
   getLength(): Promise<number>;
 
