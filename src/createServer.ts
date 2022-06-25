@@ -19,7 +19,7 @@ import { isMediaTypeCompressed } from './compressedMediaTypes.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, '..', 'package.json')).toString()
+  fs.readFileSync(path.join(__dirname, '..', 'package.json')).toString()
 );
 
 /**
@@ -60,15 +60,18 @@ export default function createServer(
           `Basic realm="${opts.realm}", charset="UTF-8"`
         );
         printDevModeError(response, e);
+        response.end();
         return;
       }
       if (e instanceof ForbiddenError) {
         response.status(403);
         printDevModeError(response, e);
+        response.end();
         return;
       }
       response.status(500);
       printDevModeError(response, e);
+      response.end();
       return;
     }
     next();
@@ -84,6 +87,7 @@ export default function createServer(
     } catch (e: any) {
       response.status(500);
       printDevModeError(response, e);
+      response.end();
       return;
     }
     next();

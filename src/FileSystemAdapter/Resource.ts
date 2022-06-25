@@ -36,7 +36,7 @@ export default class Resource implements ResourceInterface {
   private get absolutePath() {
     // This is absolutely wrong for production, because '..' is illegal in a
     // WebDAV path.
-    return path.resolve(this.adapter.root, this.path);
+    return path.join(this.adapter.root, this.path);
   }
 
   async getLockByUser(user: User) {
@@ -50,7 +50,12 @@ export default class Resource implements ResourceInterface {
   async getStream() {
     const handle = await fsp.open(this.absolutePath, 'r');
 
-    return handle.createReadStream();
+    const stream = handle.createReadStream();
+    stream.on('end', () => {
+      handle.close();
+    });
+
+    return stream;
   }
 
   async setStream(input: Readable) {
@@ -155,5 +160,9 @@ export default class Resource implements ResourceInterface {
     }
 
     return true;
+  }
+
+  async getStats() {
+    return await fsp.stat(this.absolutePath);
   }
 }

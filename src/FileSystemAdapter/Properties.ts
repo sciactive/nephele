@@ -11,17 +11,26 @@ export default class Properties implements PropertiesInterface {
   }
 
   async get(name: string) {
-    return `${name}`;
+    if (name === 'Last-Modified') {
+      try {
+        const stats = await this.resource.getStats();
+        return stats.mtime.toUTCString();
+      } catch (e: any) {
+        return '';
+      }
+    }
+
+    return '';
   }
   async set(name: string, value: string) {
     return;
   }
 
   async getByUser(name: string, user: User) {
-    return `${name}`;
+    return await this.get(name);
   }
   async setByUser(name: string, value: string, user: User) {
-    return;
+    await this.set(name, value);
   }
 
   async list() {

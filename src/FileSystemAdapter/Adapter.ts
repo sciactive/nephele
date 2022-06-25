@@ -123,7 +123,7 @@ export default class Adapter implements AdapterInterface {
   }
 
   async isAuthorized(
-    url: URL,
+    _url: URL,
     method: string,
     request: Request,
     response: AuthResponse
@@ -165,8 +165,8 @@ export default class Adapter implements AdapterInterface {
 
     // First make sure the server process and user has access to all
     // directories in the tree.
-    const pathname = path.resolve(this.root, request.path);
-    const parts = pathname.split('/').filter((str) => str !== '');
+    const pathname = path.join(this.root, request.path);
+    const parts = pathname.split(path.sep).filter((str) => str !== '');
     let exists = true;
 
     try {
@@ -178,12 +178,12 @@ export default class Adapter implements AdapterInterface {
       exists = false;
     }
 
-    for (let i = 0; i <= parts.length; i++) {
-      const dir = path.resolve(this.root, ...parts.slice(0, i));
+    for (let i = 1; i <= parts.length; i++) {
+      const ipathname = path.join('/', ...parts.slice(0, i));
 
       // Check if the user can access it.
       try {
-        const stats = await fsp.stat(dir);
+        const stats = await fsp.stat(ipathname);
 
         if (access === 'x' || i < parts.length) {
           if (
