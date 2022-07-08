@@ -12,7 +12,10 @@ import { defaults } from './Options.js';
 import {
   EncodingNotSupportedError,
   ForbiddenError,
+  MediaTypeNotSupportedError,
+  ResourceExistsError,
   ResourceNotFoundError,
+  ResourceTreeNotCompleteError,
   UnauthorizedError,
 } from './Errors/index.js';
 import { isMediaTypeCompressed } from './compressedMediaTypes.js';
@@ -336,6 +339,13 @@ export default function createServer(
           throw e;
         }
       } catch (e: any) {
+        if (e instanceof ForbiddenError) {
+          response.status(403);
+          opts.errorHandler(403, 'Forbidden.', request, response, e);
+          response.end();
+          return;
+        }
+
         if (e instanceof EncodingNotSupportedError) {
           response.status(406); // Not Acceptable
           opts.errorHandler(
@@ -489,9 +499,6 @@ export default function createServer(
 
       let stream: Readable = request;
       let encoding = request.get('Content-Encoding');
-      response.set({
-        'Content-Encoding': encoding,
-      });
       switch (encoding) {
         case 'gzip':
         case 'x-gzip':
@@ -543,6 +550,13 @@ export default function createServer(
       });
       response.end();
     } catch (e: any) {
+      if (e instanceof ForbiddenError) {
+        response.status(403);
+        opts.errorHandler(403, 'Forbidden.', request, response, e);
+        response.end();
+        return;
+      }
+
       if (e instanceof EncodingNotSupportedError) {
         response.status(406); // Not Acceptable
         opts.errorHandler(
@@ -569,7 +583,175 @@ export default function createServer(
 
   app.move('*', async (request, response: AuthResponse) => {});
 
-  app.mkcol('*', async (request, response: AuthResponse) => {});
+  app.mkcol('*', async (request, response: AuthResponse) => {
+    try {
+      const { url } = getRequestData(request);
+
+      if (!(await adapter.isAuthorized(url, 'MKCOL', request, response))) {
+        response.status(401); // Unauthorized
+        opts.errorHandler(401, 'Unauthorized.', request, response);
+        return;
+      }
+
+      let resource = await adapter.newCollection(url, request, response);
+
+      // Check if header for etag.
+      const ifMatch = request.get('If-Match');
+
+      // It's a new resource, so any etag should fail.
+      if (ifMatch != null) {
+        response.status(412); // Precondition Failed
+        opts.errorHandler(412, 'Etag precondition failed.', request, response);
+        return;
+      }
+
+      const ifNoneMatch = request.get('If-None-Match');
+      if (ifNoneMatch != null) {
+        if (ifNoneMatch.trim() !== '*') {
+          response.status(400); // Bad Request
+          opts.errorHandler(
+            400,
+            'If-None-Match, if provided, must be "*" on a MKCOL request.',
+            request,
+            response
+          );
+          return;
+        }
+      }
+
+      response.set({
+        'Cache-Control': 'private, no-cache',
+        Date: new Date().toUTCString(),
+      });
+
+      let stream: Readable = request;
+      let encoding = request.get('Content-Encoding');
+      switch (encoding) {
+        case 'gzip':
+        case 'x-gzip':
+          stream = pipeline(request, zlib.createGunzip(), (e: any) => {
+            if (e) {
+              throw new Error('Compression pipeline failed: ' + e);
+            }
+          });
+          break;
+        case 'deflate':
+          stream = pipeline(request, zlib.createInflate(), (e: any) => {
+            if (e) {
+              throw new Error('Compression pipeline failed: ' + e);
+            }
+          });
+          break;
+        case 'br':
+          stream = pipeline(
+            request,
+            zlib.createBrotliDecompress(),
+            (e: any) => {
+              if (e) {
+                throw new Error('Compression pipeline failed: ' + e);
+              }
+            }
+          );
+          break;
+        case 'identity':
+          break;
+        default:
+          if (encoding != null) {
+            response.status(415); // Unsupported Media Type
+            opts.errorHandler(
+              415,
+              'Provided content encoding is not supported.',
+              request,
+              response
+            );
+            return;
+          }
+          break;
+      }
+
+      try {
+        stream.on('data', () => {
+          throw new MediaTypeNotSupportedError();
+        });
+
+        await new Promise<void>((resolve, _reject) => {
+          stream.on('end', () => {
+            resolve();
+          });
+        });
+      } catch (e: any) {
+        if (e instanceof MediaTypeNotSupportedError) {
+          response.status(415); // Unsupported Media Type
+          opts.errorHandler(
+            415,
+            "This server doesn't understand the body sent in the request.",
+            request,
+            response
+          );
+          return;
+        }
+      }
+
+      try {
+        await resource.create(response.locals.user);
+      } catch (e: any) {
+        if (e instanceof ResourceTreeNotCompleteError) {
+          response.status(409);
+          opts.errorHandler(
+            409,
+            'One or more intermediate collections must be created before this one.',
+            request,
+            response,
+            e
+          );
+          response.end();
+          return;
+        }
+
+        if (e instanceof ResourceExistsError) {
+          response.status(405);
+          opts.errorHandler(
+            405,
+            'The collection already exists.',
+            request,
+            response,
+            e
+          );
+          response.end();
+          return;
+        }
+      }
+
+      response.status(201); // Created or No Content
+      response.set({
+        'Content-Location': (await resource.getCanonicalUrl()).pathname,
+      });
+      response.end();
+    } catch (e: any) {
+      if (e instanceof ForbiddenError) {
+        response.status(403);
+        opts.errorHandler(403, 'Forbidden.', request, response, e);
+        response.end();
+        return;
+      }
+
+      if (e instanceof EncodingNotSupportedError) {
+        response.status(406); // Not Acceptable
+        opts.errorHandler(
+          406,
+          'Requested content encoding is not supported.',
+          request,
+          response,
+          e
+        );
+        return;
+      }
+
+      response.status(500); // Internal Server Error
+      opts.errorHandler(500, 'Internal server error.', request, response, e);
+      return;
+    }
+  });
 
   app.options('*', async (request, response: AuthResponse) => {});
 

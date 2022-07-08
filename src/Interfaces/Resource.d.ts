@@ -5,7 +5,25 @@ import type { Properties } from './Properties.js';
 import type { User } from './User.js';
 
 export interface Resource {
-  getLockByUser(user: User): Promise<Lock | null>;
+  /**
+   * Return any locks that apply to this resource, including any lock for
+   * collection resources that contain this resource where the lock has a depth
+   * such that this resource is included.
+   *
+   * A depth 1 lock applies to a collection and its immediate children, while a
+   * depth infinity lock applies to a collection and all of its descendents.
+   */
+  getLocks(): Promise<Lock[]>;
+
+  /**
+   * Return any locks that apply to this resource and were issued to the given
+   * user, including any lock for collection resources that contain this
+   * resource where the lock has a depth such that this resource is included.
+   *
+   * A depth 1 lock applies to a collection and its immediate children, while a
+   * depth infinity lock applies to a collection and all of its descendents.
+   */
+  getLocksByUser(user: User): Promise<Lock[]>;
 
   getProperties(): Promise<Properties>;
 
@@ -36,6 +54,19 @@ export interface Resource {
   getCanonicalUrl(): Promise<URL>;
 
   isCollection(): Promise<boolean>;
+
+  /**
+   * Create the resource.
+   *
+   * If the resource is a collection, the collection should be created normally.
+   *
+   * If the resource is not a collection, the resource should be created as an
+   * empty resource. This probably means a lock is being created for the
+   * resource.
+   *
+   * If the resource already exists, a ResourceExistsError should be thrown.
+   */
+  create(user: User): Promise<void>;
 }
 
 // Notes:

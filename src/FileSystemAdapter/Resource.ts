@@ -6,6 +6,7 @@ import crypto from 'node:crypto';
 import mmm, { Magic } from 'mmmagic';
 
 import type { Resource as ResourceInterface } from '../index.js';
+import { ResourceExistsError, ResourceTreeNotCompleteError } from '../index.js';
 
 import type Adapter from './Adapter.js';
 import Properties from './Properties.js';
@@ -39,8 +40,12 @@ export default class Resource implements ResourceInterface {
     return path.join(this.adapter.root, this.path);
   }
 
-  async getLockByUser(user: User) {
-    return null;
+  async getLocks() {
+    return [];
+  }
+
+  async getLocksByUser(user: User) {
+    return [];
   }
 
   async getProperties() {
@@ -166,6 +171,30 @@ export default class Resource implements ResourceInterface {
     } catch (e: any) {
       return false;
     }
+  }
+
+  async create(user: User) {
+    if (await this.exists()) {
+      throw new ResourceExistsError();
+    }
+
+    try {
+      await fsp.access(path.dirname(this.absolutePath), constants.F_OK);
+    } catch (e: any) {
+      throw new ResourceTreeNotCompleteError();
+    }
+
+    if (this.createCollection) {
+      await fsp.mkdir(this.absolutePath);
+    } else {
+      await fsp.writeFile(this.absolutePath, Uint8Array.from([]));
+    }
+
+    await fsp.chown(
+      this.absolutePath,
+      await user.getUid(),
+      await user.getGid()
+    );
   }
 
   async exists() {
