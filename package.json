@@ -45,7 +45,6 @@
     "@types/jest": "^27.5.0",
     "@types/mmmagic": "^0.4.30",
     "@types/xml2js": "^0.4.11",
-    "@types/xsd-schema-validator": "^0.5.4",
     "basic-auth": "^2.0.1",
     "husky": "^8.0.1",
     "jest": "^28.1.0",
@@ -60,8 +59,7 @@
     "authenticate-pam": "^1.0.5",
     "cookie-parser": "^1.4.6",
     "express": "^4.18.1",
-    "xml2js": "^0.4.23",
-    "xsd-schema-validator": "^0.7.0"
+    "xml2js": "^0.4.23"
   },
   "engines": {
     "node": ">=16"

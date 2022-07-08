@@ -1,24 +1,4 @@
-import path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import xml2js from 'xml2js';
-import validator from 'xsd-schema-validator';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-
-let validate = async (input: string) =>
-  await new Promise((resolve, reject) => {
-    validator.validateXML(
-      input,
-      path.resolve(__dirname, '../resources/webdav.xsd'),
-      (err, result) => {
-        if (err) {
-          reject(err);
-        }
-
-        resolve(result.valid);
-      }
-    );
-  });
 
 let builder = new xml2js.Builder({
   xmldec: { version: '1.0', encoding: 'UTF-8' },
@@ -102,5 +82,3 @@ let obj = {
 let xml = builder.buildObject(obj);
 
 console.log(xml);
-
-console.log(await validate(xml));
