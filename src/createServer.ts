@@ -200,6 +200,78 @@ export default function createServer(
     return { url, encoding, cacheControl };
   };
 
+  app.options('*', async (request, response: AuthResponse) => {
+    try {
+      let { url } = getRequestData(request, response);
+
+      const complianceClasses = [
+        '1',
+        '3',
+        ...(await adapter.getComplianceClasses(url, request, response)),
+      ];
+      const allowedMethods = [
+        'OPTIONS',
+        'GET',
+        'HEAD',
+        'POST',
+        'PUT',
+        'PATCH',
+        'DELETE',
+        'COPY',
+        'MOVE',
+        'MKCOL',
+        'SEARCH',
+        'PROPFIND',
+        'PROPPATCH',
+        ...(complianceClasses.includes('2') ? ['LOCK', 'UNLOCK'] : []),
+        ...(await adapter.getAllowedMethods(url, request, response)),
+      ];
+      const cacheControl = await adapter.getOptionsResponseCacheControl(
+        url,
+        request,
+        response
+      );
+
+      try {
+        request.on('data', () => {
+          response.locals.debug('Provided body to OPTIONS.');
+          throw new MediaTypeNotSupportedError();
+        });
+
+        await new Promise<void>((resolve, _reject) => {
+          request.on('end', () => {
+            resolve();
+          });
+        });
+      } catch (e: any) {
+        if (e instanceof MediaTypeNotSupportedError) {
+          response.status(415); // Unsupported Media Type
+          opts.errorHandler(
+            415,
+            "This server doesn't understand the body sent in the request.",
+            request,
+            response
+          );
+          return;
+        }
+      }
+
+      response.status(204); // No Content
+      response.set({
+        'Cache-Control': cacheControl,
+        Date: new Date().toUTCString(),
+        Allow: allowedMethods.join(', '),
+        DAV: complianceClasses.join(', '),
+      });
+      response.end();
+    } catch (e: any) {
+      response.locals.debug('Error: ', e);
+      response.status(500); // Internal Server Error
+      opts.errorHandler(500, 'Internal server error.', request, response, e);
+      return;
+    }
+  });
+
   const getOrHead = (method: 'GET' | 'HEAD') => {
     return async (request: Request, response: AuthResponse) => {
       try {
@@ -783,8 +855,6 @@ export default function createServer(
     }
   });
 
-  app.options('*', async (request, response: AuthResponse) => {});
-
   app.lock('*', async (request, response: AuthResponse) => {});
 
   app.unlock('*', async (request, response: AuthResponse) => {});
@@ -795,7 +865,7 @@ export default function createServer(
     // propfind
     // proppatch
     // On 405 response:
-    // Allow: 'GET, HEAD, POST, PUT, PATCH, DELETE, COPY, MOVE, MKCOL, OPTIONS, LOCK, UNLOCK, SEARCH, PROPFIND, PROPPATCH',
+    // Allow: (see OPTIONS handler)
   });
 
   // Unauthenticate after the request.

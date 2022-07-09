@@ -104,6 +104,35 @@ export default class Adapter implements AdapterInterface {
     }
   }
 
+  async getComplianceClasses(
+    _url: URL,
+    _request: Request,
+    _response: AuthResponse
+  ) {
+    // This adapter supports locks.
+    return ['2'];
+  }
+
+  async getAllowedMethods(
+    _url: URL,
+    _request: Request,
+    _response: AuthResponse
+  ) {
+    // This adapter doesn't support any WebDAV extensions that require
+    // additional methods.
+    return [];
+  }
+
+  async getOptionsResponseCacheControl(
+    _url: URL,
+    _request: Request,
+    _response: AuthResponse
+  ) {
+    // This adapter doesn't do anything special for individual URLs, so a max
+    // age of one week is fine.
+    return 'max-age=604800';
+  }
+
   async authenticate(request: Request, response: AuthResponse) {
     const authorization = request.get('Authorization');
     let username = 'nobody';
