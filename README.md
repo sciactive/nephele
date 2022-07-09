@@ -58,6 +58,21 @@ Properties are the metadata associated with resources. Live properties are data 
 
 Users are extremely flexible in Nephele. Basically Nephele hands you a request, and you provide whatever you like back as the user for that request. Later, when Nephele asks you to do certain things, it will provide this same user back to you.
 
+# Testing
+
+To bring up the testing server, which you should never do in a production environment, run the `testserver.js` file, like this.
+
+```
+mkdir testroot
+node --experimental-specifier-resolution=node testserver.js testroot
+```
+
+If you want to run it without PAM authentication, set the `NOPAM` env var, like this.
+
+```
+env NOPAM=true node --experimental-specifier-resolution=node testserver.js testroot
+```
+
 # License
 
 Copyright 2022 SciActive Inc

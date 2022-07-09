@@ -5,7 +5,7 @@
  */
 
 import { hostname } from 'node:os';
-import { dirname } from 'node:path';
+import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 
@@ -18,7 +18,7 @@ const app = express();
 const host = hostname();
 const port = 8080;
 const path = '/';
-const root = __dirname;
+const root = process.argv.length > 2 ? resolve(process.argv[2]) : __dirname;
 
 app.use(
   '/',
@@ -28,6 +28,7 @@ app.use(
       port,
       path,
       root,
+      pam: !process.env.NOPAM,
     })
   )
 );
