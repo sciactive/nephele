@@ -338,8 +338,6 @@ export default function createServer(
           if (!opts.compression || isMediaTypeCompressed(mediaType)) {
             encoding = 'identity';
           }
-          // TODO: Set encoding to "identity" if the media type is already
-          //       compressed, or if compression is disabled in options.
 
           response.set({
             'Cache-Control': 'private, no-cache',
