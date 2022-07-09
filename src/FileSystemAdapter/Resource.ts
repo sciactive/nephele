@@ -80,7 +80,7 @@ export default class Resource implements ResourceInterface {
 
     return new Promise<void>((resolve, reject) => {
       stream.on('close', async () => {
-        if (!exists) {
+        if (!exists && this.adapter.pam) {
           await fsp.chown(
             this.absolutePath,
             await user.getUid(),
@@ -190,11 +190,13 @@ export default class Resource implements ResourceInterface {
       await fsp.writeFile(this.absolutePath, Uint8Array.from([]));
     }
 
-    await fsp.chown(
-      this.absolutePath,
-      await user.getUid(),
-      await user.getGid()
-    );
+    if (this.adapter.pam) {
+      await fsp.chown(
+        this.absolutePath,
+        await user.getUid(),
+        await user.getGid()
+      );
+    }
   }
 
   async exists() {

@@ -44,6 +44,10 @@ export default class User implements UserInterface {
   }
 
   async getUid(): Promise<number> {
+    if (!this.adapter.pam) {
+      return -1;
+    }
+
     return await new Promise((resolve, reject) => {
       let id = '';
       const p = cp.spawn('id', ['-u', this.username]);
@@ -60,6 +64,10 @@ export default class User implements UserInterface {
   }
 
   async getGid(): Promise<number> {
+    if (!this.adapter.pam) {
+      return -1;
+    }
+
     return await new Promise((resolve, reject) => {
       let gid = '';
       const p = cp.spawn('id', ['-g', this.username]);
@@ -76,6 +84,10 @@ export default class User implements UserInterface {
   }
 
   async getGids(): Promise<number[]> {
+    if (!this.adapter.pam) {
+      return [];
+    }
+
     return await new Promise((resolve, reject) => {
       let gids = '';
       const p = cp.spawn('id', ['-G', this.username]);
