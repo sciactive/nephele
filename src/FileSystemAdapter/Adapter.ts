@@ -113,8 +113,10 @@ export default class Adapter implements AdapterInterface {
         password = auth.pass;
       }
     }
-    response.locals.user = new User({ username, adapter: this });
-    await (response.locals.user as User).authenticate(password);
+    const user = new User({ username, adapter: this });
+    await user.authenticate(password);
+
+    return user;
   }
 
   async cleanAuthentication(_request: Request, _response: AuthResponse) {

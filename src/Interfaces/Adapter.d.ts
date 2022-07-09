@@ -15,10 +15,13 @@ export interface Adapter {
   /**
    * Authenticate the user based on the data provided by the request.
    *
+   * The object returned here will be placed in `response.locals.user`, and
+   * sometimes passed to other functions that take a `User` argument.
+   *
    * @param request The server request.
-   * @param response Store the auth data in `response.auth`.
+   * @param response The unauthenticated server response.
    */
-  authenticate(request: Request, response: AuthResponse): Promise<void>;
+  authenticate(request: Request, response: AuthResponse): Promise<User>;
 
   /**
    * Perform any sort of auth cleanup that needs to be done once the request is

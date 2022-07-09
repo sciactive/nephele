@@ -54,7 +54,7 @@ export default function createServer(
     next: NextFunction
   ) {
     try {
-      await adapter.authenticate(request, response);
+      response.locals.user = await adapter.authenticate(request, response);
     } catch (e: any) {
       if (e instanceof UnauthorizedError) {
         response.status(401);
