@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import express, { NextFunction, Request } from 'express';
 import cookieParser from 'cookie-parser';
+import createDebug from 'debug';
 
 import type { Adapter, AuthResponse, Resource } from './Interfaces/index.js';
 import type { Options } from './Options.js';
@@ -19,6 +20,8 @@ import {
   UnauthorizedError,
 } from './Errors/index.js';
 import { isMediaTypeCompressed } from './compressedMediaTypes.js';
+
+const debug = createDebug('nephele:server');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
@@ -48,14 +51,31 @@ export default function createServer(
   app.disable('etag');
   app.use(cookieParser());
 
+  async function debugLogger(
+    request: Request,
+    response: AuthResponse,
+    next: NextFunction
+  ) {
+    response.locals.debug = debug.extend(
+      `${request.ip.replace(/:/g, '_')}:${request.method}:${
+        request.originalUrl
+      }`
+    );
+    next();
+  }
+
+  app.use(debugLogger);
+
   async function authenticate(
     request: Request,
     response: AuthResponse,
     next: NextFunction
   ) {
     try {
+      response.locals.debug(`Authenticating user.`);
       response.locals.user = await adapter.authenticate(request, response);
     } catch (e: any) {
+      response.locals.debug(`Auth failed: ${e}`);
       if (e instanceof UnauthorizedError) {
         response.status(401);
         response.set(
@@ -66,12 +86,15 @@ export default function createServer(
         response.end();
         return;
       }
+
       if (e instanceof ForbiddenError) {
         response.status(403);
         opts.errorHandler(403, 'Forbidden.', request, response, e);
         response.end();
         return;
       }
+
+      response.locals.debug('Error: ', e);
       response.status(500);
       opts.errorHandler(500, 'Internal server error.', request, response, e);
       response.end();
@@ -86,8 +109,10 @@ export default function createServer(
     next: NextFunction
   ) {
     try {
+      response.locals.debug(`Cleaning up authentication.`);
       await adapter.cleanAuthentication(request, response);
     } catch (e: any) {
+      response.locals.debug('Error: ', e);
       response.status(500);
       opts.errorHandler(500, 'Internal server error.', request, response, e);
       response.end();
@@ -113,7 +138,7 @@ export default function createServer(
   // Add the server header to the response.
   app.use(addServerHeader);
 
-  const getRequestedEncoding = (request: Request) => {
+  const getRequestedEncoding = (request: Request, response: AuthResponse) => {
     const acceptEncoding = request.get('Accept-Encoding') || '*';
     const supported = ['gzip', 'deflate', 'br', 'identity'];
     const encodings: [string, number][] = acceptEncoding
@@ -138,6 +163,7 @@ export default function createServer(
           (check) => encodings.find(([check2]) => check === check2) == null
         ) || 'gzip';
     }
+    response.locals.debug(`Encoding set to ${encoding}.`);
     return encoding as 'gzip' | 'x-gzip' | 'deflate' | 'br' | 'identity';
   };
 
@@ -164,12 +190,12 @@ export default function createServer(
     return cacheControl;
   };
 
-  const getRequestData = (request: Request) => {
+  const getRequestData = (request: Request, response: AuthResponse) => {
     const url = new URL(
       request.url,
       `${request.protocol}://${request.headers.host}`
     );
-    const encoding = getRequestedEncoding(request);
+    const encoding = getRequestedEncoding(request, response);
     const cacheControl = getCacheControl(request);
     return { url, encoding, cacheControl };
   };
@@ -177,10 +203,11 @@ export default function createServer(
   const getOrHead = (method: 'GET' | 'HEAD') => {
     return async (request: Request, response: AuthResponse) => {
       try {
-        let { url, encoding, cacheControl } = getRequestData(request);
+        let { url, encoding, cacheControl } = getRequestData(request, response);
 
         if (!(await adapter.isAuthorized(url, method, request, response))) {
-          response.status(401); // Unauthorized
+          response.status(401);
+          opts.errorHandler(401, 'Unauthorized.', request, response);
           return;
         }
 
@@ -268,6 +295,7 @@ export default function createServer(
           if (encoding !== 'identity') {
             // Inform the client, even on a HEAD request, that this entity will be transmitted in
             // chunks.
+            response.locals.debug('Set to chunked encoding.');
             response.set({
               'Transfer-Encoding': 'chunked',
             });
@@ -310,6 +338,7 @@ export default function createServer(
                   break;
               }
 
+              response.locals.debug('Beginning response stream.');
               stream.on('data', (chunk) => {
                 response.write(
                   ('length' in chunk ? chunk.length : chunk.size).toString(16) +
@@ -324,6 +353,7 @@ export default function createServer(
               });
 
               stream.on('end', () => {
+                response.locals.debug('Response stream finished.');
                 response.write('0\r\n\r\n');
                 response.end();
               });
@@ -342,7 +372,6 @@ export default function createServer(
         if (e instanceof ForbiddenError) {
           response.status(403);
           opts.errorHandler(403, 'Forbidden.', request, response, e);
-          response.end();
           return;
         }
 
@@ -358,6 +387,7 @@ export default function createServer(
           return;
         }
 
+        response.locals.debug('Error: ', e);
         response.status(500); // Internal Server Error
         opts.errorHandler(500, 'Internal server error.', request, response, e);
         return;
@@ -374,10 +404,10 @@ export default function createServer(
 
   app.put('*', async (request, response: AuthResponse) => {
     try {
-      const { url } = getRequestData(request);
+      const { url } = getRequestData(request, response);
 
       if (!(await adapter.isAuthorized(url, 'PUT', request, response))) {
-        response.status(401); // Unauthorized
+        response.status(401);
         opts.errorHandler(401, 'Unauthorized.', request, response);
         return;
       }
@@ -553,7 +583,6 @@ export default function createServer(
       if (e instanceof ForbiddenError) {
         response.status(403);
         opts.errorHandler(403, 'Forbidden.', request, response, e);
-        response.end();
         return;
       }
 
@@ -569,6 +598,7 @@ export default function createServer(
         return;
       }
 
+      response.locals.debug('Error: ', e);
       response.status(500); // Internal Server Error
       opts.errorHandler(500, 'Internal server error.', request, response, e);
       return;
@@ -585,10 +615,10 @@ export default function createServer(
 
   app.mkcol('*', async (request, response: AuthResponse) => {
     try {
-      const { url } = getRequestData(request);
+      const { url } = getRequestData(request, response);
 
       if (!(await adapter.isAuthorized(url, 'MKCOL', request, response))) {
-        response.status(401); // Unauthorized
+        response.status(401);
         opts.errorHandler(401, 'Unauthorized.', request, response);
         return;
       }
@@ -671,6 +701,7 @@ export default function createServer(
 
       try {
         stream.on('data', () => {
+          response.locals.debug('Provided body to MKCOL.');
           throw new MediaTypeNotSupportedError();
         });
 
@@ -704,7 +735,6 @@ export default function createServer(
             response,
             e
           );
-          response.end();
           return;
         }
 
@@ -717,7 +747,6 @@ export default function createServer(
             response,
             e
           );
-          response.end();
           return;
         }
       }
@@ -731,7 +760,6 @@ export default function createServer(
       if (e instanceof ForbiddenError) {
         response.status(403);
         opts.errorHandler(403, 'Forbidden.', request, response, e);
-        response.end();
         return;
       }
 
@@ -747,6 +775,7 @@ export default function createServer(
         return;
       }
 
+      response.locals.debug('Error: ', e);
       response.status(500); // Internal Server Error
       opts.errorHandler(500, 'Internal server error.', request, response, e);
       return;
@@ -770,6 +799,8 @@ export default function createServer(
 
   // Unauthenticate after the request.
   app.use(unauthenticate);
+
+  debug(`Nephele server set up.`);
 
   return app;
 }

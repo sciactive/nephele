@@ -8,11 +8,14 @@ import { hostname } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
+import createDebug from 'debug';
 
 import server from './dist/index.js';
 import FileSystemAdapter from './dist/FileSystemAdapter/Adapter.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+
+const debug = createDebug('nephele:testserver');
 
 const app = express();
 const host = hostname();
@@ -34,5 +37,7 @@ app.use(
 );
 
 app.listen(port, () => {
+  debug(`Listening on ${host}:${port}.`);
+  debug(`Serving files from "${root}".`);
   console.log(`Example Nephele WebDAV server listening on port ${port}`);
 });

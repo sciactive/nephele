@@ -64,13 +64,13 @@ To bring up the testing server, which you should never do in a production enviro
 
 ```
 mkdir testroot
-node --experimental-specifier-resolution=node testserver.js testroot
+env DEBUG="nephele:*" node --experimental-specifier-resolution=node testserver.js testroot
 ```
 
 If you want to run it without PAM authentication, set the `NOPAM` env var, like this.
 
 ```
-env NOPAM=true node --experimental-specifier-resolution=node testserver.js testroot
+env NOPAM=true DEBUG="nephele:*" node --experimental-specifier-resolution=node testserver.js testroot
 ```
 
 # License
