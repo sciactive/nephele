@@ -420,8 +420,9 @@ export default function createServer(
         if (e instanceof ResourceNotFoundError) {
           resource = await adapter.newResource(url, request, response);
           newResource = true;
+        } else {
+          throw e;
         }
-        throw e;
       }
 
       if (newResource) {
