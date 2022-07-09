@@ -1,5 +1,6 @@
 import type {
   Adapter,
+  AuthResponse,
   Cache,
   Lock,
   Properties,
@@ -12,7 +13,16 @@ export * from './Errors/index.js';
 import createServer from './createServer.js';
 import { defaults } from './Options.js';
 
-export { Adapter, Cache, Lock, Properties, Resource, User, Options };
+export {
+  Adapter,
+  AuthResponse,
+  Cache,
+  Lock,
+  Properties,
+  Resource,
+  User,
+  Options,
+};
 
 export { createServer, defaults };
 

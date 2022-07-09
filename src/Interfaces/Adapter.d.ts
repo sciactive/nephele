@@ -1,8 +1,13 @@
 import type { Request, Response } from 'express';
+import type { Debugger } from 'debug';
+
 import type { Resource } from './Resource.js';
 import type { User } from './User.js';
 
-export type AuthResponse = Response<any, { user: User }>;
+export type AuthResponse<
+  ResBody = any,
+  Locals extends Record<string, any> = Record<string, any>
+> = Response<ResBody, { user: User; debug: Debugger } & Locals>;
 
 /**
  * An interface for a Nephele adapter.

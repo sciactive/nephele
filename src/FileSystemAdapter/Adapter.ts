@@ -6,12 +6,15 @@ import { fileURLToPath } from 'node:url';
 import type { Request, Response } from 'express';
 import basicAuth from 'basic-auth';
 
-import type { Adapter as AdapterInterface } from '../index.js';
+import type {
+  Adapter as AdapterInterface,
+  AuthResponse as NepheleAuthResponse,
+} from '../index.js';
 import { ResourceNotFoundError } from '../index.js';
 import User from './User.js';
 import Resource from './Resource.js';
 
-export type AuthResponse = Response<any, { user: User }>;
+export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -180,61 +183,63 @@ export default class Adapter implements AdapterInterface {
       exists = false;
     }
 
-    for (let i = 1; i <= parts.length; i++) {
-      const ipathname = path.join('/', ...parts.slice(0, i));
+    if (this.pam) {
+      for (let i = 1; i <= parts.length; i++) {
+        const ipathname = path.join('/', ...parts.slice(0, i));
 
-      // Check if the user can access it.
-      try {
-        const stats = await fsp.stat(ipathname);
+        // Check if the user can access it.
+        try {
+          const stats = await fsp.stat(ipathname);
 
-        if (access === 'x' || i < parts.length) {
+          if (access === 'x' || i < parts.length) {
+            if (
+              !(
+                stats.mode & otherExecute ||
+                (stats.uid === uid && stats.mode & userExecute) ||
+                (gids.indexOf(stats.gid) > -1 && stats.mode & groupExecute)
+              )
+            ) {
+              return false;
+            }
+          }
+
+          if (i === parts.length && access === 'r' && exists) {
+            if (
+              !(
+                stats.mode & otherRead ||
+                (stats.uid === uid && stats.mode & userRead) ||
+                (gids.indexOf(stats.gid) > -1 && stats.mode & groupRead)
+              )
+            ) {
+              return false;
+            }
+          }
+
           if (
-            !(
-              stats.mode & otherExecute ||
-              (stats.uid === uid && stats.mode & userExecute) ||
-              (gids.indexOf(stats.gid) > -1 && stats.mode & groupExecute)
-            )
+            (i === parts.length && access === 'w') ||
+            (!exists && i === parts.length - 1)
           ) {
+            if (
+              !(
+                stats.mode & otherWrite ||
+                (stats.uid === uid && stats.mode & userWrite) ||
+                (gids.indexOf(stats.gid) > -1 && stats.mode & groupWrite)
+              )
+            ) {
+              return false;
+            }
+          }
+        } catch (e: any) {
+          if (exists || i < parts.length) {
             return false;
           }
-        }
-
-        if (i === parts.length && access === 'r' && exists) {
-          if (
-            !(
-              stats.mode & otherRead ||
-              (stats.uid === uid && stats.mode & userRead) ||
-              (gids.indexOf(stats.gid) > -1 && stats.mode & groupRead)
-            )
-          ) {
-            return false;
-          }
-        }
-
-        if (
-          (i === parts.length && access === 'w') ||
-          (!exists && i === parts.length - 1)
-        ) {
-          if (
-            !(
-              stats.mode & otherWrite ||
-              (stats.uid === uid && stats.mode & userWrite) ||
-              (gids.indexOf(stats.gid) > -1 && stats.mode & groupWrite)
-            )
-          ) {
-            return false;
-          }
-        }
-      } catch (e: any) {
-        if (exists || i < parts.length) {
-          return false;
         }
       }
     }
 
     // If we get to here, it means either the file exists and user has
     // permission, or the file doesn't exist, and the user has access to all
-    // directories above it.
+    // directories above it. (Or pam is disabled.)
     return true;
   }
 
