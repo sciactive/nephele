@@ -7,7 +7,10 @@ import type { User } from './User.js';
 export type AuthResponse<
   ResBody = any,
   Locals extends Record<string, any> = Record<string, any>
-> = Response<ResBody, { user: User; debug: Debugger } & Locals>;
+> = Response<
+  ResBody,
+  { requestId: string; debug: Debugger; user: User } & Locals
+>;
 
 /**
  * An interface for a Nephele adapter.

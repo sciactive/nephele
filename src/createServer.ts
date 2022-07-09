@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 import express, { NextFunction, Request } from 'express';
 import cookieParser from 'cookie-parser';
 import createDebug from 'debug';
+import { nanoid } from 'nanoid';
 
 import type { Adapter, AuthResponse, Resource } from './Interfaces/index.js';
 import type { Options } from './Options.js';
@@ -56,15 +57,32 @@ export default function createServer(
     response: AuthResponse,
     next: NextFunction
   ) {
-    response.locals.debug = debug.extend(
-      `${request.ip.replace(/:/g, '_')}:${request.method}:${
-        request.originalUrl
-      }`
+    response.locals.requestId = nanoid(8);
+    response.locals.debug = debug.extend(`${response.locals.requestId}`);
+    response.locals.debug(
+      `IP: ${request.ip}, Method: ${request.method}, URL: ${request.originalUrl}`
     );
     next();
   }
 
+  // Log the details of the request.
   app.use(debugLogger);
+
+  async function debugLoggerEnd(
+    _request: Request,
+    response: AuthResponse,
+    next: NextFunction
+  ) {
+    response.on('close', () => {
+      response.locals.debug(
+        `Response: ${response.statusCode} ${response.statusMessage}`
+      );
+    });
+    next();
+  }
+
+  // Log the details of the response.
+  app.use(debugLoggerEnd);
 
   async function authenticate(
     request: Request,
@@ -83,39 +101,18 @@ export default function createServer(
           `Basic realm="${opts.realm}", charset="UTF-8"`
         );
         opts.errorHandler(401, 'Unauthorized.', request, response, e);
-        response.end();
         return;
       }
 
       if (e instanceof ForbiddenError) {
         response.status(403);
         opts.errorHandler(403, 'Forbidden.', request, response, e);
-        response.end();
         return;
       }
 
       response.locals.debug('Error: ', e);
       response.status(500);
       opts.errorHandler(500, 'Internal server error.', request, response, e);
-      response.end();
-      return;
-    }
-    next();
-  }
-
-  async function unauthenticate(
-    request: Request,
-    response: AuthResponse,
-    next: NextFunction
-  ) {
-    try {
-      response.locals.debug(`Cleaning up authentication.`);
-      await adapter.cleanAuthentication(request, response);
-    } catch (e: any) {
-      response.locals.debug('Error: ', e);
-      response.status(500);
-      opts.errorHandler(500, 'Internal server error.', request, response, e);
-      response.end();
       return;
     }
     next();
@@ -123,6 +120,24 @@ export default function createServer(
 
   // Authenticate before the request.
   app.use(authenticate);
+
+  async function unauthenticate(
+    request: Request,
+    response: AuthResponse,
+    next: NextFunction
+  ) {
+    response.on('close', async () => {
+      try {
+        await adapter.cleanAuthentication(request, response);
+      } catch (e: any) {
+        response.locals.debug('Error during authentication cleanup: ', e);
+      }
+    });
+    next();
+  }
+
+  // Unauthenticate after the request.
+  app.use(unauthenticate);
 
   async function addServerHeader(
     _request: Request,
@@ -488,6 +503,17 @@ export default function createServer(
       let newResource = false;
       try {
         resource = await adapter.getResource(url, request, response);
+
+        if (await resource.isCollection()) {
+          response.status(405); // Method Not Allowed
+          opts.errorHandler(
+            405,
+            'This resource is an existing collection.',
+            request,
+            response
+          );
+          return;
+        }
       } catch (e: any) {
         if (e instanceof ResourceNotFoundError) {
           resource = await adapter.newResource(url, request, response);
@@ -557,17 +583,18 @@ export default function createServer(
           return;
         }
 
-        if (ifMatch == null && ifUnmodifiedSince == null) {
-          // Require that PUT for an existing resource is conditional.
-          response.status(428); // Precondition Required
-          opts.errorHandler(
-            428,
-            'Overwriting existing resource requires the use of a conditional header, If-Match or If-Unmodified-Since.',
-            request,
-            response
-          );
-          return;
-        }
+        // TODO: This seems to cause issues with existing clients.
+        // if (ifMatch == null && ifUnmodifiedSince == null) {
+        //   // Require that PUT for an existing resource is conditional.
+        //   response.status(428); // Precondition Required
+        //   opts.errorHandler(
+        //     428,
+        //     'Overwriting existing resource requires the use of a conditional header, If-Match or If-Unmodified-Since.',
+        //     request,
+        //     response
+        //   );
+        //   return;
+        // }
       }
 
       const ifNoneMatch = request.get('If-None-Match');
@@ -645,13 +672,29 @@ export default function createServer(
           break;
       }
 
-      await resource.setStream(stream, response.locals.user);
+      try {
+        await resource.setStream(stream, response.locals.user);
 
-      response.status(newResource ? 201 : 204); // Created or No Content
-      response.set({
-        'Content-Location': (await resource.getCanonicalUrl()).pathname,
-      });
-      response.end();
+        response.status(newResource ? 201 : 204); // Created or No Content
+        response.set({
+          'Content-Location': (await resource.getCanonicalUrl()).pathname,
+        });
+        response.end();
+      } catch (e: any) {
+        if (e instanceof ResourceTreeNotCompleteError) {
+          response.status(409);
+          opts.errorHandler(
+            409,
+            'One or more intermediate collections must be created before this resource.',
+            request,
+            response,
+            e
+          );
+          return;
+        }
+
+        throw e;
+      }
     } catch (e: any) {
       if (e instanceof ForbiddenError) {
         response.status(403);
@@ -824,7 +867,7 @@ export default function createServer(
         }
       }
 
-      response.status(201); // Created or No Content
+      response.status(201); // Created
       response.set({
         'Content-Location': (await resource.getCanonicalUrl()).pathname,
       });
@@ -867,9 +910,6 @@ export default function createServer(
     // On 405 response:
     // Allow: (see OPTIONS handler)
   });
-
-  // Unauthenticate after the request.
-  app.use(unauthenticate);
 
   debug(`Nephele server set up.`);
 

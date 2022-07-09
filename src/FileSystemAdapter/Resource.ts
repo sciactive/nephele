@@ -67,6 +67,12 @@ export default class Resource implements ResourceInterface {
     let exists = true;
 
     try {
+      await fsp.access(path.dirname(this.absolutePath), constants.F_OK);
+    } catch (e: any) {
+      throw new ResourceTreeNotCompleteError();
+    }
+
+    try {
       await fsp.access(this.absolutePath, constants.W_OK);
     } catch (e: any) {
       exists = false;
