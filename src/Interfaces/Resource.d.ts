@@ -36,6 +36,19 @@ export interface Resource {
   getStream(): Promise<Readable>;
   setStream(input: Readable, user: User): Promise<void>;
 
+  /**
+   * Create the resource.
+   *
+   * If the resource is a collection, the collection should be created normally.
+   *
+   * If the resource is not a collection, the resource should be created as an
+   * empty resource. This probably means a lock is being created for the
+   * resource.
+   *
+   * If the resource already exists, a ResourceExistsError should be thrown.
+   */
+  create(user: User): Promise<void>;
+
   getLength(): Promise<number>;
 
   getEtag(): Promise<string>;
@@ -56,15 +69,11 @@ export interface Resource {
   isCollection(): Promise<boolean>;
 
   /**
-   * Create the resource.
+   * Get the internal members of the collection.
    *
-   * If the resource is a collection, the collection should be created normally.
-   *
-   * If the resource is not a collection, the resource should be created as an
-   * empty resource. This probably means a lock is being created for the
-   * resource.
-   *
-   * If the resource already exists, a ResourceExistsError should be thrown.
+   * Internal members are the direct descendents (children) of a collection. If
+   * this is called on a resource that is not a collection, it should throw a
+   * MethodNotSupportedError.
    */
-  create(user: User): Promise<void>;
+  getInternalMembers(): Promise<Resource[]>;
 }

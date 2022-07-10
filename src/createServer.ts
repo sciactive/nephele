@@ -12,13 +12,21 @@ import type { Adapter, AuthResponse, Resource } from './Interfaces/index.js';
 import type { Options } from './Options.js';
 import { defaults } from './Options.js';
 import {
+  BadRequestError,
   EncodingNotSupportedError,
+  FailedDependencyError,
   ForbiddenError,
+  InsufficientStorageError,
+  LockedError,
   MediaTypeNotSupportedError,
+  MethodNotSupportedError,
+  PreconditionFailedError,
+  RequestURITooLongError,
   ResourceExistsError,
   ResourceNotFoundError,
   ResourceTreeNotCompleteError,
   UnauthorizedError,
+  UnprocessableEntityError,
 } from './Errors/index.js';
 import { isMediaTypeCompressed } from './compressedMediaTypes.js';
 
@@ -302,11 +310,20 @@ export default function createServer(
           const resource = await adapter.getResource(url, request, response);
           const properties = await resource.getProperties();
           const etagPromise = resource.getEtag();
-          const lastModifiedPromise = properties.get('Last-Modified');
-          const [etag, lastModified] = [
+          const lastModifiedPromise = properties.get('getlastmodified');
+          const contentLanguagePromise = properties.get('getcontentlanguage');
+          const [etag, lastModifiedString, contentLanguage] = [
             await etagPromise,
-            new Date(await lastModifiedPromise),
+            await lastModifiedPromise,
+            await contentLanguagePromise,
           ];
+          if (typeof lastModifiedString !== 'string') {
+            throw new Error('Last modified date property is not a string.');
+          }
+          const lastModified = new Date(lastModifiedString);
+          if (typeof contentLanguage !== 'string') {
+            throw new Error('Content language property is not a string.');
+          }
 
           // TODO: use If-Range here. If-Match and If-Unmodified-Since are for PUT.
           // Check if header for etag.
@@ -344,6 +361,11 @@ export default function createServer(
             Date: new Date().toUTCString(),
             Vary: 'Accept-Encoding',
           });
+          if (contentLanguage !== '') {
+            response.set({
+              'Content-Language': contentLanguage,
+            });
+          }
 
           if (!cacheControl['no-cache'] && cacheControl['max-age'] !== 0) {
             // Check the request header for the etag.
@@ -539,11 +561,15 @@ export default function createServer(
       } else {
         const properties = await resource.getProperties();
         const etagPromise = resource.getEtag();
-        const lastModifiedPromise = properties.get('Last-Modified');
-        const [etag, lastModified] = [
+        const lastModifiedPromise = properties.get('getlastmodified');
+        const [etag, lastModifiedString] = [
           await etagPromise,
-          new Date(await lastModifiedPromise),
+          await lastModifiedPromise,
         ];
+        if (typeof lastModifiedString !== 'string') {
+          throw new Error('Last modified date property is not a string.');
+        }
+        const lastModified = new Date(lastModifiedString);
 
         // Check if header for etag.
         const ifMatch = request.get('If-Match');
@@ -625,6 +651,7 @@ export default function createServer(
         Date: new Date().toUTCString(),
       });
 
+      const contentLanguage = request.get('Content-Language');
       let stream: Readable = request;
       let encoding = request.get('Content-Encoding');
       switch (encoding) {
@@ -692,6 +719,15 @@ export default function createServer(
         }
 
         throw e;
+      }
+
+      if (contentLanguage && contentLanguage !== '') {
+        try {
+          const properties = await resource.getProperties();
+          await properties.set('getcontentlanguage', contentLanguage);
+        } catch (e: any) {
+          // Ignore errors here.
+        }
       }
     } catch (e: any) {
       if (e instanceof ForbiddenError) {
@@ -902,14 +938,141 @@ export default function createServer(
 
   app.search('*', async (request, response: AuthResponse) => {});
 
+  const propfind = async (request: Request, response: AuthResponse) => {};
+
+  const proppatch = async (request: Request, response: AuthResponse) => {};
+
   app.all('*', async (request, response: AuthResponse) => {
-    // propfind
-    // proppatch
-    // On 405 response:
-    // Allow: (see OPTIONS handler)
+    let { url } = getRequestData(request, response);
+
+    switch (request.method) {
+      case 'PROPFIND':
+        await propfind(request, response);
+        break;
+      case 'PROPPATCH':
+        await proppatch(request, response);
+        break;
+      default:
+        const adapterMethods = await adapter.getAllowedMethods(
+          url,
+          request,
+          response
+        );
+
+        if (!adapterMethods.includes(request.method)) {
+          response.status(405); // Method Not Allowed
+          opts.errorHandler(405, 'Method not allowed.', request, response);
+          return;
+        }
+
+        // If the adapter says it can handle the method, just handle the
+        // authorization and error handling for it.
+        if (
+          !(await adapter.isAuthorized(url, request.method, request, response))
+        ) {
+          response.status(401);
+          opts.errorHandler(401, 'Unauthorized.', request, response);
+          return;
+        }
+
+        try {
+          await adapter.handleMethod(url, request.method, request, response);
+        } catch (e: any) {
+          if (e instanceof BadRequestError) {
+            response.status(400); // Bad Request
+            opts.errorHandler(400, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof ForbiddenError) {
+            response.status(403);
+            opts.errorHandler(403, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof ResourceNotFoundError) {
+            response.status(404);
+            opts.errorHandler(404, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof MethodNotSupportedError) {
+            response.status(405); // Method Not Allowed
+            opts.errorHandler(405, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof EncodingNotSupportedError) {
+            response.status(406); // Not Acceptable
+            opts.errorHandler(406, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof PreconditionFailedError) {
+            response.status(412); // Precondition Failed
+            opts.errorHandler(412, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof RequestURITooLongError) {
+            response.status(414); // Request-URI Too Long
+            opts.errorHandler(414, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof MediaTypeNotSupportedError) {
+            response.status(415); // Unsupported Media Type
+            opts.errorHandler(415, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof ResourceExistsError) {
+            response.status(405); // Method Not Allowed
+            opts.errorHandler(405, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof UnprocessableEntityError) {
+            response.status(422); // Unprocessable Entity
+            opts.errorHandler(422, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof LockedError) {
+            response.status(423); // Locked
+            opts.errorHandler(423, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof FailedDependencyError) {
+            response.status(424); // Failed Dependency
+            opts.errorHandler(424, e.message, request, response, e);
+            return;
+          }
+
+          if (e instanceof InsufficientStorageError) {
+            response.status(507); // Insufficient Storage
+            opts.errorHandler(507, e.message, request, response, e);
+            return;
+          }
+
+          response.locals.debug('Error: ', e);
+          response.status(500); // Internal Server Error
+          opts.errorHandler(
+            500,
+            'Internal server error.',
+            request,
+            response,
+            e
+          );
+          return;
+        }
+
+        break;
+    }
   });
 
-  debug(`Nephele server set up.`);
+  debug(`Nephele server set up. Ready to start listening.`);
 
   return app;
 }

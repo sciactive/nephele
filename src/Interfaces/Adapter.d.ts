@@ -148,4 +148,27 @@ export interface Adapter {
     request: Request,
     response: AuthResponse
   ): Promise<Resource>;
+
+  /**
+   * Handle an additional method that is reported by `getAllowedMethods`.
+   *
+   * This will be called after `isAuthorized`, and any thrown errors will be
+   * caught and reported in the response, along with their message. If you need
+   * more sophisticated error handling, such as returning specific error codes
+   * in certain situations, you should handle errors within this function.
+   *
+   * If you don't return any additional method from `getAllowedMethods`, this
+   * will never be called.
+   *
+   * @param url Resource URL.
+   * @param method The method being requested. (Same as `request.method`.)
+   * @param request The server request.
+   * @param response The authenticated server response.
+   */
+  handleMethod(
+    url: URL,
+    method: string,
+    request: Request,
+    response: AuthResponse
+  ): Promise<void>;
 }

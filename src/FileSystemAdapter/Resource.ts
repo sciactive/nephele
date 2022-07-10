@@ -6,7 +6,11 @@ import crypto from 'node:crypto';
 import mmm, { Magic } from 'mmmagic';
 
 import type { Resource as ResourceInterface } from '../index.js';
-import { ResourceExistsError, ResourceTreeNotCompleteError } from '../index.js';
+import {
+  MethodNotSupportedError,
+  ResourceExistsError,
+  ResourceTreeNotCompleteError,
+} from '../index.js';
 
 import type Adapter from './Adapter.js';
 import Properties from './Properties.js';
@@ -107,6 +111,32 @@ export default class Resource implements ResourceInterface {
     });
   }
 
+  async create(user: User) {
+    if (await this.exists()) {
+      throw new ResourceExistsError();
+    }
+
+    try {
+      await fsp.access(path.dirname(this.absolutePath), constants.F_OK);
+    } catch (e: any) {
+      throw new ResourceTreeNotCompleteError();
+    }
+
+    if (this.createCollection) {
+      await fsp.mkdir(this.absolutePath);
+    } else {
+      await fsp.writeFile(this.absolutePath, Uint8Array.from([]));
+    }
+
+    if (this.adapter.pam) {
+      await fsp.chown(
+        this.absolutePath,
+        await user.getUid(),
+        await user.getGid()
+      );
+    }
+  }
+
   async getLength() {
     const stat = await fsp.stat(this.absolutePath);
 
@@ -179,30 +209,28 @@ export default class Resource implements ResourceInterface {
     }
   }
 
-  async create(user: User) {
-    if (await this.exists()) {
-      throw new ResourceExistsError();
+  async getInternalMembers() {
+    if (await this.isCollection()) {
+      throw new MethodNotSupportedError();
     }
 
-    try {
-      await fsp.access(path.dirname(this.absolutePath), constants.F_OK);
-    } catch (e: any) {
-      throw new ResourceTreeNotCompleteError();
-    }
+    const listing = await fsp.readdir(this.absolutePath);
+    const resources: Resource[] = [];
 
-    if (this.createCollection) {
-      await fsp.mkdir(this.absolutePath);
-    } else {
-      await fsp.writeFile(this.absolutePath, Uint8Array.from([]));
-    }
+    for (let name of listing) {
+      if (name.endsWith('.nepheleprops')) {
+        continue;
+      }
 
-    if (this.adapter.pam) {
-      await fsp.chown(
-        this.absolutePath,
-        await user.getUid(),
-        await user.getGid()
+      resources.push(
+        new Resource({
+          path: path.join(this.absolutePath, name),
+          adapter: this.adapter,
+        })
       );
     }
+
+    return resources;
   }
 
   async exists() {
@@ -217,5 +245,15 @@ export default class Resource implements ResourceInterface {
 
   async getStats() {
     return await fsp.stat(this.absolutePath);
+  }
+
+  async getPropFilePath() {
+    if (await this.isCollection()) {
+      return path.join(this.absolutePath, '.nepheleprops');
+    } else {
+      const dirname = path.dirname(this.absolutePath);
+      const basename = path.basename(this.absolutePath);
+      return path.join(dirname, `.${basename}.nepheleprops`);
+    }
   }
 }

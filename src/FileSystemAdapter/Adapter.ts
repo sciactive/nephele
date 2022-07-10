@@ -299,4 +299,14 @@ export default class Adapter implements AdapterInterface {
       collection: true,
     });
   }
+
+  async handleMethod(
+    _url: URL,
+    _method: string,
+    _request: Request,
+    _response: AuthResponse
+  ) {
+    // No additional methods to handle.
+    return;
+  }
 }
