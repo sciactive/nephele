@@ -3,7 +3,7 @@ import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 
-import type { Request, Response } from 'express';
+import type { Request } from 'express';
 import basicAuth from 'basic-auth';
 
 import type {
@@ -279,7 +279,7 @@ export default class Adapter implements AdapterInterface {
     });
 
     if (!(await resource.exists())) {
-      throw new ResourceNotFoundError();
+      throw new ResourceNotFoundError('Resource not found.');
     }
 
     return resource;

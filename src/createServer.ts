@@ -161,6 +161,117 @@ export default function createServer(
   // Add the server header to the response.
   app.use(addServerHeader);
 
+  const catchAndReportErrors = (
+    fn: (request: Request, response: AuthResponse) => Promise<void>
+  ) => {
+    return async (request: Request, response: AuthResponse) => {
+      try {
+        await fn(request, response);
+      } catch (e: any) {
+        if (e instanceof BadRequestError) {
+          response.status(400); // Bad Request
+          opts.errorHandler(400, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof UnauthorizedError) {
+          response.status(401); // Unauthorized
+          opts.errorHandler(401, e.message, request, response);
+          return;
+        }
+
+        if (e instanceof ForbiddenError) {
+          response.status(403); // Forbidden
+          opts.errorHandler(403, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof ResourceNotFoundError) {
+          response.status(404); // Not Found
+          opts.errorHandler(404, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof MethodNotSupportedError) {
+          response.status(405); // Method Not Allowed
+          opts.errorHandler(405, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof EncodingNotSupportedError) {
+          response.status(406); // Not Acceptable
+          opts.errorHandler(406, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof PreconditionFailedError) {
+          response.status(412); // Precondition Failed
+          opts.errorHandler(412, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof RequestURITooLongError) {
+          response.status(414); // Request-URI Too Long
+          opts.errorHandler(414, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof MediaTypeNotSupportedError) {
+          response.status(415); // Unsupported Media Type
+          opts.errorHandler(415, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof ResourceExistsError) {
+          response.status(405); // Method Not Allowed
+          opts.errorHandler(405, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof ResourceTreeNotCompleteError) {
+          response.status(409); // Conflict
+          opts.errorHandler(409, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof UnprocessableEntityError) {
+          response.status(422); // Unprocessable Entity
+          opts.errorHandler(422, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof LockedError) {
+          response.status(423); // Locked
+          opts.errorHandler(423, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof FailedDependencyError) {
+          response.status(424); // Failed Dependency
+          opts.errorHandler(424, e.message, request, response, e);
+          return;
+        }
+
+        if (e instanceof InsufficientStorageError) {
+          response.status(507); // Insufficient Storage
+          opts.errorHandler(507, e.message, request, response, e);
+          return;
+        }
+
+        response.locals.debug('Unknown Error: ', e);
+        response.status(500); // Internal Server Error
+        opts.errorHandler(
+          500,
+          e.message || 'Internal server error.',
+          request,
+          response,
+          e
+        );
+        return;
+      }
+    };
+  };
+
   const getRequestedEncoding = (request: Request, response: AuthResponse) => {
     const acceptEncoding = request.get('Accept-Encoding') || '*';
     const supported = ['gzip', 'deflate', 'br', 'identity'];
@@ -175,7 +286,9 @@ export default function createServer(
     let encoding = '';
     while ([...supported, 'x-gzip', '*'].indexOf(encoding) === -1) {
       if (!encodings.length) {
-        throw new EncodingNotSupportedError();
+        throw new EncodingNotSupportedError(
+          'Requested content encoding is not supported.'
+        );
       }
       encoding = encodings.splice(0, 1)[0][0];
     }
@@ -223,8 +336,9 @@ export default function createServer(
     return { url, encoding, cacheControl };
   };
 
-  app.options('*', async (request, response: AuthResponse) => {
-    try {
+  app.options(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {
       let { url } = getRequestData(request, response);
 
       const complianceClasses = [
@@ -255,29 +369,18 @@ export default function createServer(
         response
       );
 
-      try {
-        request.on('data', () => {
-          response.locals.debug('Provided body to OPTIONS.');
-          throw new MediaTypeNotSupportedError();
-        });
+      request.on('data', () => {
+        response.locals.debug('Provided body to OPTIONS.');
+        throw new MediaTypeNotSupportedError(
+          "This server doesn't understand the body sent in the request."
+        );
+      });
 
-        await new Promise<void>((resolve, _reject) => {
-          request.on('end', () => {
-            resolve();
-          });
+      await new Promise<void>((resolve, _reject) => {
+        request.on('end', () => {
+          resolve();
         });
-      } catch (e: any) {
-        if (e instanceof MediaTypeNotSupportedError) {
-          response.status(415); // Unsupported Media Type
-          opts.errorHandler(
-            415,
-            "This server doesn't understand the body sent in the request.",
-            request,
-            response
-          );
-          return;
-        }
-      }
+      });
 
       response.status(204); // No Content
       response.set({
@@ -287,236 +390,197 @@ export default function createServer(
         DAV: complianceClasses.join(', '),
       });
       response.end();
-    } catch (e: any) {
-      response.locals.debug('Error: ', e);
-      response.status(500); // Internal Server Error
-      opts.errorHandler(500, 'Internal server error.', request, response, e);
-      return;
-    }
-  });
+    })
+  );
 
   const getOrHead = (method: 'GET' | 'HEAD') => {
     return async (request: Request, response: AuthResponse) => {
-      try {
-        let { url, encoding, cacheControl } = getRequestData(request, response);
+      let { url, encoding, cacheControl } = getRequestData(request, response);
 
-        if (!(await adapter.isAuthorized(url, method, request, response))) {
-          response.status(401);
-          opts.errorHandler(401, 'Unauthorized.', request, response);
+      if (!(await adapter.isAuthorized(url, method, request, response))) {
+        throw new UnauthorizedError('Unauthorized.');
+      }
+
+      const resource = await adapter.getResource(url, request, response);
+      const properties = await resource.getProperties();
+      const etagPromise = resource.getEtag();
+      const lastModifiedPromise = properties.get('getlastmodified');
+      const contentLanguagePromise = properties.get('getcontentlanguage');
+      const [etag, lastModifiedString, contentLanguage] = [
+        await etagPromise,
+        await lastModifiedPromise,
+        await contentLanguagePromise,
+      ];
+      if (typeof lastModifiedString !== 'string') {
+        throw new Error('Last modified date property is not a string.');
+      }
+      const lastModified = new Date(lastModifiedString);
+      if (typeof contentLanguage !== 'string') {
+        throw new Error('Content language property is not a string.');
+      }
+
+      // TODO: use If-Range here. If-Match and If-Unmodified-Since are for PUT.
+      // Check if header for etag.
+      const ifMatch = request.get('If-Match');
+      if (ifMatch != null) {
+        const ifMatchEtags = ifMatch
+          .split(',')
+          .map((value) =>
+            value.trim().replace(/^["']/, '').replace(/["']$/, '')
+          );
+        if (ifMatchEtags.indexOf(etag) === -1) {
+          throw new PreconditionFailedError('If-Match header check failed.');
+        }
+      }
+
+      // Check if header for modified date.
+      const ifUnmodifiedSince = request.get('If-Unmodified-Since');
+      if (
+        ifUnmodifiedSince != null &&
+        new Date(ifUnmodifiedSince) < lastModified
+      ) {
+        throw new PreconditionFailedError(
+          'If-Unmodified-Since header check failed.'
+        );
+      }
+
+      const mediaType = await resource.getMediaType();
+
+      if (!opts.compression || isMediaTypeCompressed(mediaType)) {
+        encoding = 'identity';
+      }
+
+      response.set({
+        'Cache-Control': 'private, no-cache',
+        Date: new Date().toUTCString(),
+        Vary: 'Accept-Encoding',
+      });
+      if (contentLanguage !== '') {
+        response.set({
+          'Content-Language': contentLanguage,
+        });
+      }
+
+      if (!cacheControl['no-cache'] && cacheControl['max-age'] !== 0) {
+        // Check the request header for the etag.
+        const ifNoneMatch = request.get('If-None-Match');
+        if (
+          ifNoneMatch != null &&
+          ifNoneMatch.trim().replace(/^["']/, '').replace(/["']$/, '') === etag
+        ) {
+          response.status(304); // Not Modified
+          response.end();
           return;
         }
 
-        try {
-          const resource = await adapter.getResource(url, request, response);
-          const properties = await resource.getProperties();
-          const etagPromise = resource.getEtag();
-          const lastModifiedPromise = properties.get('getlastmodified');
-          const contentLanguagePromise = properties.get('getcontentlanguage');
-          const [etag, lastModifiedString, contentLanguage] = [
-            await etagPromise,
-            await lastModifiedPromise,
-            await contentLanguagePromise,
-          ];
-          if (typeof lastModifiedString !== 'string') {
-            throw new Error('Last modified date property is not a string.');
-          }
-          const lastModified = new Date(lastModifiedString);
-          if (typeof contentLanguage !== 'string') {
-            throw new Error('Content language property is not a string.');
-          }
+        // Check the request header for the modified date.
+        const ifModifiedSince = request.get('If-Modified-Since');
+        if (
+          ifModifiedSince != null &&
+          new Date(ifModifiedSince) >= lastModified
+        ) {
+          response.status(304); // Not Modified
+          response.end();
+          return;
+        }
+      }
 
-          // TODO: use If-Range here. If-Match and If-Unmodified-Since are for PUT.
-          // Check if header for etag.
-          const ifMatch = request.get('If-Match');
-          if (ifMatch != null) {
-            const ifMatchEtags = ifMatch
-              .split(',')
-              .map((value) =>
-                value.trim().replace(/^["']/, '').replace(/["']$/, '')
-              );
-            if (ifMatchEtags.indexOf(etag) === -1) {
-              response.status(412); // Precondition Failed
-              return;
-            }
-          }
+      // TODO: put If-Range check here for partial content responses.
 
-          // Check if header for modified date.
-          const ifUnmodifiedSince = request.get('If-Unmodified-Since');
-          if (
-            ifUnmodifiedSince != null &&
-            new Date(ifUnmodifiedSince) < lastModified
-          ) {
-            response.status(412); // Precondition Failed
-            return;
-          }
-
-          const mediaType = await resource.getMediaType();
-
-          if (!opts.compression || isMediaTypeCompressed(mediaType)) {
-            encoding = 'identity';
-          }
-
+      response.status(200); // Ok
+      response.set({
+        'Content-Type': mediaType,
+        'Content-Encoding': encoding,
+        Etag: JSON.stringify(etag),
+        'Last-Modified': lastModified.toUTCString(),
+      });
+      if (encoding !== 'identity') {
+        // Inform the client, even on a HEAD request, that this entity will be transmitted in
+        // chunks.
+        response.locals.debug('Set to chunked encoding.');
+        response.set({
+          'Transfer-Encoding': 'chunked',
+        });
+      }
+      if (method === 'GET') {
+        let stream: Readable = await resource.getStream();
+        if (encoding === 'identity') {
           response.set({
-            'Cache-Control': 'private, no-cache',
-            Date: new Date().toUTCString(),
-            Vary: 'Accept-Encoding',
+            'Content-Length': `${await resource.getLength()}`, // how to do this with compressed encoding
           });
-          if (contentLanguage !== '') {
-            response.set({
-              'Content-Language': contentLanguage,
-            });
-          }
 
-          if (!cacheControl['no-cache'] && cacheControl['max-age'] !== 0) {
-            // Check the request header for the etag.
-            const ifNoneMatch = request.get('If-None-Match');
-            if (
-              ifNoneMatch != null &&
-              ifNoneMatch.trim().replace(/^["']/, '').replace(/["']$/, '') ===
-                etag
-            ) {
-              response.status(304); // Not Modified
-              return;
-            }
-
-            // Check the request header for the modified date.
-            const ifModifiedSince = request.get('If-Modified-Since');
-            if (
-              ifModifiedSince != null &&
-              new Date(ifModifiedSince) >= lastModified
-            ) {
-              response.status(304); // Not Modified
-              return;
-            }
-          }
-
-          // TODO: put If-Range check here for partial content responses.
-
-          response.status(200); // Ok
-          response.set({
-            'Content-Type': mediaType,
-            'Content-Encoding': encoding,
-            Etag: JSON.stringify(etag),
-            'Last-Modified': lastModified.toUTCString(),
-          });
-          if (encoding !== 'identity') {
-            // Inform the client, even on a HEAD request, that this entity will be transmitted in
-            // chunks.
-            response.locals.debug('Set to chunked encoding.');
-            response.set({
-              'Transfer-Encoding': 'chunked',
-            });
-          }
-          if (method === 'GET') {
-            let stream: Readable = await resource.getStream();
-            if (encoding === 'identity') {
-              response.set({
-                'Content-Length': `${await resource.getLength()}`, // how to do this with compressed encoding
-              });
-
-              stream.pipe(response);
-            } else {
-              switch (encoding) {
-                case 'gzip':
-                case 'x-gzip':
-                  stream = pipeline(stream, zlib.createGzip(), (e: any) => {
-                    if (e) {
-                      throw new Error('Compression pipeline failed: ' + e);
-                    }
-                  });
-                  break;
-                case 'deflate':
-                  stream = pipeline(stream, zlib.createDeflate(), (e: any) => {
-                    if (e) {
-                      throw new Error('Compression pipeline failed: ' + e);
-                    }
-                  });
-                  break;
-                case 'br':
-                  stream = pipeline(
-                    stream,
-                    zlib.createBrotliCompress(),
-                    (e: any) => {
-                      if (e) {
-                        throw new Error('Compression pipeline failed: ' + e);
-                      }
-                    }
-                  );
-                  break;
-              }
-
-              response.locals.debug('Beginning response stream.');
-              stream.on('data', (chunk) => {
-                response.write(
-                  ('length' in chunk ? chunk.length : chunk.size).toString(16) +
-                    '\r\n'
-                );
-                response.write(chunk);
-                if (!response.write('\r\n')) {
-                  stream.pause();
-
-                  response.once('drain', () => stream.resume());
+          stream.pipe(response);
+        } else {
+          switch (encoding) {
+            case 'gzip':
+            case 'x-gzip':
+              stream = pipeline(stream, zlib.createGzip(), (e: any) => {
+                if (e) {
+                  throw new Error('Compression pipeline failed: ' + e);
                 }
               });
-
-              stream.on('end', () => {
-                response.locals.debug('Response stream finished.');
-                response.write('0\r\n\r\n');
-                response.end();
+              break;
+            case 'deflate':
+              stream = pipeline(stream, zlib.createDeflate(), (e: any) => {
+                if (e) {
+                  throw new Error('Compression pipeline failed: ' + e);
+                }
               });
+              break;
+            case 'br':
+              stream = pipeline(
+                stream,
+                zlib.createBrotliCompress(),
+                (e: any) => {
+                  if (e) {
+                    throw new Error('Compression pipeline failed: ' + e);
+                  }
+                }
+              );
+              break;
+          }
+
+          response.locals.debug('Beginning response stream.');
+          stream.on('data', (chunk) => {
+            response.write(
+              ('length' in chunk ? chunk.length : chunk.size).toString(16) +
+                '\r\n'
+            );
+            response.write(chunk);
+            if (!response.write('\r\n')) {
+              stream.pause();
+
+              response.once('drain', () => stream.resume());
             }
-          }
-        } catch (e: any) {
-          if (e instanceof ResourceNotFoundError) {
-            response.status(404); // Not Found
-            opts.errorHandler(404, 'Resource not found.', request, response, e);
-            return;
-          }
+          });
 
-          throw e;
+          stream.on('end', () => {
+            response.locals.debug('Response stream finished.');
+            response.write('0\r\n\r\n');
+            response.end();
+          });
         }
-      } catch (e: any) {
-        if (e instanceof ForbiddenError) {
-          response.status(403);
-          opts.errorHandler(403, 'Forbidden.', request, response, e);
-          return;
-        }
-
-        if (e instanceof EncodingNotSupportedError) {
-          response.status(406); // Not Acceptable
-          opts.errorHandler(
-            406,
-            'Requested content encoding is not supported.',
-            request,
-            response,
-            e
-          );
-          return;
-        }
-
-        response.locals.debug('Error: ', e);
-        response.status(500); // Internal Server Error
-        opts.errorHandler(500, 'Internal server error.', request, response, e);
-        return;
       }
     };
   };
 
-  app.get('*', getOrHead('GET'));
-  app.head('*', getOrHead('HEAD'));
+  app.get('*', catchAndReportErrors(getOrHead('GET')));
+  app.head('*', catchAndReportErrors(getOrHead('HEAD')));
 
-  app.post('*', async (_request, _response: AuthResponse) => {
-    // What does a POST do in WebDAV?
-  });
+  app.post(
+    '*',
+    catchAndReportErrors(async (_request, _response: AuthResponse) => {
+      // What does a POST do in WebDAV?
+    })
+  );
 
-  app.put('*', async (request, response: AuthResponse) => {
-    try {
+  app.put(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {
       const { url } = getRequestData(request, response);
 
       if (!(await adapter.isAuthorized(url, 'PUT', request, response))) {
-        response.status(401);
-        opts.errorHandler(401, 'Unauthorized.', request, response);
-        return;
+        throw new UnauthorizedError('Unauthorized.');
       }
 
       let resource: Resource;
@@ -525,14 +589,9 @@ export default function createServer(
         resource = await adapter.getResource(url, request, response);
 
         if (await resource.isCollection()) {
-          response.status(405); // Method Not Allowed
-          opts.errorHandler(
-            405,
-            'This resource is an existing collection.',
-            request,
-            response
+          throw new MethodNotSupportedError(
+            'This resource is an existing collection.'
           );
-          return;
         }
       } catch (e: any) {
         if (e instanceof ResourceNotFoundError) {
@@ -549,14 +608,7 @@ export default function createServer(
 
         // It's a new resource, so any etag should fail.
         if (ifMatch != null) {
-          response.status(412); // Precondition Failed
-          opts.errorHandler(
-            412,
-            'Etag precondition failed.',
-            request,
-            response
-          );
-          return;
+          throw new PreconditionFailedError('If-Match header check failed.');
         }
       } else {
         const properties = await resource.getProperties();
@@ -580,14 +632,7 @@ export default function createServer(
               value.trim().replace(/^["']/, '').replace(/["']$/, '')
             );
           if (ifMatchEtags.indexOf(etag) === -1) {
-            response.status(412); // Precondition Failed
-            opts.errorHandler(
-              412,
-              'Etag precondition failed.',
-              request,
-              response
-            );
-            return;
+            throw new PreconditionFailedError('If-Match header check failed.');
           }
         }
 
@@ -597,27 +642,18 @@ export default function createServer(
           ifUnmodifiedSince != null &&
           new Date(ifUnmodifiedSince) < lastModified
         ) {
-          response.status(412); // Precondition Failed
-          opts.errorHandler(
-            412,
-            'Modified date precondition failed.',
-            request,
-            response
+          throw new PreconditionFailedError(
+            'If-Unmodified-Since header check failed.'
           );
-          return;
         }
 
         // TODO: This seems to cause issues with existing clients.
         // if (ifMatch == null && ifUnmodifiedSince == null) {
         //   // Require that PUT for an existing resource is conditional.
-        //   response.status(428); // Precondition Required
-        //   opts.errorHandler(
-        //     428,
-        //     'Overwriting existing resource requires the use of a conditional header, If-Match or If-Unmodified-Since.',
-        //     request,
-        //     response
+        //   // 428 Precondition Required
+        //   throw new PreconditionRequiredError(
+        //     'Overwriting existing resource requires the use of a conditional header, If-Match or If-Unmodified-Since.'
         //   );
-        //   return;
         // }
       }
 
@@ -625,24 +661,14 @@ export default function createServer(
       if (ifNoneMatch != null) {
         if (ifNoneMatch.trim() === '*') {
           if (!newResource) {
-            response.status(412); // Precondition Failed
-            opts.errorHandler(
-              412,
-              'Etag precondition failed.',
-              request,
-              response
+            throw new PreconditionFailedError(
+              'If-None-Match header check failed.'
             );
-            return;
           }
         } else {
-          response.status(400); // Bad Request
-          opts.errorHandler(
-            400,
-            'If-None-Match, if provided, must be "*" on a PUT request.',
-            request,
-            response
+          throw new BadRequestError(
+            'If-None-Match, if provided, must be "*" on a PUT request.'
           );
-          return;
         }
       }
 
@@ -685,41 +711,20 @@ export default function createServer(
           break;
         default:
           if (encoding != null) {
-            response.status(415); // Unsupported Media Type
-            opts.errorHandler(
-              415,
-              'Provided content encoding is not supported.',
-              request,
-              response
+            throw new MediaTypeNotSupportedError(
+              'Provided content encoding is not supported.'
             );
-            return;
           }
           break;
       }
 
-      try {
-        await resource.setStream(stream, response.locals.user);
+      await resource.setStream(stream, response.locals.user);
 
-        response.status(newResource ? 201 : 204); // Created or No Content
-        response.set({
-          'Content-Location': (await resource.getCanonicalUrl()).pathname,
-        });
-        response.end();
-      } catch (e: any) {
-        if (e instanceof ResourceTreeNotCompleteError) {
-          response.status(409);
-          opts.errorHandler(
-            409,
-            'One or more intermediate collections must be created before this resource.',
-            request,
-            response,
-            e
-          );
-          return;
-        }
-
-        throw e;
-      }
+      response.status(newResource ? 201 : 204); // Created or No Content
+      response.set({
+        'Content-Location': (await resource.getCanonicalUrl()).pathname,
+      });
+      response.end();
 
       if (contentLanguage && contentLanguage !== '') {
         try {
@@ -729,48 +734,36 @@ export default function createServer(
           // Ignore errors here.
         }
       }
-    } catch (e: any) {
-      if (e instanceof ForbiddenError) {
-        response.status(403);
-        opts.errorHandler(403, 'Forbidden.', request, response, e);
-        return;
-      }
+    })
+  );
 
-      if (e instanceof EncodingNotSupportedError) {
-        response.status(406); // Not Acceptable
-        opts.errorHandler(
-          406,
-          'Requested content encoding is not supported.',
-          request,
-          response,
-          e
-        );
-        return;
-      }
+  app.patch(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {})
+  );
 
-      response.locals.debug('Error: ', e);
-      response.status(500); // Internal Server Error
-      opts.errorHandler(500, 'Internal server error.', request, response, e);
-      return;
-    }
-  });
+  app.delete(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {})
+  );
 
-  app.patch('*', async (request, response: AuthResponse) => {});
+  app.copy(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {})
+  );
 
-  app.delete('*', async (request, response: AuthResponse) => {});
+  app.move(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {})
+  );
 
-  app.copy('*', async (request, response: AuthResponse) => {});
-
-  app.move('*', async (request, response: AuthResponse) => {});
-
-  app.mkcol('*', async (request, response: AuthResponse) => {
-    try {
+  app.mkcol(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {
       const { url } = getRequestData(request, response);
 
       if (!(await adapter.isAuthorized(url, 'MKCOL', request, response))) {
-        response.status(401);
-        opts.errorHandler(401, 'Unauthorized.', request, response);
-        return;
+        throw new UnauthorizedError('Unauthorized.');
       }
 
       let resource = await adapter.newCollection(url, request, response);
@@ -780,22 +773,15 @@ export default function createServer(
 
       // It's a new resource, so any etag should fail.
       if (ifMatch != null) {
-        response.status(412); // Precondition Failed
-        opts.errorHandler(412, 'Etag precondition failed.', request, response);
-        return;
+        throw new PreconditionFailedError('If-Match header check failed.');
       }
 
       const ifNoneMatch = request.get('If-None-Match');
       if (ifNoneMatch != null) {
         if (ifNoneMatch.trim() !== '*') {
-          response.status(400); // Bad Request
-          opts.errorHandler(
-            400,
-            'If-None-Match, if provided, must be "*" on a MKCOL request.',
-            request,
-            response
+          throw new BadRequestError(
+            'If-None-Match, if provided, must be "*" on a MKCOL request.'
           );
-          return;
         }
       }
 
@@ -837,242 +823,98 @@ export default function createServer(
           break;
         default:
           if (encoding != null) {
-            response.status(415); // Unsupported Media Type
-            opts.errorHandler(
-              415,
-              'Provided content encoding is not supported.',
-              request,
-              response
+            throw new MediaTypeNotSupportedError(
+              'Provided content encoding is not supported.'
             );
-            return;
           }
           break;
       }
 
-      try {
-        stream.on('data', () => {
-          response.locals.debug('Provided body to MKCOL.');
-          throw new MediaTypeNotSupportedError();
+      stream.on('data', () => {
+        response.locals.debug('Provided body to MKCOL.');
+        throw new MediaTypeNotSupportedError(
+          "This server doesn't understand the body sent in the request."
+        );
+      });
+
+      await new Promise<void>((resolve, _reject) => {
+        stream.on('end', () => {
+          resolve();
         });
+      });
 
-        await new Promise<void>((resolve, _reject) => {
-          stream.on('end', () => {
-            resolve();
-          });
-        });
-      } catch (e: any) {
-        if (e instanceof MediaTypeNotSupportedError) {
-          response.status(415); // Unsupported Media Type
-          opts.errorHandler(
-            415,
-            "This server doesn't understand the body sent in the request.",
-            request,
-            response
-          );
-          return;
-        }
-      }
-
-      try {
-        await resource.create(response.locals.user);
-      } catch (e: any) {
-        if (e instanceof ResourceTreeNotCompleteError) {
-          response.status(409);
-          opts.errorHandler(
-            409,
-            'One or more intermediate collections must be created before this one.',
-            request,
-            response,
-            e
-          );
-          return;
-        }
-
-        if (e instanceof ResourceExistsError) {
-          response.status(405);
-          opts.errorHandler(
-            405,
-            'The collection already exists.',
-            request,
-            response,
-            e
-          );
-          return;
-        }
-      }
+      await resource.create(response.locals.user);
 
       response.status(201); // Created
       response.set({
         'Content-Location': (await resource.getCanonicalUrl()).pathname,
       });
       response.end();
-    } catch (e: any) {
-      if (e instanceof ForbiddenError) {
-        response.status(403);
-        opts.errorHandler(403, 'Forbidden.', request, response, e);
-        return;
-      }
+    })
+  );
 
-      if (e instanceof EncodingNotSupportedError) {
-        response.status(406); // Not Acceptable
-        opts.errorHandler(
-          406,
-          'Requested content encoding is not supported.',
-          request,
-          response,
-          e
-        );
-        return;
-      }
+  app.lock(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {})
+  );
 
-      response.locals.debug('Error: ', e);
-      response.status(500); // Internal Server Error
-      opts.errorHandler(500, 'Internal server error.', request, response, e);
-      return;
-    }
-  });
+  app.unlock(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {})
+  );
 
-  app.lock('*', async (request, response: AuthResponse) => {});
-
-  app.unlock('*', async (request, response: AuthResponse) => {});
-
-  app.search('*', async (request, response: AuthResponse) => {});
+  app.search(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {})
+  );
 
   const propfind = async (request: Request, response: AuthResponse) => {};
 
   const proppatch = async (request: Request, response: AuthResponse) => {};
 
-  app.all('*', async (request, response: AuthResponse) => {
-    let { url } = getRequestData(request, response);
+  app.all(
+    '*',
+    catchAndReportErrors(async (request, response: AuthResponse) => {
+      let { url } = getRequestData(request, response);
 
-    switch (request.method) {
-      case 'PROPFIND':
-        await propfind(request, response);
-        break;
-      case 'PROPPATCH':
-        await proppatch(request, response);
-        break;
-      default:
-        const adapterMethods = await adapter.getAllowedMethods(
-          url,
-          request,
-          response
-        );
-
-        if (!adapterMethods.includes(request.method)) {
-          response.status(405); // Method Not Allowed
-          opts.errorHandler(405, 'Method not allowed.', request, response);
-          return;
-        }
-
-        // If the adapter says it can handle the method, just handle the
-        // authorization and error handling for it.
-        if (
-          !(await adapter.isAuthorized(url, request.method, request, response))
-        ) {
-          response.status(401);
-          opts.errorHandler(401, 'Unauthorized.', request, response);
-          return;
-        }
-
-        try {
-          await adapter.handleMethod(url, request.method, request, response);
-        } catch (e: any) {
-          if (e instanceof BadRequestError) {
-            response.status(400); // Bad Request
-            opts.errorHandler(400, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof ForbiddenError) {
-            response.status(403);
-            opts.errorHandler(403, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof ResourceNotFoundError) {
-            response.status(404);
-            opts.errorHandler(404, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof MethodNotSupportedError) {
-            response.status(405); // Method Not Allowed
-            opts.errorHandler(405, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof EncodingNotSupportedError) {
-            response.status(406); // Not Acceptable
-            opts.errorHandler(406, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof PreconditionFailedError) {
-            response.status(412); // Precondition Failed
-            opts.errorHandler(412, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof RequestURITooLongError) {
-            response.status(414); // Request-URI Too Long
-            opts.errorHandler(414, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof MediaTypeNotSupportedError) {
-            response.status(415); // Unsupported Media Type
-            opts.errorHandler(415, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof ResourceExistsError) {
-            response.status(405); // Method Not Allowed
-            opts.errorHandler(405, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof UnprocessableEntityError) {
-            response.status(422); // Unprocessable Entity
-            opts.errorHandler(422, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof LockedError) {
-            response.status(423); // Locked
-            opts.errorHandler(423, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof FailedDependencyError) {
-            response.status(424); // Failed Dependency
-            opts.errorHandler(424, e.message, request, response, e);
-            return;
-          }
-
-          if (e instanceof InsufficientStorageError) {
-            response.status(507); // Insufficient Storage
-            opts.errorHandler(507, e.message, request, response, e);
-            return;
-          }
-
-          response.locals.debug('Error: ', e);
-          response.status(500); // Internal Server Error
-          opts.errorHandler(
-            500,
-            'Internal server error.',
+      switch (request.method) {
+        case 'PROPFIND':
+          await propfind(request, response);
+          break;
+        case 'PROPPATCH':
+          await proppatch(request, response);
+          break;
+        default:
+          const adapterMethods = await adapter.getAllowedMethods(
+            url,
             request,
-            response,
-            e
+            response
           );
-          return;
-        }
 
-        break;
-    }
-  });
+          if (!adapterMethods.includes(request.method)) {
+            throw new MethodNotSupportedError('Method not allowed.');
+          }
 
-  debug(`Nephele server set up. Ready to start listening.`);
+          // If the adapter says it can handle the method, just handle the
+          // authorization and error handling for it.
+          if (
+            !(await adapter.isAuthorized(
+              url,
+              request.method,
+              request,
+              response
+            ))
+          ) {
+            throw new UnauthorizedError('Unauthorized.');
+          }
+
+          await adapter.handleMethod(url, request.method, request, response);
+          break;
+      }
+    })
+  );
+
+  debug('Nephele server set up. Ready to start listening.');
 
   return app;
 }

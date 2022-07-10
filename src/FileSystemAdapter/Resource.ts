@@ -113,13 +113,15 @@ export default class Resource implements ResourceInterface {
 
   async create(user: User) {
     if (await this.exists()) {
-      throw new ResourceExistsError();
+      throw new ResourceExistsError('A resource already exists here.');
     }
 
     try {
       await fsp.access(path.dirname(this.absolutePath), constants.F_OK);
     } catch (e: any) {
-      throw new ResourceTreeNotCompleteError();
+      throw new ResourceTreeNotCompleteError(
+        'One or more intermediate collections must be created before this resource.'
+      );
     }
 
     if (this.createCollection) {
@@ -211,7 +213,7 @@ export default class Resource implements ResourceInterface {
 
   async getInternalMembers() {
     if (await this.isCollection()) {
-      throw new MethodNotSupportedError();
+      throw new MethodNotSupportedError('This is a collection.');
     }
 
     const listing = await fsp.readdir(this.absolutePath);

@@ -113,6 +113,8 @@ export interface Adapter {
   /**
    * Get a resource's object.
    *
+   * If the resource doesn't exist, a ResourceNotFoundError should be thrown.
+   *
    * @param url Resource URL.
    * @param request The server request.
    * @param response The authenticated server response.
