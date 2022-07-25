@@ -9,7 +9,7 @@ export type AuthResponse<
   Locals extends Record<string, any> = Record<string, any>
 > = Response<
   ResBody,
-  { requestId: string; debug: Debugger; user: User } & Locals
+  { user: User; requestId: string; debug: Debugger; error?: Error } & Locals
 >;
 
 /**

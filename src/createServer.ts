@@ -1,3 +1,4 @@
+import { inspect } from 'node:util';
 import zlib from 'node:zlib';
 import { pipeline, Readable } from 'node:stream';
 import path from 'node:path';
@@ -7,6 +8,8 @@ import express, { NextFunction, Request } from 'express';
 import cookieParser from 'cookie-parser';
 import createDebug from 'debug';
 import { nanoid } from 'nanoid';
+import xml2js from 'xml2js';
+import contentType from 'content-type';
 
 import type { Adapter, AuthResponse, Resource } from './Interfaces/index.js';
 import type { Options } from './Options.js';
@@ -60,6 +63,11 @@ export default function createServer(
   app.disable('etag');
   app.use(cookieParser());
 
+  const xmlParser = new xml2js.Parser();
+  const xmlBuilder = new xml2js.Builder({
+    xmldec: { version: '1.0', encoding: 'UTF-8' },
+  });
+
   async function debugLogger(
     request: Request,
     response: AuthResponse,
@@ -83,8 +91,14 @@ export default function createServer(
   ) {
     response.on('close', () => {
       response.locals.debug(
-        `Response: ${response.statusCode} ${response.statusMessage}`
+        `Response: ${response.statusCode} ${response.statusMessage || ''}`
       );
+
+      if (response.locals.error) {
+        response.locals.debug(
+          `Error Message: ${response.locals.error.message}`
+        );
+      }
     });
     next();
   }
@@ -101,7 +115,8 @@ export default function createServer(
       response.locals.debug(`Authenticating user.`);
       response.locals.user = await adapter.authenticate(request, response);
     } catch (e: any) {
-      response.locals.debug(`Auth failed: ${e}`);
+      response.locals.debug(`Auth failed.`);
+      response.locals.error = e;
       if (e instanceof UnauthorizedError) {
         response.status(401);
         response.set(
@@ -168,6 +183,8 @@ export default function createServer(
       try {
         await fn(request, response);
       } catch (e: any) {
+        response.locals.error = e;
+
         if (e instanceof BadRequestError) {
           response.status(400); // Bad Request
           opts.errorHandler(400, e.message, request, response, e);
@@ -336,10 +353,124 @@ export default function createServer(
     return { url, encoding, cacheControl };
   };
 
+  const getBodyStream = async (request: Request) => {
+    let stream: Readable = request;
+    let encoding = request.get('Content-Encoding');
+    switch (encoding) {
+      case 'gzip':
+      case 'x-gzip':
+        stream = pipeline(request, zlib.createGunzip(), (e: any) => {
+          if (e) {
+            throw new Error('Compression pipeline failed: ' + e);
+          }
+        });
+        break;
+      case 'deflate':
+        stream = pipeline(request, zlib.createInflate(), (e: any) => {
+          if (e) {
+            throw new Error('Compression pipeline failed: ' + e);
+          }
+        });
+        break;
+      case 'br':
+        stream = pipeline(request, zlib.createBrotliDecompress(), (e: any) => {
+          if (e) {
+            throw new Error('Compression pipeline failed: ' + e);
+          }
+        });
+        break;
+      case 'identity':
+        break;
+      default:
+        if (encoding != null) {
+          throw new MediaTypeNotSupportedError(
+            'Provided content encoding is not supported.'
+          );
+        }
+        break;
+    }
+
+    return stream;
+  };
+
+  /**
+   * Get the body of the request as an XML object from xml2js.
+   *
+   * If you call this function, it means that anything other than XML in the
+   * body is an error.
+   *
+   * If the body is empty, it will return null.
+   */
+  const getBodyXML = async (request: Request) => {
+    const stream = await getBodyStream(request);
+    const contentTypeHeader = request.get('Content-Type');
+
+    if (contentTypeHeader == null) {
+      return null;
+    }
+
+    const requestType = contentType.parse(contentTypeHeader);
+
+    if (
+      requestType.type != null &&
+      requestType.type !== 'text/xml' &&
+      requestType.type !== 'application/xml'
+    ) {
+      throw new MediaTypeNotSupportedError(
+        'Provided content type is not supported.'
+      );
+    }
+
+    if (
+      ![
+        'ascii',
+        'utf8',
+        'utf-8',
+        'utf16le',
+        'ucs2',
+        'ucs-2',
+        'base64',
+        'base64url',
+        'latin1',
+        'binary',
+        'hex',
+      ].includes(requestType?.parameters?.charset || 'utf-8')
+    ) {
+      throw new MediaTypeNotSupportedError(
+        'Provided content charset is not supported.'
+      );
+    }
+
+    const encoding: BufferEncoding = (requestType?.parameters?.charset ||
+      'utf-8') as BufferEncoding;
+
+    let xml = await new Promise<string>((resolve, reject) => {
+      const buffers: Buffer[] = [];
+
+      stream.on('data', (chunk: Buffer) => {
+        buffers.push(chunk);
+      });
+
+      stream.on('end', () => {
+        resolve(Buffer.concat(buffers).toString(encoding));
+      });
+
+      stream.on('error', (e) => {
+        reject(e);
+      });
+    });
+
+    if (xml.trim() === '') {
+      return null;
+    }
+
+    return await xmlParser.parseStringPromise(xml);
+  };
+
   app.options(
     '*',
     catchAndReportErrors(async (request, response: AuthResponse) => {
-      let { url } = getRequestData(request, response);
+      const { url } = getRequestData(request, response);
 
       const complianceClasses = [
         '1',
@@ -571,6 +702,9 @@ export default function createServer(
     '*',
     catchAndReportErrors(async (_request, _response: AuthResponse) => {
       // What does a POST do in WebDAV?
+      throw new MethodNotSupportedError(
+        'POST is not implemented on this server.'
+      );
     })
   );
 
@@ -678,46 +812,7 @@ export default function createServer(
       });
 
       const contentLanguage = request.get('Content-Language');
-      let stream: Readable = request;
-      let encoding = request.get('Content-Encoding');
-      switch (encoding) {
-        case 'gzip':
-        case 'x-gzip':
-          stream = pipeline(request, zlib.createGunzip(), (e: any) => {
-            if (e) {
-              throw new Error('Compression pipeline failed: ' + e);
-            }
-          });
-          break;
-        case 'deflate':
-          stream = pipeline(request, zlib.createInflate(), (e: any) => {
-            if (e) {
-              throw new Error('Compression pipeline failed: ' + e);
-            }
-          });
-          break;
-        case 'br':
-          stream = pipeline(
-            request,
-            zlib.createBrotliDecompress(),
-            (e: any) => {
-              if (e) {
-                throw new Error('Compression pipeline failed: ' + e);
-              }
-            }
-          );
-          break;
-        case 'identity':
-          break;
-        default:
-          if (encoding != null) {
-            throw new MediaTypeNotSupportedError(
-              'Provided content encoding is not supported.'
-            );
-          }
-          break;
-      }
-
+      let stream = await getBodyStream(request);
       await resource.setStream(stream, response.locals.user);
 
       response.status(newResource ? 201 : 204); // Created or No Content
@@ -790,45 +885,7 @@ export default function createServer(
         Date: new Date().toUTCString(),
       });
 
-      let stream: Readable = request;
-      let encoding = request.get('Content-Encoding');
-      switch (encoding) {
-        case 'gzip':
-        case 'x-gzip':
-          stream = pipeline(request, zlib.createGunzip(), (e: any) => {
-            if (e) {
-              throw new Error('Compression pipeline failed: ' + e);
-            }
-          });
-          break;
-        case 'deflate':
-          stream = pipeline(request, zlib.createInflate(), (e: any) => {
-            if (e) {
-              throw new Error('Compression pipeline failed: ' + e);
-            }
-          });
-          break;
-        case 'br':
-          stream = pipeline(
-            request,
-            zlib.createBrotliDecompress(),
-            (e: any) => {
-              if (e) {
-                throw new Error('Compression pipeline failed: ' + e);
-              }
-            }
-          );
-          break;
-        case 'identity':
-          break;
-        default:
-          if (encoding != null) {
-            throw new MediaTypeNotSupportedError(
-              'Provided content encoding is not supported.'
-            );
-          }
-          break;
-      }
+      let stream = await getBodyStream(request);
 
       stream.on('data', () => {
         response.locals.debug('Provided body to MKCOL.');
@@ -868,15 +925,38 @@ export default function createServer(
     catchAndReportErrors(async (request, response: AuthResponse) => {})
   );
 
-  const propfind = async (request: Request, response: AuthResponse) => {};
+  const propfind = async (request: Request, response: AuthResponse) => {
+    const { url } = getRequestData(request, response);
+
+    if (!(await adapter.isAuthorized(url, 'PROPFIND', request, response))) {
+      throw new UnauthorizedError('Unauthorized.');
+    }
+
+    let depth = request.get('Depth') || 'infinity';
+    let resource = await adapter.newCollection(url, request, response);
+
+    if (!['0', '1', 'infinity'].includes(depth)) {
+      throw new BadRequestError(
+        'Depth header must be one of "0", "1", or "infinity".'
+      );
+    }
+
+    const xml = await getBodyXML(request);
+
+    response.locals.debug('XML Body', inspect(xml, false, null));
+
+    let props = [];
+    let allprops = true;
+
+    // TODO: parse incoming XML
+    // TODO: render outgoing XML
+  };
 
   const proppatch = async (request: Request, response: AuthResponse) => {};
 
   app.all(
     '*',
     catchAndReportErrors(async (request, response: AuthResponse) => {
-      let { url } = getRequestData(request, response);
-
       switch (request.method) {
         case 'PROPFIND':
           await propfind(request, response);
@@ -885,6 +965,7 @@ export default function createServer(
           await proppatch(request, response);
           break;
         default:
+          const { url } = getRequestData(request, response);
           const adapterMethods = await adapter.getAllowedMethods(
             url,
             request,
