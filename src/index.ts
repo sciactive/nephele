@@ -13,6 +13,9 @@ export * from './Errors/index.js';
 import createServer from './createServer.js';
 import { defaults } from './Options.js';
 
+export * from './HTTPStatusMessages.js';
+export * from './MultiStatus.js';
+
 export {
   Adapter,
   AuthResponse,
