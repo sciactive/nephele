@@ -2,11 +2,13 @@ import xml2js from 'xml2js';
 
 import { HTTPStatusMessages } from './HTTPStatusMessages.js';
 
+const DEV = process.env.NODE_ENV !== 'production';
+
 export class PropStatStatus {
   statusCode: number;
   statusMessage: string;
   body: { [k: string]: any } | undefined = undefined;
-  props: { [k: string]: any } | undefined = undefined;
+  prop: { [k: string]: any } | undefined = undefined;
   description: string | undefined = undefined;
 
   constructor(statusCode: number, statusMessage?: string) {
@@ -36,7 +38,7 @@ export class PropStatStatus {
   }
 
   /**
-   * Add an xml2js compatible body to the props element.
+   * Add an xml2js compatible body to the prop element.
    *
    * It should be a prop object, like this for successful props:
    *
@@ -52,10 +54,10 @@ export class PropStatStatus {
    *       otherprop: {}
    *     }
    *
-   * @param props An xml2js compatible object.
+   * @param prop An xml2js compatible object.
    */
-  setProps(props: { [k: string]: any } | undefined) {
-    this.props = props;
+  setProp(prop: { [k: string]: any } | undefined) {
+    this.prop = prop;
   }
 
   render() {
@@ -67,8 +69,8 @@ export class PropStatStatus {
       response.responsedescription = [this.description];
     }
 
-    if (this.props) {
-      response.props = this.props;
+    if (this.prop) {
+      response.prop = this.prop;
     }
 
     if (this.body) {
@@ -171,6 +173,19 @@ export class MultiStatus {
   constructor() {
     this.builder = new xml2js.Builder({
       xmldec: { version: '1.0', encoding: 'UTF-8' },
+      ...(DEV
+        ? {
+            renderOpts: {
+              pretty: true,
+            },
+          }
+        : {
+            renderOpts: {
+              indent: '',
+              newline: '',
+              pretty: false,
+            },
+          }),
     });
   }
 

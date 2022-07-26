@@ -10,20 +10,20 @@ const multistatuspropstat = async () => {
   multistatus.addStatus(container);
 
   const containerProps = new PropStatStatus(200);
-  containerProps.setProps({ test: ['value'] });
+  containerProps.setProp({ test: ['value'] });
   container.addPropStatStatus(containerProps);
 
   const containerErrorProps = new PropStatStatus(403);
   containerErrorProps.description =
     'The user does not have access to the "restricted" property.';
-  containerErrorProps.setProps({ restricted: {} });
+  containerErrorProps.setProp({ restricted: {} });
   container.addPropStatStatus(containerErrorProps);
 
   const file = new Status('http://www.example.com/container/file', 207);
   multistatus.addStatus(file);
 
   const fileProps = new PropStatStatus(200);
-  fileProps.setProps({ prop1: ['success'], prop2: ['more success'] });
+  fileProps.setProp({ prop1: ['success'], prop2: ['more success'] });
   file.addPropStatStatus(fileProps);
 
   console.log(multistatus.render());

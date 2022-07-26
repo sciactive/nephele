@@ -35,6 +35,8 @@ import {
 import { isMediaTypeCompressed } from './compressedMediaTypes.js';
 import { MultiStatus, Status, PropStatStatus } from './MultiStatus.js';
 
+const DEV = process.env.NODE_ENV !== 'production';
+
 const debug = createDebug('nephele:server');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -68,6 +70,19 @@ export default function createServer(
   const xmlParser = new xml2js.Parser();
   const xmlBuilder = new xml2js.Builder({
     xmldec: { version: '1.0', encoding: 'UTF-8' },
+    ...(DEV
+      ? {
+          renderOpts: {
+            pretty: true,
+          },
+        }
+      : {
+          renderOpts: {
+            indent: '',
+            newline: '',
+            pretty: false,
+          },
+        }),
   });
 
   async function debugLogger(
@@ -955,7 +970,6 @@ export default function createServer(
     }
 
     const xml = await getBodyXML(request);
-
     response.locals.debug('XML Body', inspect(xml, false, null));
 
     let requestedProps: string[] = [];
@@ -963,12 +977,14 @@ export default function createServer(
     let propname = false;
     const multiStatus = new MultiStatus();
 
-    // TODO: parse incoming XML
+    if (xml != null) {
+      // TODO: parse incoming XML
+    }
 
     let level = 0;
     const addResourceProps = async (resource: Resource) => {
       const url = await resource.getCanonicalUrl();
-      response.locals.debug(`Retrieving props for ${url}.`);
+      response.locals.debug(`Retrieving props for ${url}`);
 
       if (!(await adapter.isAuthorized(url, 'PROPFIND', request, response))) {
         const error = new Status(url.toString(), 401);
@@ -989,7 +1005,7 @@ export default function createServer(
           for (let name of propnames) {
             propObj[name] = {};
           }
-          propStatStatus.setProps(propObj);
+          propStatStatus.setProp(propObj);
           status.addPropStatStatus(propStatStatus);
         } else {
           let propObj: { [k: string]: any } = {};
@@ -1021,7 +1037,7 @@ export default function createServer(
 
           if (Object.keys(propObj).length) {
             const propStatStatus = new PropStatStatus(200);
-            propStatStatus.setProps(propObj);
+            propStatStatus.setProp(propObj);
             status.addPropStatStatus(propStatStatus);
           }
 
@@ -1030,7 +1046,7 @@ export default function createServer(
             propStatStatus.description = `The user does not have access to the ${forbiddenProps.join(
               ', '
             )} propert${forbiddenProps.length === 1 ? 'y' : 'ies'}.`;
-            propStatStatus.setProps(
+            propStatStatus.setProp(
               Object.fromEntries(forbiddenProps.map((name) => [name, {}]))
             );
             status.addPropStatStatus(propStatStatus);
@@ -1041,7 +1057,7 @@ export default function createServer(
             propStatStatus.description = `The user is not authorized to retrieve the ${unauthorizedProps.join(
               ', '
             )} propert${unauthorizedProps.length === 1 ? 'y' : 'ies'}.`;
-            propStatStatus.setProps(
+            propStatStatus.setProp(
               Object.fromEntries(unauthorizedProps.map((name) => [name, {}]))
             );
             status.addPropStatStatus(propStatStatus);
@@ -1052,7 +1068,7 @@ export default function createServer(
             propStatStatus.description = `An error occurred while trying to retrieve the ${errorProps.join(
               ', '
             )} propert${errorProps.length === 1 ? 'y' : 'ies'}.`;
-            propStatStatus.setProps(
+            propStatStatus.setProp(
               Object.fromEntries(errorProps.map((name) => [name, {}]))
             );
             status.addPropStatStatus(propStatStatus);

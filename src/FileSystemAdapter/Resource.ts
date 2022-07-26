@@ -221,8 +221,8 @@ export default class Resource implements ResourceInterface {
   }
 
   async getInternalMembers() {
-    if (await this.isCollection()) {
-      throw new MethodNotSupportedError('This is a collection.');
+    if (!(await this.isCollection())) {
+      throw new MethodNotSupportedError('This is not a collection.');
     }
 
     const listing = await fsp.readdir(this.absolutePath);
@@ -235,7 +235,7 @@ export default class Resource implements ResourceInterface {
 
       resources.push(
         new Resource({
-          path: path.join(this.absolutePath, name),
+          path: path.join(this.path, name),
           adapter: this.adapter,
         })
       );
