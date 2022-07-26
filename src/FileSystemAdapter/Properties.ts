@@ -63,9 +63,16 @@ export default class Properties implements PropertiesInterface {
 
     // Fall back to a file based prop store.
     const filepath = await this.resource.getPropFilePath();
-    const props = JSON.parse((await fsp.readFile(filepath)).toString());
-
-    return props['*'][name];
+    try {
+      const props = JSON.parse((await fsp.readFile(filepath)).toString());
+      return props['*'][name];
+    } catch (e: any) {
+      if (e.code === 'ENOENT') {
+        return undefined;
+      } else {
+        throw e;
+      }
+    }
   }
 
   async set(name: string, value: string) {
@@ -86,7 +93,15 @@ export default class Properties implements PropertiesInterface {
 
     // Fall back to a file based prop store.
     const filepath = await this.resource.getPropFilePath();
-    const props = JSON.parse((await fsp.readFile(filepath)).toString());
+    let props: { [k: string]: any } = {};
+
+    try {
+      props = JSON.parse((await fsp.readFile(filepath)).toString());
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') {
+        throw e;
+      }
+    }
 
     let changed = false;
     if (value === undefined) {
@@ -118,7 +133,15 @@ export default class Properties implements PropertiesInterface {
 
   async getAll() {
     const filepath = await this.resource.getPropFilePath();
-    const props = JSON.parse((await fsp.readFile(filepath)).toString());
+    let props: { [k: string]: any } = {};
+
+    try {
+      props = JSON.parse((await fsp.readFile(filepath)).toString());
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') {
+        throw e;
+      }
+    }
 
     return {
       ...props['*'],
@@ -141,6 +164,10 @@ export default class Properties implements PropertiesInterface {
     return [...(await this.listLive()), ...(await this.listDead())];
   }
 
+  async listByUser(_user: User) {
+    return await this.list();
+  }
+
   async listLive() {
     return [
       'creationdate',
@@ -154,14 +181,30 @@ export default class Properties implements PropertiesInterface {
     ];
   }
 
+  async listLiveByUser(user: User) {
+    return await this.listLive();
+  }
+
   async listDead() {
     const filepath = await this.resource.getPropFilePath();
-    const props = JSON.parse((await fsp.readFile(filepath)).toString());
+    let props: { [k: string]: any } = {};
+
+    try {
+      props = JSON.parse((await fsp.readFile(filepath)).toString());
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') {
+        throw e;
+      }
+    }
 
     return [
       'displayname',
       'getcontentlanguage',
       ...Object.keys(props['*'] || {}),
     ];
+  }
+
+  async listDeadByUser(user: User) {
+    return await this.listDead();
   }
 }

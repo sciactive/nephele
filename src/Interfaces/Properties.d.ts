@@ -75,7 +75,13 @@ export interface Properties {
     user: User
   ): Promise<{ [k: string]: string | Object | Object[] }>;
 
+  /**
+   * Return the names of all properties.
+   */
   list(): Promise<string[]>;
+  listByUser(user: User): Promise<string[]>;
   listLive(): Promise<string[]>;
+  listLiveByUser(user: User): Promise<string[]>;
   listDead(): Promise<string[]>;
+  listDeadByUser(user: User): Promise<string[]>;
 }

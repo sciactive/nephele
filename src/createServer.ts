@@ -23,6 +23,7 @@ import {
   LockedError,
   MediaTypeNotSupportedError,
   MethodNotSupportedError,
+  NotAcceptableError,
   PreconditionFailedError,
   RequestURITooLongError,
   ResourceExistsError,
@@ -32,6 +33,7 @@ import {
   UnprocessableEntityError,
 } from './Errors/index.js';
 import { isMediaTypeCompressed } from './compressedMediaTypes.js';
+import { MultiStatus, Status, PropStatStatus } from './MultiStatus.js';
 
 const debug = createDebug('nephele:server');
 
@@ -221,6 +223,12 @@ export default function createServer(
           return;
         }
 
+        if (e instanceof NotAcceptableError) {
+          response.status(406); // Not Acceptable
+          opts.errorHandler(406, e.message, request, response, e);
+          return;
+        }
+
         if (e instanceof PreconditionFailedError) {
           response.status(412); // Precondition Failed
           opts.errorHandler(412, e.message, request, response, e);
@@ -316,7 +324,7 @@ export default function createServer(
           (check) => encodings.find(([check2]) => check === check2) == null
         ) || 'gzip';
     }
-    response.locals.debug(`Encoding set to ${encoding}.`);
+    response.locals.debug(`Requested encoding is ${encoding}.`);
     return encoding as 'gzip' | 'x-gzip' | 'deflate' | 'br' | 'identity';
   };
 
@@ -546,7 +554,7 @@ export default function createServer(
         throw new Error('Last modified date property is not a string.');
       }
       const lastModified = new Date(lastModifiedString);
-      if (typeof contentLanguage !== 'string') {
+      if (contentLanguage != null && typeof contentLanguage !== 'string') {
         throw new Error('Content language property is not a string.');
       }
 
@@ -586,7 +594,7 @@ export default function createServer(
         Date: new Date().toUTCString(),
         Vary: 'Accept-Encoding',
       });
-      if (contentLanguage !== '') {
+      if (contentLanguage != null && contentLanguage !== '') {
         response.set({
           'Content-Language': contentLanguage,
         });
@@ -932,8 +940,13 @@ export default function createServer(
       throw new UnauthorizedError('Unauthorized.');
     }
 
+    const contentType = request.accepts('application/xml', 'text/xml');
+    if (!contentType) {
+      throw new NotAcceptableError('Requested content type is not supported.');
+    }
+
     let depth = request.get('Depth') || 'infinity';
-    let resource = await adapter.newCollection(url, request, response);
+    const resource = await adapter.getResource(url, request, response);
 
     if (!['0', '1', 'infinity'].includes(depth)) {
       throw new BadRequestError(
@@ -945,11 +958,133 @@ export default function createServer(
 
     response.locals.debug('XML Body', inspect(xml, false, null));
 
-    let props = [];
-    let allprops = true;
+    let requestedProps: string[] = [];
+    let allprop = true;
+    let propname = false;
+    const multiStatus = new MultiStatus();
 
     // TODO: parse incoming XML
-    // TODO: render outgoing XML
+
+    let level = 0;
+    const addResourceProps = async (resource: Resource) => {
+      const url = await resource.getCanonicalUrl();
+      response.locals.debug(`Retrieving props for ${url}.`);
+
+      if (!(await adapter.isAuthorized(url, 'PROPFIND', request, response))) {
+        const error = new Status(url.toString(), 401);
+        error.description =
+          'The user is not authorized to get properties for this resource.';
+        multiStatus.addStatus(error);
+        return;
+      }
+
+      const status = new Status(url.toString(), 207);
+      const props = await resource.getProperties();
+
+      try {
+        if (propname) {
+          const propnames = await props.listByUser(response.locals.user);
+          const propStatStatus = new PropStatStatus(200);
+          const propObj: { [k: string]: {} } = {};
+          for (let name of propnames) {
+            propObj[name] = {};
+          }
+          propStatStatus.setProps(propObj);
+          status.addPropStatStatus(propStatStatus);
+        } else {
+          let propObj: { [k: string]: any } = {};
+          const forbiddenProps: string[] = [];
+          const unauthorizedProps: string[] = [];
+          const errorProps: string[] = [];
+          if (allprop) {
+            propObj = await props.getAllByUser(response.locals.user);
+          }
+
+          for (let name of requestedProps) {
+            if (name in propObj) {
+              continue;
+            }
+
+            try {
+              const value = await props.getByUser(name, response.locals.user);
+              propObj[name] = value;
+            } catch (e: any) {
+              if (e instanceof ForbiddenError) {
+                forbiddenProps.push(name);
+              } else if (e instanceof UnauthorizedError) {
+                unauthorizedProps.push(name);
+              } else {
+                errorProps.push(name);
+              }
+            }
+          }
+
+          if (Object.keys(propObj).length) {
+            const propStatStatus = new PropStatStatus(200);
+            propStatStatus.setProps(propObj);
+            status.addPropStatStatus(propStatStatus);
+          }
+
+          if (forbiddenProps.length) {
+            const propStatStatus = new PropStatStatus(403);
+            propStatStatus.description = `The user does not have access to the ${forbiddenProps.join(
+              ', '
+            )} propert${forbiddenProps.length === 1 ? 'y' : 'ies'}.`;
+            propStatStatus.setProps(
+              Object.fromEntries(forbiddenProps.map((name) => [name, {}]))
+            );
+            status.addPropStatStatus(propStatStatus);
+          }
+
+          if (unauthorizedProps.length) {
+            const propStatStatus = new PropStatStatus(401);
+            propStatStatus.description = `The user is not authorized to retrieve the ${unauthorizedProps.join(
+              ', '
+            )} propert${unauthorizedProps.length === 1 ? 'y' : 'ies'}.`;
+            propStatStatus.setProps(
+              Object.fromEntries(unauthorizedProps.map((name) => [name, {}]))
+            );
+            status.addPropStatStatus(propStatStatus);
+          }
+
+          if (errorProps.length) {
+            const propStatStatus = new PropStatStatus(401);
+            propStatStatus.description = `An error occurred while trying to retrieve the ${errorProps.join(
+              ', '
+            )} propert${errorProps.length === 1 ? 'y' : 'ies'}.`;
+            propStatStatus.setProps(
+              Object.fromEntries(errorProps.map((name) => [name, {}]))
+            );
+            status.addPropStatStatus(propStatStatus);
+          }
+        }
+      } catch (e: any) {
+        const propStatStatus = new PropStatStatus(500);
+        propStatStatus.description = 'An internal server error occurred.';
+        status.addPropStatStatus(propStatStatus);
+      }
+
+      multiStatus.addStatus(status);
+
+      if (depth === '0' || (level === 1 && depth === '1')) {
+        return;
+      }
+
+      level++;
+      const children = await resource.getInternalMembers();
+      for (let child of children) {
+        await addResourceProps(child);
+      }
+    };
+    await addResourceProps(resource);
+
+    const responseXml = multiStatus.render();
+    response.status(207); // Multi-Status
+    response.set({
+      'Content-Type': contentType,
+      'Content-Length': responseXml.length,
+    });
+    response.send(responseXml);
   };
 
   const proppatch = async (request: Request, response: AuthResponse) => {};

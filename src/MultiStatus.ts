@@ -206,7 +206,6 @@ export class MultiStatus {
       responses.push(status.render());
     }
 
-    // console.log(JSON.stringify(xml, null, 2));
     return this.builder.buildObject(xml);
   }
 }

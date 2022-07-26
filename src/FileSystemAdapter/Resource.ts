@@ -1,4 +1,4 @@
-import type { Readable } from 'node:stream';
+import { Readable } from 'node:stream';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
@@ -57,6 +57,11 @@ export default class Resource implements ResourceInterface {
   }
 
   async getStream() {
+    if (await this.isCollection()) {
+      const stream = Readable.from([]);
+      return stream;
+    }
+
     const handle = await fsp.open(this.absolutePath, 'r');
 
     const stream = handle.createReadStream();
@@ -140,6 +145,10 @@ export default class Resource implements ResourceInterface {
   }
 
   async getLength() {
+    if (await this.isCollection()) {
+      return 0;
+    }
+
     const stat = await fsp.stat(this.absolutePath);
 
     return stat.size;
