@@ -129,7 +129,7 @@ export class PROPFIND extends Method {
           }
 
           if (errorProps.length) {
-            const propStatStatus = new PropStatStatus(401);
+            const propStatStatus = new PropStatStatus(500);
             propStatStatus.description = `An error occurred while trying to retrieve the ${errorProps.join(
               ', '
             )} propert${errorProps.length === 1 ? 'y' : 'ies'}.`;
