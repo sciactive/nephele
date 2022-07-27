@@ -1,6 +1,8 @@
 import type { Request, Response } from 'express';
 import type { Debugger } from 'debug';
 
+import type { Method } from '../index.js';
+
 import type { Resource } from './Resource.js';
 import type { User } from './User.js';
 
@@ -152,25 +154,16 @@ export interface Adapter {
   ): Promise<Resource>;
 
   /**
-   * Handle an additional method that is reported by `getAllowedMethods`.
+   * Get a handler class for an additional method.
    *
-   * This will be called after `isAuthorized`, and any thrown errors will be
-   * caught and reported in the response, along with their message. If you need
-   * more sophisticated error handling, such as returning specific error codes
-   * in certain situations, you should handle errors within this function.
+   * Any thrown errors will be caught and reported in the response, along with
+   * their message. If you need more sophisticated error handling, such as
+   * returning specific error codes in certain situations, you should handle
+   * errors within this class' `run` function.
    *
-   * If you don't return any additional method from `getAllowedMethods`, this
-   * will never be called.
-   *
-   * @param url Resource URL.
-   * @param method The method being requested. (Same as `request.method`.)
-   * @param request The server request.
-   * @param response The authenticated server response.
+   * If the requested method is not supported (i.e. it isn't included in the
+   * output from `getAllowedMethods`), a MethodNotSupportedError should be
+   * thrown.
    */
-  handleMethod(
-    url: URL,
-    method: string,
-    request: Request,
-    response: AuthResponse
-  ): Promise<void>;
+  getMethod(method: string): typeof Method;
 }

@@ -9,8 +9,9 @@ import basicAuth from 'basic-auth';
 import type {
   Adapter as AdapterInterface,
   AuthResponse as NepheleAuthResponse,
+  Method,
 } from '../index.js';
-import { ResourceNotFoundError } from '../index.js';
+import { MethodNotSupportedError, ResourceNotFoundError } from '../index.js';
 import User from './User.js';
 import Resource from './Resource.js';
 
@@ -300,13 +301,8 @@ export default class Adapter implements AdapterInterface {
     });
   }
 
-  async handleMethod(
-    _url: URL,
-    _method: string,
-    _request: Request,
-    _response: AuthResponse
-  ) {
+  getMethod(_method: string): typeof Method {
     // No additional methods to handle.
-    return;
+    throw new MethodNotSupportedError('Method not allowed.');
   }
 }
