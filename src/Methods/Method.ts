@@ -62,13 +62,12 @@ export class Method {
     method?: string,
     url?: URL
   ) {
-    const { url: requestUrl } = this.getRequestData(request, response);
-
     // If the adapter says it can handle the method, just handle the
     // authorization and error handling for it.
     if (
       !(await this.adapter.isAuthorized(
-        url || requestUrl,
+        url ||
+          new URL(request.url, `${request.protocol}://${request.headers.host}`),
         method || request.method,
         request,
         response
