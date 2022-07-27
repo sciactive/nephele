@@ -73,7 +73,7 @@ export default function createServer(
     response: AuthResponse,
     next: NextFunction
   ) {
-    response.locals.requestId = nanoid(8);
+    response.locals.requestId = nanoid(5);
     response.locals.debug = debug.extend(`${response.locals.requestId}`);
     response.locals.debug(
       `IP: ${request.ip}, Method: ${request.method}, URL: ${request.originalUrl}`
@@ -175,6 +175,23 @@ export default function createServer(
 
   // Add the server header to the response.
   app.use(addServerHeader);
+
+  async function checkRequestPath(
+    request: Request,
+    response: AuthResponse,
+    next: NextFunction
+  ) {
+    const splitPath = request.path.split('/');
+    if (splitPath.includes('..') || splitPath.includes('.')) {
+      response.status(400);
+      opts.errorHandler(400, 'Bad request.', request, response);
+      return;
+    }
+    next();
+  }
+
+  // Check the request path for '.' or '..' segments.
+  app.use(checkRequestPath);
 
   const catchAndReportErrors = (
     fn: (request: Request, response: AuthResponse) => Promise<void>
