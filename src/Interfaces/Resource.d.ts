@@ -61,6 +61,11 @@ export interface Resource {
   getMediaType(): Promise<string>;
 
   /**
+   * The canonical path relative to the root of the WebDAV server.
+   */
+  getCanonicalPath(): Promise<string>;
+
+  /**
    * The canonical URL must be within the WebDAV server's namespace, and must
    * not have query parameters.
    */

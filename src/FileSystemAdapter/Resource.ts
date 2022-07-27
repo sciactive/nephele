@@ -183,6 +183,13 @@ export default class Resource implements ResourceInterface {
     return mediaType;
   }
 
+  async getCanonicalPath() {
+    if (await this.isCollection()) {
+      return this.path.replace(/(?:$|\/$)/, () => '/');
+    }
+    return this.path;
+  }
+
   async getCanonicalUrl() {
     const scheme = this.adapter.scheme;
     const host = this.adapter.host;
@@ -202,7 +209,7 @@ export default class Resource implements ResourceInterface {
 
     url += encodeURI(path);
 
-    url += encodeURI(this.path.replace(/^\//, ''));
+    url += encodeURI((await this.getCanonicalPath()).replace(/^\//, ''));
 
     return new URL(url);
   }

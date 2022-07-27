@@ -47,7 +47,9 @@ export class PROPFIND extends Method {
     let level = 0;
     const addResourceProps = async (resource: Resource) => {
       const url = await resource.getCanonicalUrl();
-      response.locals.debug(`Retrieving props for ${url}`);
+      response.locals.debug(
+        `Retrieving props for ${await resource.getCanonicalPath()}`
+      );
 
       if (
         !(await this.adapter.isAuthorized(url, 'PROPFIND', request, response))
