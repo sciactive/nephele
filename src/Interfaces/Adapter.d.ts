@@ -44,8 +44,8 @@ export interface Adapter {
    * The standard set of WebDAV methods are already known, so don't include them
    * in the returned array. They include:
    *
-   * GET, HEAD, POST, PUT, PATCH, DELETE, COPY, MOVE, MKCOL, OPTIONS, LOCK,
-   * UNLOCK, SEARCH, PROPFIND, and PROPPATCH
+   * GET, HEAD, POST, PUT, DELETE, COPY, MOVE, MKCOL, OPTIONS, LOCK, UNLOCK,
+   * SEARCH, PROPFIND, and PROPPATCH
    *
    * LOCK and UNLOCK are only included if `getComplianceClasses` returns "2" in
    * the array when called with the same arguments.

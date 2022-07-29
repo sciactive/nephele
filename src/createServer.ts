@@ -193,9 +193,6 @@ export default function createServer(
   const put = new PUT(adapter, opts);
   app.put('*', catchErrors(put.run.bind(put), opts.errorHandler));
 
-  const patch = new Method(adapter, opts);
-  app.patch('*', catchErrors(patch.run.bind(patch), opts.errorHandler));
-
   const del = new DELETE(adapter, opts);
   app.delete('*', catchErrors(del.run.bind(del), opts.errorHandler));
 
@@ -214,8 +211,9 @@ export default function createServer(
   const unlock = new Method(adapter, opts);
   app.unlock('*', catchErrors(unlock.run.bind(unlock), opts.errorHandler));
 
-  const search = new Method(adapter, opts);
-  app.search('*', catchErrors(search.run.bind(search), opts.errorHandler));
+  // TODO: Available once rfc5323 is implemented.
+  // const search = new SEARCH(adapter, opts);
+  // app.search('*', catchErrors(search.run.bind(search), opts.errorHandler));
 
   const propfind = new PROPFIND(adapter, opts);
   const proppatch = new Method(adapter, opts);

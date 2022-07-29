@@ -170,9 +170,7 @@ export default class Adapter implements AdapterInterface {
     }
 
     if (
-      ['POST', 'PUT', 'PATCH', 'DELETE', 'MOVE', 'MKCOL', 'PROPPATCH'].includes(
-        method
-      )
+      ['POST', 'PUT', 'DELETE', 'MOVE', 'MKCOL', 'PROPPATCH'].includes(method)
     ) {
       // Write operations.
       access = 'w';

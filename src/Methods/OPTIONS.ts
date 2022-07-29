@@ -20,12 +20,11 @@ export class OPTIONS extends Method {
       'HEAD',
       'POST',
       'PUT',
-      'PATCH',
       'DELETE',
       'COPY',
       'MOVE',
       'MKCOL',
-      'SEARCH',
+      // 'SEARCH', // TODO: Available once rfc5323 is implemented.
       'PROPFIND',
       'PROPPATCH',
       ...(complianceClasses.includes('2') ? ['LOCK', 'UNLOCK'] : []),
