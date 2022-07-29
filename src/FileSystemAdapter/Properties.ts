@@ -1,7 +1,7 @@
 import fsp from 'node:fs/promises';
 
 import type { Properties as PropertiesInterface } from '../index.js';
-import { PropertyIsProtectedError } from '../index.js';
+import { PropertyIsProtectedError, PropertyNotFoundError } from '../index.js';
 
 import Resource from './Resource.js';
 import User from './User.js';
@@ -14,65 +14,70 @@ export default class Properties implements PropertiesInterface {
   }
 
   async get(name: string) {
-    try {
-      switch (name) {
-        case 'creationdate': {
-          const stats = await this.resource.getStats();
-          return stats.ctime.toISOString();
-        }
-        case 'getcontentlength':
-          return `${await this.resource.getLength()}`;
-        case 'getcontenttype':
-          return await this.resource.getMediaType();
-        case 'getetag':
-          return await this.resource.getEtag();
-        case 'getlastmodified': {
-          const stats = await this.resource.getStats();
-          return stats.mtime.toISOString();
-        }
-        case 'lockdiscovery':
-          // TODO: Implement this. (Page 94)
-          return '';
-        case 'resourcetype':
-          try {
-            if (await this.resource.isCollection()) {
-              return { collection: {} };
-            } else {
-              return {};
-            }
-          } catch (e: any) {
-            return undefined;
-          }
-        case 'supportedlock':
-          return {
-            lockentry: [
-              {
-                lockscope: { exclusive: {} },
-                locktype: { write: {} },
-              },
-              {
-                lockscope: { shared: {} },
-                locktype: { write: {} },
-              },
-            ],
-          };
+    switch (name) {
+      case 'creationdate': {
+        const stats = await this.resource.getStats();
+        return stats.ctime.toISOString();
       }
-    } catch (e: any) {
-      return undefined;
+      case 'getcontentlength':
+        return `${await this.resource.getLength()}`;
+      case 'getcontenttype':
+        return await this.resource.getMediaType();
+      case 'getetag':
+        return await this.resource.getEtag();
+      case 'getlastmodified': {
+        const stats = await this.resource.getStats();
+        return stats.mtime.toISOString();
+      }
+      case 'lockdiscovery':
+        // TODO: Implement this. (Page 94)
+        return '';
+      case 'resourcetype':
+        if (await this.resource.isCollection()) {
+          return { collection: {} };
+        } else {
+          return {};
+        }
+      case 'supportedlock':
+        return {
+          lockentry: [
+            {
+              lockscope: { exclusive: {} },
+              locktype: { write: {} },
+            },
+            {
+              lockscope: { shared: {} },
+              locktype: { write: {} },
+            },
+          ],
+        };
     }
 
     // Fall back to a file based prop store.
     const filepath = await this.resource.getPropFilePath();
     try {
       const props = JSON.parse((await fsp.readFile(filepath)).toString());
+
+      if (!(name in props['*'])) {
+        throw new PropertyNotFoundError(
+          `${name} property doesn't exist on resource.`
+        );
+      }
+
       return props['*'][name];
     } catch (e: any) {
       if (e.code === 'ENOENT') {
-        return undefined;
+        throw new PropertyNotFoundError(
+          `${name} property doesn't exist on resource.`
+        );
       } else {
         throw e;
       }
     }
+  }
+
+  async getByUser(name: string, _user: User) {
+    return await this.get(name);
   }
 
   async set(name: string, value: string) {
@@ -123,11 +128,7 @@ export default class Properties implements PropertiesInterface {
     }
   }
 
-  async getByUser(name: string, user: User) {
-    return await this.get(name);
-  }
-
-  async setByUser(name: string, value: string, user: User) {
+  async setByUser(name: string, value: string, _user: User) {
     await this.set(name, value);
   }
 
@@ -181,7 +182,7 @@ export default class Properties implements PropertiesInterface {
     ];
   }
 
-  async listLiveByUser(user: User) {
+  async listLiveByUser(_user: User) {
     return await this.listLive();
   }
 
@@ -198,13 +199,14 @@ export default class Properties implements PropertiesInterface {
     }
 
     return [
-      'displayname',
-      'getcontentlanguage',
+      // TODO: Should these be included if they're not defined yet.
+      // 'displayname',
+      // 'getcontentlanguage',
       ...Object.keys(props['*'] || {}),
     ];
   }
 
-  async listDeadByUser(user: User) {
+  async listDeadByUser(_user: User) {
     return await this.listDead();
   }
 }

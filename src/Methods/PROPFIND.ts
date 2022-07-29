@@ -6,6 +6,7 @@ import {
   BadRequestError,
   ForbiddenError,
   NotAcceptableError,
+  PropertyNotFoundError,
   UnauthorizedError,
 } from '../Errors/index.js';
 import { MultiStatus, Status, PropStatStatus } from '../MultiStatus.js';
@@ -33,7 +34,6 @@ export class PROPFIND extends Method {
     }
 
     const xml = await this.getBodyXML(request);
-    response.locals.debug('XML Body', inspect(xml, false, null));
 
     let requestedProps: string[] = [];
     let allprop = true;
@@ -41,7 +41,37 @@ export class PROPFIND extends Method {
     const multiStatus = new MultiStatus();
 
     if (xml != null) {
-      // TODO: parse incoming XML
+      const requestXml = await this.parseXml(xml);
+
+      if (!('propfind' in requestXml)) {
+        throw new BadRequestError(
+          'PROPFIND methods requires a propfind element.'
+        );
+      }
+
+      if ('propname' in requestXml.propfind) {
+        propname = true;
+      }
+
+      if (!('allprop' in requestXml.propfind)) {
+        allprop = false;
+      } else if ('include' in requestXml.propfind) {
+        for (let include of requestXml.propfind.include) {
+          requestedProps = [
+            ...requestedProps,
+            ...Object.keys(include).filter((name) => name !== '$'),
+          ];
+        }
+      }
+
+      if ('prop' in requestXml.propfind) {
+        for (let prop of requestXml.propfind.prop) {
+          requestedProps = [
+            ...requestedProps,
+            ...Object.keys(prop).filter((name) => name !== '$'),
+          ];
+        }
+      }
     }
 
     let level = 0;
@@ -78,6 +108,7 @@ export class PROPFIND extends Method {
           let propObj: { [k: string]: any } = {};
           const forbiddenProps: string[] = [];
           const unauthorizedProps: string[] = [];
+          const notFoundProps: string[] = [];
           const errorProps: string[] = [];
           if (allprop) {
             propObj = await props.getAllByUser(response.locals.user);
@@ -96,6 +127,8 @@ export class PROPFIND extends Method {
                 forbiddenProps.push(name);
               } else if (e instanceof UnauthorizedError) {
                 unauthorizedProps.push(name);
+              } else if (e instanceof PropertyNotFoundError) {
+                notFoundProps.push(name);
               } else {
                 errorProps.push(name);
               }
@@ -126,6 +159,19 @@ export class PROPFIND extends Method {
             )} propert${unauthorizedProps.length === 1 ? 'y' : 'ies'}.`;
             propStatStatus.setProp(
               Object.fromEntries(unauthorizedProps.map((name) => [name, {}]))
+            );
+            status.addPropStatStatus(propStatStatus);
+          }
+
+          if (notFoundProps.length) {
+            const propStatStatus = new PropStatStatus(404);
+            propStatStatus.description = `The ${notFoundProps.join(
+              ', '
+            )} propert${
+              notFoundProps.length === 1 ? 'y was' : 'ies were'
+            } not found.`;
+            propStatStatus.setProp(
+              Object.fromEntries(notFoundProps.map((name) => [name, {}]))
             );
             status.addPropStatStatus(propStatStatus);
           }
@@ -161,7 +207,7 @@ export class PROPFIND extends Method {
     };
     await addResourceProps(resource);
 
-    const responseXml = multiStatus.render();
+    const responseXml = await this.renderXml(multiStatus.render());
     response.status(207); // Multi-Status
     response.set({
       'Content-Type': contentType,

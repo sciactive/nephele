@@ -1,7 +1,49 @@
 import { inspect } from 'node:util';
 import xml2js from 'xml2js';
 
-import { MultiStatus, PropStatStatus, Status } from './MultiStatus.js';
+import {
+  Method,
+  MultiStatus,
+  PropStatStatus,
+  Status,
+  defaults,
+  Adapter,
+} from './index.js';
+
+const builder = new xml2js.Builder({
+  xmldec: { version: '1.0', encoding: 'UTF-8' },
+});
+const parser = new xml2js.Parser({
+  xmlns: true,
+});
+
+const parsexml = async () => {
+  const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<D:propfind xmlns:D="DAV:" xml:lang="en">
+  <D:prop xmlns:R="http://ns.example.com/boxschema/">
+    <R:bigbox R:someattr="yes" D:otherattr="no" lastattr="maybe">
+    test
+    </R:bigbox>
+    <R:author/>
+    <R:DingALing/>
+    <Random xmlns="http://ns.example.com/boxschema/" attrib="yes"/>
+  </D:prop>
+</D:propfind>
+`;
+
+  const method = new Method({} as Adapter, defaults);
+
+  const parsed = await parser.parseStringPromise(xml);
+  const parsed2 = await method.parseXml(xml);
+
+  // console.log(inspect(parsed, false, null));
+  // console.log(inspect(parsed2, false, null));
+
+  let testxml = await method.renderXml(parsed2);
+
+  console.log(testxml);
+};
+await parsexml();
 
 const multistatuspropstat = async () => {
   const multistatus = new MultiStatus();
@@ -28,7 +70,7 @@ const multistatuspropstat = async () => {
 
   console.log(multistatus.render());
 };
-await multistatuspropstat();
+// await multistatuspropstat();
 
 const multistatuserror = async () => {
   const multistatus = new MultiStatus();
@@ -47,12 +89,7 @@ const multistatuserror = async () => {
 };
 // await multistatuserror();
 
-const builder = async () => {
-  let builder = new xml2js.Builder({
-    xmldec: { version: '1.0', encoding: 'UTF-8' },
-  });
-  let parser = new xml2js.Parser();
-
+const testbuilder = async () => {
   let obj = {
     multistatus: {
       $: {
@@ -135,4 +172,4 @@ const builder = async () => {
   console.log(xml);
   console.log(inspect(await parser.parseStringPromise(xml), false, null));
 };
-// await builder();
+// await testbuilder();

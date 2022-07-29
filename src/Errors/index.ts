@@ -9,6 +9,7 @@ export * from './MethodNotSupportedError.js';
 export * from './NotAcceptableError.js';
 export * from './PreconditionFailedError.js';
 export * from './PropertyIsProtectedError.js';
+export * from './PropertyNotFoundError.js';
 export * from './RequestURITooLongError.js';
 export * from './ResourceExistsError.js';
 export * from './ResourceNotFoundError.js';

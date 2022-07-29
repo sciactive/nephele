@@ -8,7 +8,7 @@ export interface Properties {
    * object that represents an XML structure that can be understood by xml2js,
    * or an array of such objects.
    *
-   * If the property doesn't exist, this should return undefined.
+   * If the property doesn't exist, this should throw a PropertyNotFoundError.
    *
    * WebDAV requires support for the following properties, all in the
    * DAV: XML namespace.
@@ -23,8 +23,16 @@ export interface Properties {
    * - lockdiscovery
    * - resourcetype
    * - supportedlock
+   *
+   * Any property not in the DAV: namespace will have its namespace and the
+   * string '::' prepended to its name.
    */
   get(name: string): Promise<string | Object | Object[] | undefined>;
+  getByUser(
+    name: string,
+    user: User
+  ): Promise<string | Object | Object[] | undefined>;
+
   /**
    * Set a property's value.
    *
@@ -53,11 +61,6 @@ export interface Properties {
     name: string,
     value: string | Object | Object[] | undefined
   ): Promise<void>;
-
-  getByUser(
-    name: string,
-    user: User
-  ): Promise<string | Object | Object[] | undefined>;
   setByUser(
     name: string,
     value: string | Object | Object[] | undefined,

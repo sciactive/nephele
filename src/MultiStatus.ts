@@ -166,28 +166,8 @@ export class Status {
 }
 
 export class MultiStatus {
-  builder: xml2js.Builder;
   statuses: Status[] = [];
   description: string | undefined = undefined;
-
-  constructor() {
-    this.builder = new xml2js.Builder({
-      xmldec: { version: '1.0', encoding: 'UTF-8' },
-      ...(DEV
-        ? {
-            renderOpts: {
-              pretty: true,
-            },
-          }
-        : {
-            renderOpts: {
-              indent: '',
-              newline: '',
-              pretty: false,
-            },
-          }),
-    });
-  }
 
   addStatus(status: Status) {
     this.statuses.push(status);
@@ -212,7 +192,7 @@ export class MultiStatus {
     }
 
     if (this.statuses.length < 1) {
-      return this.builder.buildObject(xml);
+      return xml;
     }
 
     xml.multistatus.response = responses;
@@ -221,6 +201,6 @@ export class MultiStatus {
       responses.push(status.render());
     }
 
-    return this.builder.buildObject(xml);
+    return xml;
   }
 }

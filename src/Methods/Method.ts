@@ -3,6 +3,7 @@ import { pipeline, Readable } from 'node:stream';
 import type { Request } from 'express';
 import xml2js from 'xml2js';
 import contentType from 'content-type';
+import splitn from '@sciactive/splitn';
 
 import type { Adapter, AuthResponse, Options } from '../index.js';
 import {
@@ -18,7 +19,9 @@ export class Method {
 
   DEV = process.env.NODE_ENV !== 'production';
 
-  xmlParser = new xml2js.Parser();
+  xmlParser = new xml2js.Parser({
+    xmlns: true,
+  });
   xmlBuilder = new xml2js.Builder({
     xmldec: { version: '1.0', encoding: 'UTF-8' },
     ...(this.DEV
@@ -253,5 +256,308 @@ export class Method {
     }
 
     return await this.xmlParser.parseStringPromise(xml);
+  }
+
+  /**
+   * Parse XML into a form that uses the DAV: namespace.
+   *
+   * Tags and attributes from other namespaces will have their namespace and the
+   * string '::' prepended to their name.
+   */
+  async parseXml(xml: string) {
+    let parsed = await this.xmlParser.parseStringPromise(xml);
+
+    const rewriteAttributes = (
+      input: {
+        [k: string]: {
+          name: string;
+          value: string;
+          prefix: string;
+          local: string;
+          uri: string;
+        };
+      },
+      namespace: string
+    ): any => {
+      const output: { [k: string]: string } = {};
+
+      for (let name in input) {
+        if (
+          input[name].uri === 'http://www.w3.org/2000/xmlns/' ||
+          input[name].uri === 'http://www.w3.org/XML/1998/namespace'
+        ) {
+          output[name] = input[name].value;
+        } else if (
+          input[name].uri === 'DAV:' ||
+          (input[name].uri === '' && namespace === 'DAV:')
+        ) {
+          output[input[name].local] = input[name].value;
+        } else {
+          output[`${input[name].uri || namespace}::${input[name].local}`] =
+            input[name].value;
+        }
+      }
+
+      return output;
+    };
+
+    const extractNamespaces = (input: {
+      [k: string]: {
+        name: string;
+        value: string;
+        prefix: string;
+        local: string;
+        uri: string;
+      };
+    }) => {
+      const output: { [k: string]: string } = {};
+
+      for (let name in input) {
+        if (
+          input[name].uri === 'http://www.w3.org/2000/xmlns/' &&
+          input[name].local !== '' &&
+          input[name].value !== 'DAV:'
+        ) {
+          output[input[name].local] = input[name].value;
+        }
+      }
+
+      return output;
+    };
+
+    const recursivelyRewrite = (
+      input: any,
+      lang?: string,
+      element = '',
+      prefix: string = '',
+      namespaces: { [k: string]: string } = {},
+      includeLang = false
+    ): any => {
+      if (Array.isArray(input)) {
+        return input.map((value) =>
+          recursivelyRewrite(
+            value,
+            lang,
+            element,
+            prefix,
+            namespaces,
+            includeLang
+          )
+        );
+      } else if (typeof input === 'object') {
+        const output: { [k: string]: any } = {};
+        // Remember the xml:lang attribute, as required by spec.
+        let curLang = lang;
+        let curNamespaces = { ...namespaces };
+
+        if ('$' in input) {
+          if ('xml:lang' in input.$) {
+            curLang = input.$['xml:lang'].value as string;
+          }
+
+          output.$ = rewriteAttributes(input.$, input['$ns'].uri);
+          curNamespaces = {
+            ...curNamespaces,
+            ...extractNamespaces(input.$),
+          };
+        }
+
+        if (curLang != null && includeLang) {
+          output.$ = output.$ || {};
+          output.$['xml:lang'] = curLang;
+        }
+
+        if (element.includes('::') && prefix !== '') {
+          const uri = element.split('::', 1)[0];
+          if (prefix in curNamespaces) {
+            output.$ = output.$ || {};
+            output.$[`xmlns:${prefix}`] = curNamespaces[prefix];
+          }
+        }
+
+        for (let name in input) {
+          if (name === '$ns' || name === '$') {
+            continue;
+          }
+
+          const ns = (Array.isArray(input[name])
+            ? input[name][0]['$ns']
+            : input[name]['$ns']) || { local: name, uri: 'DAV:' };
+
+          let prefix = '';
+          if (name.includes(':')) {
+            prefix = name.split(':', 1)[0];
+          }
+
+          const el = ns.uri === 'DAV:' ? ns.local : `${ns.uri}::${ns.local}`;
+          output[el] = recursivelyRewrite(
+            input[name],
+            curLang,
+            el,
+            prefix,
+            curNamespaces,
+            element === 'prop'
+          );
+        }
+
+        return output;
+      } else {
+        return input;
+      }
+    };
+
+    return recursivelyRewrite(parsed);
+  }
+
+  /**
+   * Render XML that's in the form returned by `parseXml`.
+   */
+  async renderXml(xml: any) {
+    let topLevelObject: { [k: string]: any } | undefined = undefined;
+
+    const recursivelyRewrite = (
+      input: any,
+      element = '',
+      currentUri = 'DAV:',
+      namespacePrefixes: { [k: string]: string } = {},
+      addNamespace?: string
+    ): any => {
+      if (Array.isArray(input)) {
+        return input.map((value) =>
+          recursivelyRewrite(
+            value,
+            element,
+            currentUri,
+            namespacePrefixes,
+            addNamespace
+          )
+        );
+      } else if (typeof input === 'object') {
+        const output: { [k: string]: any } =
+          element === ''
+            ? {}
+            : {
+                $: {
+                  ...(addNamespace == null ? {} : { xmlns: addNamespace }),
+                },
+              };
+
+        const curNamespacePrefixes = { ...namespacePrefixes };
+
+        if ('$' in input) {
+          for (let attr in input.$) {
+            // Translate uri::name attributes to prefix:name.
+            if (
+              attr.includes('::') ||
+              (currentUri !== 'DAV:' && !attr.includes(':') && attr !== 'xmlns')
+            ) {
+              const [uri, name] = attr.includes('::')
+                ? splitn(attr, '::', 2)
+                : ['DAV:', attr];
+
+              if (currentUri === uri) {
+                output.$[name] = input.$[attr];
+              } else {
+                const xmlns = Object.entries(input.$).find(
+                  ([name, value]) => name.startsWith('xmlns:') && value === uri
+                );
+                if (xmlns) {
+                  const [_dec, prefix] = splitn(xmlns[0], ':', 2);
+                  output.$[`${prefix}:${name}`] = input.$[attr];
+                } else {
+                  const prefixEntry = Object.entries(curNamespacePrefixes).find(
+                    ([_prefix, value]) => value === uri
+                  );
+
+                  output.$[
+                    `${prefixEntry ? prefixEntry[0] + ':' : ''}${name}`
+                  ] = input.$[attr];
+                }
+              }
+            } else {
+              if (attr.startsWith('xmlns:')) {
+                // Remove excess namespace declarations.
+                if (curNamespacePrefixes[attr.substring(6)] === input.$[attr]) {
+                  continue;
+                }
+
+                curNamespacePrefixes[attr.substring(6)] = input.$[attr];
+              }
+
+              output.$[attr] = input.$[attr];
+            }
+          }
+        }
+
+        for (let name in input) {
+          if (name === '$') {
+            continue;
+          }
+
+          let el = name;
+          let prefix = '';
+          let namespaceToAdd: string | undefined = undefined;
+          let uri = 'DAV:';
+          let local = el;
+          if (name.includes('::')) {
+            [uri, local] = splitn(name, '::', 2);
+            const child = Array.isArray(input[name])
+              ? input[name][0]
+              : input[name];
+
+            if ('$' in child) {
+              if ('xmlns' in child.$ && child.$.xmlns === uri) {
+                el = local;
+              } else {
+                for (let attr in child.$) {
+                  if (attr.startsWith('xmlns:') && child.$[attr] === uri) {
+                    prefix = attr.substring(6);
+                    break;
+                  }
+                }
+
+                if (prefix) {
+                  el = `${prefix}:${local}`;
+                } else {
+                  namespaceToAdd = uri;
+                  el = local;
+                }
+              }
+            } else {
+              namespaceToAdd = uri;
+              el = local;
+            }
+          }
+
+          let setTopLevel = false;
+          if (topLevelObject == null) {
+            setTopLevel = true;
+          }
+
+          output[el] = recursivelyRewrite(
+            input[name],
+            el,
+            uri,
+            curNamespacePrefixes,
+            namespaceToAdd
+          );
+
+          if (setTopLevel) {
+            topLevelObject = output[el];
+          }
+        }
+
+        return output;
+      } else {
+        return input;
+      }
+    };
+
+    const obj = recursivelyRewrite(xml);
+    if (topLevelObject != null) {
+      // Explicitly set the top level namespace to 'DAV:'.
+      (topLevelObject as { [k: string]: any }).$.xmlns = 'DAV:';
+    }
+    return this.xmlBuilder.buildObject(obj);
   }
 }

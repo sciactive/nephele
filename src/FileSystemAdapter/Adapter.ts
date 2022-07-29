@@ -1,7 +1,6 @@
 import path from 'node:path';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
-import { fileURLToPath } from 'node:url';
 
 import type { Request } from 'express';
 import basicAuth from 'basic-auth';
@@ -16,8 +15,6 @@ import User from './User.js';
 import Resource from './Resource.js';
 
 export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Unix filesystem permission bits.
 const userRead = 0o400;
@@ -79,16 +76,16 @@ export default class Adapter implements AdapterInterface {
     host = 'localhost',
     port = 8080,
     path = '/',
-    root = __dirname,
+    root = process.cwd(),
     pam = true,
   }: {
-    scheme: string;
-    host: string;
-    port: number;
-    path: string;
-    root: string;
-    pam: boolean;
-  }) {
+    scheme?: string;
+    host?: string;
+    port?: number;
+    path?: string;
+    root?: string;
+    pam?: boolean;
+  } = {}) {
     this.scheme = scheme;
     this.host = host;
     this.port = port;

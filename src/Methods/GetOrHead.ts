@@ -3,7 +3,10 @@ import { pipeline, Readable } from 'node:stream';
 import type { Request } from 'express';
 
 import type { AuthResponse } from '../Interfaces/index.js';
-import { PreconditionFailedError } from '../Errors/index.js';
+import {
+  PreconditionFailedError,
+  PropertyNotFoundError,
+} from '../Errors/index.js';
 import { isMediaTypeCompressed } from '../compressedMediaTypes.js';
 
 import { Method } from './Method.js';
@@ -26,11 +29,14 @@ export class GetOrHead extends Method {
     const etagPromise = resource.getEtag();
     const lastModifiedPromise = properties.get('getlastmodified');
     const contentLanguagePromise = properties.get('getcontentlanguage');
-    const [etag, lastModifiedString, contentLanguage] = [
-      await etagPromise,
-      await lastModifiedPromise,
-      await contentLanguagePromise,
-    ];
+    const etag = await etagPromise;
+    const lastModifiedString = await lastModifiedPromise;
+    const contentLanguage = await contentLanguagePromise.catch((e) => {
+      if (e instanceof PropertyNotFoundError) {
+        return undefined;
+      }
+      return Promise.reject(e);
+    });
     if (typeof lastModifiedString !== 'string') {
       throw new Error('Last modified date property is not a string.');
     }
