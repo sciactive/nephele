@@ -91,7 +91,7 @@ export default class Properties implements PropertiesInterface {
         'lockdiscovery',
         'resourcetype',
         'supportedlock',
-      ].indexOf(name) > -1
+      ].includes(name)
     ) {
       throw new PropertyIsProtectedError(`${name} is a protected property.`);
     }

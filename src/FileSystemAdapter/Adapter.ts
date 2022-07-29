@@ -11,21 +11,22 @@ import type {
   Method,
 } from '../index.js';
 import { MethodNotSupportedError, ResourceNotFoundError } from '../index.js';
+
+import {
+  userReadBit,
+  userWriteBit,
+  userExecuteBit,
+  groupReadBit,
+  groupWriteBit,
+  groupExecuteBit,
+  otherReadBit,
+  otherWriteBit,
+  otherExecuteBit,
+} from './FileSystemBits.js';
 import User from './User.js';
 import Resource from './Resource.js';
 
 export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
-
-// Unix filesystem permission bits.
-const userRead = 0o400;
-const userWrite = 0o200;
-const userExecute = 0o100;
-const groupRead = 0o40;
-const groupWrite = 0o20;
-const groupExecute = 0o10;
-const otherRead = 0o4;
-const otherWrite = 0o2;
-const otherExecute = 0o1;
 
 /**
  * This is an example filesystem adapter.
@@ -163,26 +164,26 @@ export default class Adapter implements AdapterInterface {
     // What type of file access do we need?
     let access = 'u';
 
-    if (['GET', 'HEAD', 'COPY', 'OPTIONS', 'PROPFIND'].indexOf(method) > -1) {
+    if (['GET', 'HEAD', 'COPY', 'OPTIONS', 'PROPFIND'].includes(method)) {
       // Read operations.
       access = 'r';
     }
 
     if (
-      ['POST', 'PUT', 'PATCH', 'DELETE', 'MOVE', 'MKCOL', 'PROPPATCH'].indexOf(
+      ['POST', 'PUT', 'PATCH', 'DELETE', 'MOVE', 'MKCOL', 'PROPPATCH'].includes(
         method
-      ) > -1
+      )
     ) {
       // Write operations.
       access = 'w';
     }
 
-    if (['SEARCH'].indexOf(method) > -1) {
+    if (['SEARCH'].includes(method)) {
       // Execute operations. (Directory listing.)
       access = 'x';
     }
 
-    if (['LOCK', 'UNLOCK'].indexOf(method) > -1) {
+    if (['LOCK', 'UNLOCK'].includes(method)) {
       // TODO: What should this be?
       access = 'r';
     }
@@ -221,9 +222,9 @@ export default class Adapter implements AdapterInterface {
           if (access === 'x' || i < parts.length) {
             if (
               !(
-                stats.mode & otherExecute ||
-                (stats.uid === uid && stats.mode & userExecute) ||
-                (gids.indexOf(stats.gid) > -1 && stats.mode & groupExecute)
+                stats.mode & otherExecuteBit ||
+                (stats.uid === uid && stats.mode & userExecuteBit) ||
+                (gids.includes(stats.gid) && stats.mode & groupExecuteBit)
               )
             ) {
               return false;
@@ -233,9 +234,9 @@ export default class Adapter implements AdapterInterface {
           if (i === parts.length && access === 'r' && exists) {
             if (
               !(
-                stats.mode & otherRead ||
-                (stats.uid === uid && stats.mode & userRead) ||
-                (gids.indexOf(stats.gid) > -1 && stats.mode & groupRead)
+                stats.mode & otherReadBit ||
+                (stats.uid === uid && stats.mode & userReadBit) ||
+                (gids.includes(stats.gid) && stats.mode & groupReadBit)
               )
             ) {
               return false;
@@ -248,9 +249,9 @@ export default class Adapter implements AdapterInterface {
           ) {
             if (
               !(
-                stats.mode & otherWrite ||
-                (stats.uid === uid && stats.mode & userWrite) ||
-                (gids.indexOf(stats.gid) > -1 && stats.mode & groupWrite)
+                stats.mode & otherWriteBit ||
+                (stats.uid === uid && stats.mode & userWriteBit) ||
+                (gids.includes(stats.gid) && stats.mode & groupWriteBit)
               )
             ) {
               return false;

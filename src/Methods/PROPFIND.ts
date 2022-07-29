@@ -199,11 +199,20 @@ export class PROPFIND extends Method {
         return;
       }
 
+      let children: Resource[] = [];
+      try {
+        children = await resource.getInternalMembers(response.locals.user);
+      } catch (e: any) {
+        if (!(e instanceof UnauthorizedError)) {
+          throw e;
+        }
+        // Silently exclude members not visible to the user.
+      }
       level++;
-      const children = await resource.getInternalMembers();
       for (let child of children) {
         await addResourceProps(child);
       }
+      level--;
     };
     await addResourceProps(resource);
 

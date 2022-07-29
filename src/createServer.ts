@@ -28,6 +28,7 @@ import {
   UnprocessableEntityError,
 } from './Errors/index.js';
 import {
+  DELETE,
   GET,
   HEAD,
   MKCOL,
@@ -330,7 +331,7 @@ export default function createServer(
   const patch = new Method(adapter, opts);
   app.patch('*', catchAndReportErrors(patch.run.bind(patch)));
 
-  const del = new Method(adapter, opts);
+  const del = new DELETE(adapter, opts);
   app.delete('*', catchAndReportErrors(del.run.bind(del)));
 
   const copy = new Method(adapter, opts);

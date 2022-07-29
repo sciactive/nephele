@@ -7,12 +7,23 @@ import mmm, { Magic } from 'mmmagic';
 
 import type { Resource as ResourceInterface } from '../index.js';
 import {
+  ForbiddenError,
   MethodNotSupportedError,
   ResourceExistsError,
+  ResourceNotFoundError,
   ResourceTreeNotCompleteError,
+  UnauthorizedError,
 } from '../index.js';
 
 import type Adapter from './Adapter.js';
+import {
+  userExecuteBit,
+  userWriteBit,
+  groupExecuteBit,
+  groupWriteBit,
+  otherExecuteBit,
+  otherWriteBit,
+} from './FileSystemBits.js';
 import Properties from './Properties.js';
 import type User from './User.js';
 
@@ -48,7 +59,7 @@ export default class Resource implements ResourceInterface {
     return [];
   }
 
-  async getLocksByUser(user: User) {
+  async getLocksByUser(_user: User) {
     return [];
   }
 
@@ -144,6 +155,66 @@ export default class Resource implements ResourceInterface {
     }
   }
 
+  async delete(user: User) {
+    if (!(await this.exists())) {
+      throw new ResourceNotFoundError("This resource doesn't exist.");
+    }
+
+    try {
+      await fsp.access(this.absolutePath, constants.W_OK);
+    } catch (e: any) {
+      throw new ForbiddenError('This resource cannot be deleted.');
+    }
+
+    const propsFilePath = await this.getPropFilePath();
+    let propsFileExists = false;
+    try {
+      await fsp.access(propsFilePath, constants.F_OK);
+      propsFileExists = true;
+    } catch (e: any) {
+      propsFileExists = false;
+    }
+
+    if (propsFileExists) {
+      try {
+        await fsp.access(propsFilePath, constants.W_OK);
+      } catch (e: any) {
+        throw new ForbiddenError('This resource cannot be deleted.');
+      }
+    }
+
+    // We need the user and group IDs.
+    const uid = await (user as User).getUid();
+    const gids = await (user as User).getGids();
+
+    if (this.adapter.pam) {
+      // Check if the user can delete it.
+      const stats = await fsp.stat(this.absolutePath);
+
+      if (
+        !(
+          stats.mode & otherWriteBit ||
+          (stats.uid === uid && stats.mode & userWriteBit) ||
+          (gids.includes(stats.gid) && stats.mode & groupWriteBit)
+        )
+      ) {
+        throw new UnauthorizedError(
+          'You do not have permission to delete this resource.'
+        );
+      }
+    }
+
+    if (propsFileExists) {
+      await fsp.unlink(propsFilePath);
+    }
+
+    if (await this.isCollection()) {
+      await fsp.rmdir(this.absolutePath);
+    } else {
+      await fsp.unlink(this.absolutePath);
+    }
+  }
+
   async getLength() {
     if (await this.isCollection()) {
       return 0;
@@ -227,9 +298,30 @@ export default class Resource implements ResourceInterface {
     }
   }
 
-  async getInternalMembers() {
+  async getInternalMembers(user: User) {
     if (!(await this.isCollection())) {
       throw new MethodNotSupportedError('This is not a collection.');
+    }
+
+    // We need the user and group IDs.
+    const uid = await user.getUid();
+    const gids = await user.getGids();
+
+    if (this.adapter.pam) {
+      // Check if the user can list its contents.
+      const stats = await fsp.stat(this.absolutePath);
+
+      if (
+        !(
+          stats.mode & otherExecuteBit ||
+          (stats.uid === uid && stats.mode & userExecuteBit) ||
+          (gids.includes(stats.gid) && stats.mode & groupExecuteBit)
+        )
+      ) {
+        throw new UnauthorizedError(
+          "You do not have permission to list this collection's members."
+        );
+      }
     }
 
     const listing = await fsp.readdir(this.absolutePath);

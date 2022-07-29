@@ -49,6 +49,21 @@ export interface Resource {
    */
   create(user: User): Promise<void>;
 
+  /**
+   * Delete the resource.
+   *
+   * If the resource is a collection, it should only be deleted if it's empty.
+   *
+   * If the resource doesn't exist, a ResourceNotFoundError should be thrown.
+   *
+   * If the user doesn't have permission to delete the resource, an
+   * UnauthorizedError should be thrown.
+   *
+   * If no one has permission to delete the resource, a ForbiddenError should be
+   * thrown.
+   */
+  delete(user: User): Promise<void>;
+
   getLength(): Promise<number>;
 
   getEtag(): Promise<string>;
@@ -79,6 +94,9 @@ export interface Resource {
    * Internal members are the direct descendents (children) of a collection. If
    * this is called on a resource that is not a collection, it should throw a
    * MethodNotSupportedError.
+   *
+   * If the user doesn't have permission to see the internal members, an
+   * UnauthorizedError should be thrown.
    */
-  getInternalMembers(): Promise<Resource[]>;
+  getInternalMembers(user: User): Promise<Resource[]>;
 }
