@@ -9,24 +9,8 @@ import { nanoid } from 'nanoid';
 import type { Adapter, AuthResponse } from './Interfaces/index.js';
 import type { Options } from './Options.js';
 import { defaults } from './Options.js';
-import {
-  BadRequestError,
-  EncodingNotSupportedError,
-  FailedDependencyError,
-  ForbiddenError,
-  InsufficientStorageError,
-  LockedError,
-  MediaTypeNotSupportedError,
-  MethodNotSupportedError,
-  NotAcceptableError,
-  PreconditionFailedError,
-  RequestURITooLongError,
-  ResourceExistsError,
-  ResourceNotFoundError,
-  ResourceTreeNotCompleteError,
-  UnauthorizedError,
-  UnprocessableEntityError,
-} from './Errors/index.js';
+import { catchErrors } from './catchErrors.js';
+import { ForbiddenError, UnauthorizedError } from './Errors/index.js';
 import {
   DELETE,
   GET,
@@ -194,170 +178,51 @@ export default function createServer(
   // Check the request path for '.' or '..' segments.
   app.use(checkRequestPath);
 
-  const catchAndReportErrors = (
-    fn: (request: Request, response: AuthResponse) => Promise<void>
-  ) => {
-    return async (request: Request, response: AuthResponse) => {
-      try {
-        await fn(request, response);
-      } catch (e: any) {
-        response.locals.error = e;
-
-        if (e instanceof BadRequestError) {
-          response.status(400); // Bad Request
-          opts.errorHandler(400, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof UnauthorizedError) {
-          response.status(401); // Unauthorized
-          opts.errorHandler(401, e.message, request, response);
-          return;
-        }
-
-        if (e instanceof ForbiddenError) {
-          response.status(403); // Forbidden
-          opts.errorHandler(403, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof ResourceNotFoundError) {
-          response.status(404); // Not Found
-          opts.errorHandler(404, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof MethodNotSupportedError) {
-          response.status(405); // Method Not Allowed
-          opts.errorHandler(405, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof EncodingNotSupportedError) {
-          response.status(406); // Not Acceptable
-          opts.errorHandler(406, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof NotAcceptableError) {
-          response.status(406); // Not Acceptable
-          opts.errorHandler(406, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof PreconditionFailedError) {
-          response.status(412); // Precondition Failed
-          opts.errorHandler(412, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof RequestURITooLongError) {
-          response.status(414); // Request-URI Too Long
-          opts.errorHandler(414, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof MediaTypeNotSupportedError) {
-          response.status(415); // Unsupported Media Type
-          opts.errorHandler(415, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof ResourceExistsError) {
-          response.status(405); // Method Not Allowed
-          opts.errorHandler(405, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof ResourceTreeNotCompleteError) {
-          response.status(409); // Conflict
-          opts.errorHandler(409, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof UnprocessableEntityError) {
-          response.status(422); // Unprocessable Entity
-          opts.errorHandler(422, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof LockedError) {
-          response.status(423); // Locked
-          opts.errorHandler(423, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof FailedDependencyError) {
-          response.status(424); // Failed Dependency
-          opts.errorHandler(424, e.message, request, response, e);
-          return;
-        }
-
-        if (e instanceof InsufficientStorageError) {
-          response.status(507); // Insufficient Storage
-          opts.errorHandler(507, e.message, request, response, e);
-          return;
-        }
-
-        response.locals.debug('Unknown Error: ', e);
-        response.status(500); // Internal Server Error
-        opts.errorHandler(
-          500,
-          e.message || 'Internal server error.',
-          request,
-          response,
-          e
-        );
-        return;
-      }
-    };
-  };
-
   const opt = new OPTIONS(adapter, opts);
-  app.options('*', catchAndReportErrors(opt.run.bind(opt)));
+  app.options('*', catchErrors(opt.run.bind(opt), opts.errorHandler));
 
   const get = new GET(adapter, opts);
-  app.get('*', catchAndReportErrors(get.run.bind(get)));
+  app.get('*', catchErrors(get.run.bind(get), opts.errorHandler));
 
   const head = new HEAD(adapter, opts);
-  app.head('*', catchAndReportErrors(head.run.bind(head)));
+  app.head('*', catchErrors(head.run.bind(head), opts.errorHandler));
 
   const post = new POST(adapter, opts);
-  app.post('*', catchAndReportErrors(post.run.bind(post)));
+  app.post('*', catchErrors(post.run.bind(post), opts.errorHandler));
 
   const put = new PUT(adapter, opts);
-  app.put('*', catchAndReportErrors(put.run.bind(put)));
+  app.put('*', catchErrors(put.run.bind(put), opts.errorHandler));
 
   const patch = new Method(adapter, opts);
-  app.patch('*', catchAndReportErrors(patch.run.bind(patch)));
+  app.patch('*', catchErrors(patch.run.bind(patch), opts.errorHandler));
 
   const del = new DELETE(adapter, opts);
-  app.delete('*', catchAndReportErrors(del.run.bind(del)));
+  app.delete('*', catchErrors(del.run.bind(del), opts.errorHandler));
 
   const copy = new Method(adapter, opts);
-  app.copy('*', catchAndReportErrors(copy.run.bind(copy)));
+  app.copy('*', catchErrors(copy.run.bind(copy), opts.errorHandler));
 
   const move = new Method(adapter, opts);
-  app.move('*', catchAndReportErrors(move.run.bind(move)));
+  app.move('*', catchErrors(move.run.bind(move), opts.errorHandler));
 
   const mkcol = new MKCOL(adapter, opts);
-  app.mkcol('*', catchAndReportErrors(mkcol.run.bind(mkcol)));
+  app.mkcol('*', catchErrors(mkcol.run.bind(mkcol), opts.errorHandler));
 
   const lock = new Method(adapter, opts);
-  app.lock('*', catchAndReportErrors(lock.run.bind(lock)));
+  app.lock('*', catchErrors(lock.run.bind(lock), opts.errorHandler));
 
   const unlock = new Method(adapter, opts);
-  app.unlock('*', catchAndReportErrors(unlock.run.bind(unlock)));
+  app.unlock('*', catchErrors(unlock.run.bind(unlock), opts.errorHandler));
 
   const search = new Method(adapter, opts);
-  app.search('*', catchAndReportErrors(search.run.bind(search)));
+  app.search('*', catchErrors(search.run.bind(search), opts.errorHandler));
 
   const propfind = new PROPFIND(adapter, opts);
   const proppatch = new Method(adapter, opts);
 
   app.all(
     '*',
-    catchAndReportErrors(async (request, response: AuthResponse) => {
+    catchErrors(async (request, response: AuthResponse) => {
       switch (request.method) {
         case 'PROPFIND':
           await propfind.run(request, response);
@@ -371,7 +236,7 @@ export default function createServer(
           await method.run(request, response);
           break;
       }
-    })
+    }, opts.errorHandler)
   );
 
   debug('Nephele server set up. Ready to start listening.');

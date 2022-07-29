@@ -169,13 +169,14 @@ export class DELETE extends Method {
         response.status(204); // No Content
         response.end();
       } else {
+        // If there were errors, don't delete the top level resource, respond
+        // with the errors.
         const responseXml = await this.renderXml(multiStatus.render());
         response.status(207); // Multi-Status
         response.set({
           'Content-Type': contentType,
           'Content-Length': responseXml.length,
         });
-        console.log(responseXml);
         response.send(responseXml);
       }
     } else {
