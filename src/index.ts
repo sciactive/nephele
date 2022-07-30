@@ -15,6 +15,7 @@ import { defaults } from './Options.js';
 
 export * from './Methods/index.js';
 
+export * from './catchErrors.js';
 export * from './HTTPStatusMessages.js';
 export * from './MultiStatus.js';
 

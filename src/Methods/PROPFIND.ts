@@ -24,8 +24,8 @@ export class PROPFIND extends Method {
       throw new NotAcceptableError('Requested content type is not supported.');
     }
 
-    let depth = request.get('Depth') || 'infinity';
-    const resource = await this.adapter.getResource(url, request, response);
+    const depth = request.get('Depth') || 'infinity';
+    const resource = await this.adapter.getResource(url, request.baseUrl);
 
     if (!['0', '1', 'infinity'].includes(depth)) {
       throw new BadRequestError(
@@ -76,13 +76,20 @@ export class PROPFIND extends Method {
 
     let level = 0;
     const addResourceProps = async (resource: Resource) => {
-      const url = await resource.getCanonicalUrl();
+      const url = await resource.getCanonicalUrl(
+        this.getRequestBaseUrl(request)
+      );
       response.locals.debug(
         `Retrieving props for ${await resource.getCanonicalPath()}`
       );
 
       if (
-        !(await this.adapter.isAuthorized(url, 'PROPFIND', request, response))
+        !(await this.adapter.isAuthorized(
+          url,
+          'PROPFIND',
+          request.baseUrl,
+          response.locals.user
+        ))
       ) {
         const error = new Status(url.toString(), 401);
         error.description =

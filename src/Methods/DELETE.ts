@@ -2,14 +2,12 @@ import type { Request } from 'express';
 
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
 import {
-  ForbiddenError,
-  LockedError,
   MediaTypeNotSupportedError,
   NotAcceptableError,
   PreconditionFailedError,
-  ResourceNotFoundError,
   UnauthorizedError,
 } from '../Errors/index.js';
+import { catchErrors } from '../catchErrors';
 import { MultiStatus, Status } from '../MultiStatus.js';
 
 import { Method } from './Method.js';
@@ -25,7 +23,12 @@ export class DELETE extends Method {
       throw new NotAcceptableError('Requested content type is not supported.');
     }
 
-    let resource = await this.adapter.getResource(url, request, response);
+    const ifMatch = request.get('If-Match');
+    const ifMatchEtags = (ifMatch || '')
+      .split(',')
+      .map((value) => value.trim().replace(/^["']/, '').replace(/["']$/, ''));
+    const ifUnmodifiedSince = request.get('If-Unmodified-Since');
+    const resource = await this.adapter.getResource(url, request.baseUrl);
 
     // According to the spec, any header included with DELETE *MUST* be applied
     // in processing every resource to be deleted.
@@ -43,20 +46,11 @@ export class DELETE extends Method {
       const lastModified = new Date(lastModifiedString);
 
       // Check if header for etag.
-      const ifMatch = request.get('If-Match');
-      if (ifMatch != null) {
-        const ifMatchEtags = ifMatch
-          .split(',')
-          .map((value) =>
-            value.trim().replace(/^["']/, '').replace(/["']$/, '')
-          );
-        if (ifMatchEtags.indexOf(etag) === -1) {
-          throw new PreconditionFailedError('If-Match header check failed.');
-        }
+      if (ifMatch != null && !ifMatchEtags.includes(etag)) {
+        throw new PreconditionFailedError('If-Match header check failed.');
       }
 
       // Check if header for modified date.
-      const ifUnmodifiedSince = request.get('If-Unmodified-Since');
       if (
         ifUnmodifiedSince != null &&
         new Date(ifUnmodifiedSince) < lastModified
@@ -100,61 +94,52 @@ export class DELETE extends Method {
 
           let allDeleted = true;
           for (let child of children) {
-            try {
-              let deleteThisOne = true;
-              if (await child.isCollection()) {
-                deleteThisOne = await recursivelyDelete(child);
-                allDeleted = allDeleted && deleteThisOne;
-              }
+            const run = catchErrors(
+              async () => {
+                let deleteThisOne = true;
+                if (await child.isCollection()) {
+                  deleteThisOne = await recursivelyDelete(child);
+                  allDeleted = allDeleted && deleteThisOne;
+                }
 
-              if (deleteThisOne) {
-                await checkConditionalHeaders(child);
-                await child.delete(response.locals.user);
-              }
-            } catch (e: any) {
-              const url = (await child.getCanonicalUrl()).toString();
-              if (e instanceof UnauthorizedError) {
-                const error = new Status(url, 401);
-                error.description =
-                  'The user is not authorized to delete this resource.';
-                multiStatus.addStatus(error);
-              } else if (e instanceof ForbiddenError) {
-                const error = new Status(url, 403);
-                error.description = 'This resource cannot be deleted.';
-                multiStatus.addStatus(error);
-              } else if (e instanceof LockedError) {
-                const error = new Status(url, 423);
-                error.description = 'This resource is locked.';
-                multiStatus.addStatus(error);
-              } else if (e instanceof ResourceNotFoundError) {
-                const error = new Status(url, 404);
-                error.description = 'The resource could not be found.';
-                multiStatus.addStatus(error);
-              } else {
-                const error = new Status(url, 500);
-                error.description =
-                  'An error occurred while attempting to delete this resource.';
-                multiStatus.addStatus(error);
-              }
+                if (deleteThisOne) {
+                  await checkConditionalHeaders(child);
+                  await child.delete(response.locals.user);
+                }
+              },
+              async (code, message) => {
+                const url = (
+                  await child.getCanonicalUrl(this.getRequestBaseUrl(request))
+                ).toString();
+                let error = new Status(url, code);
 
-              allDeleted = false;
-            }
+                if (message) {
+                  error.description = message;
+                }
+
+                multiStatus.addStatus(error);
+
+                allDeleted = false;
+              }
+            );
+
+            await run();
           }
 
           return allDeleted;
         } catch (e: any) {
-          const url = (await collection.getCanonicalUrl()).toString();
+          const url = (
+            await collection.getCanonicalUrl(this.getRequestBaseUrl(request))
+          ).toString();
+          let error = new Status(url, 500);
           if (e instanceof UnauthorizedError) {
-            const error = new Status(url, 401);
-            error.description =
-              "The user is not authorized to list this resource's members.";
-            multiStatus.addStatus(error);
-          } else {
-            const error = new Status(url, 500);
-            error.description =
-              'An error occurred while attempting to delete this resource.';
-            multiStatus.addStatus(error);
+            error = new Status(url, 401);
           }
+
+          if (e.message) {
+            error.description = e.message;
+          }
+          multiStatus.addStatus(error);
 
           return false;
         }

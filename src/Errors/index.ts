@@ -1,3 +1,4 @@
+export * from './BadGatewayError.js';
 export * from './BadRequestError.js';
 export * from './EncodingNotSupportedError.js';
 export * from './FailedDependencyError.js';

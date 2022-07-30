@@ -125,6 +125,15 @@ export default class Properties implements PropertiesInterface {
 
     if (changed) {
       await fsp.writeFile(filepath, JSON.stringify(props, null, 2));
+
+      if (this.resource.adapter.pam) {
+        const stat = await fsp.stat(this.resource.absolutePath);
+        try {
+          await fsp.chown(filepath, stat.uid, stat.gid);
+        } catch (e: any) {
+          // Ignore errors on setting ownership of props file.
+        }
+      }
     }
   }
 

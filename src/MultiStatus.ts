@@ -157,6 +157,10 @@ export class Status {
       response.status = [`HTTP/1.1 ${this.statusCode} ${this.statusMessage}`];
     }
 
+    if (this.statusCode === 423) {
+      response = { error: [{ 'lock-token-submitted': {} }], ...response };
+    }
+
     if (this.body) {
       response = { ...response, ...this.body };
     }

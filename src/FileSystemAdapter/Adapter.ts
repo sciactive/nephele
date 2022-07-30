@@ -10,7 +10,11 @@ import type {
   AuthResponse as NepheleAuthResponse,
   Method,
 } from '../index.js';
-import { MethodNotSupportedError, ResourceNotFoundError } from '../index.js';
+import {
+  BadGatewayError,
+  MethodNotSupportedError,
+  ResourceNotFoundError,
+} from '../index.js';
 
 import {
   userReadBit,
@@ -42,28 +46,10 @@ export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
  * required for PAM authentication.
  */
 export default class Adapter implements AdapterInterface {
-  scheme: string;
-  host: string;
-  port: number;
-  path: string;
   root: string;
   pam: boolean;
 
   /**
-   * The parts of the canonical URL of this service should be passed as config.
-   *
-   * Scheme should include only the name of the scheme, not the '://' part.
-   *
-   * Host should be a URL safe hostname.
-   *
-   * Port should be the port the service is running on, even if its the default
-   * port.
-   *
-   * Path should be the full path of this service on the server, including both
-   * a leading and trailing forward slash. It should **not** be URI encoded. If
-   * this service is the root service on this server, the path should be "/". It
-   * is needed to build canonical URLs.
-   *
    * Root should be the absolute path of the directory that acts as the root
    * directory for the service.
    *
@@ -73,34 +59,32 @@ export default class Adapter implements AdapterInterface {
    * @param config Adapter config.
    */
   constructor({
-    scheme = 'http',
-    host = 'localhost',
-    port = 8080,
-    path = '/',
     root = process.cwd(),
     pam = true,
   }: {
-    scheme?: string;
-    host?: string;
-    port?: number;
-    path?: string;
     root?: string;
     pam?: boolean;
   } = {}) {
-    this.scheme = scheme;
-    this.host = host;
-    this.port = port;
-    this.path = path;
     this.root = root;
     this.pam = pam;
+  }
 
-    if (!this.path.startsWith('/')) {
-      throw new Error('The path must begin with a forward slash.');
+  urlToRelativePath(url: URL, baseUrl: string) {
+    if (!url.pathname.startsWith(baseUrl)) {
+      return null;
     }
 
-    if (!this.path.endsWith('/')) {
-      throw new Error('The path must end with a forward slash.');
+    return path.join('/', url.pathname.substring(baseUrl.length));
+  }
+
+  urlToAbsolutePath(url: URL, baseUrl: string) {
+    const relativePath = this.urlToRelativePath(url, baseUrl);
+
+    if (relativePath == null) {
+      return null;
     }
+
+    return path.join(this.root, relativePath);
   }
 
   async getComplianceClasses(
@@ -155,12 +139,7 @@ export default class Adapter implements AdapterInterface {
     return;
   }
 
-  async isAuthorized(
-    _url: URL,
-    method: string,
-    request: Request,
-    response: AuthResponse
-  ) {
+  async isAuthorized(url: URL, method: string, baseUrl: string, user: User) {
     // What type of file access do we need?
     let access = 'u';
 
@@ -191,12 +170,15 @@ export default class Adapter implements AdapterInterface {
     }
 
     // We need the user and group IDs.
-    const uid = await (response.locals.user as User).getUid();
-    const gids = await (response.locals.user as User).getGids();
+    const uid = await user.getUid();
+    const gids = await user.getGids();
 
     // First make sure the server process and user has access to all
     // directories in the tree.
-    const pathname = path.join(this.root, request.path);
+    const pathname = this.urlToAbsolutePath(url, baseUrl);
+    if (pathname == null) {
+      return false;
+    }
     const parts = pathname.split(path.sep).filter((str) => str !== '');
     let exists = true;
 
@@ -269,9 +251,17 @@ export default class Adapter implements AdapterInterface {
     return true;
   }
 
-  async getResource(_url: URL, request: Request, _response: AuthResponse) {
+  async getResource(url: URL, baseUrl: string) {
+    const path = this.urlToRelativePath(url, baseUrl);
+
+    if (path == null) {
+      throw new BadGatewayError(
+        'The given path is not managed by this server.'
+      );
+    }
+
     const resource = new Resource({
-      path: request.path,
+      path,
       adapter: this,
     });
 
@@ -282,16 +272,32 @@ export default class Adapter implements AdapterInterface {
     return resource;
   }
 
-  async newResource(_url: URL, request: Request, _response: AuthResponse) {
+  async newResource(url: URL, baseUrl: string) {
+    const path = this.urlToRelativePath(url, baseUrl);
+
+    if (path == null) {
+      throw new BadGatewayError(
+        'The given path is not managed by this server.'
+      );
+    }
+
     return new Resource({
-      path: request.path,
+      path,
       adapter: this,
     });
   }
 
-  async newCollection(_url: URL, request: Request, _response: AuthResponse) {
+  async newCollection(url: URL, baseUrl: string) {
+    const path = this.urlToRelativePath(url, baseUrl);
+
+    if (path == null) {
+      throw new BadGatewayError(
+        'The given path is not managed by this server.'
+      );
+    }
+
     return new Resource({
-      path: request.path,
+      path,
       adapter: this,
       collection: true,
     });

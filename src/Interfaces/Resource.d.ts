@@ -34,6 +34,13 @@ export interface Resource {
   // setBody(input: Buffer | string): Promise<void>;
 
   getStream(): Promise<Readable>;
+
+  /**
+   * Put the input stream into the resource.
+   *
+   * If the resource is a collection, and it can't accept a stream (like a
+   * folder on a filesystem), a MethodNotSupportedError may be thrown.
+   */
   setStream(input: Readable, user: User): Promise<void>;
 
   /**
@@ -64,6 +71,32 @@ export interface Resource {
    */
   delete(user: User): Promise<void>;
 
+  /**
+   * Copy the resource to the destination.
+   *
+   * If the resource is a collection, do not copy its contents, only its
+   * properties.
+   *
+   * If the resource doesn't exist, a ResourceNotFoundError should be thrown.
+   *
+   * If the user doesn't have permission to copy the resource, an
+   * UnauthorizedError should be thrown.
+   *
+   * If no one has permission to copy the resource, a ForbiddenError should be
+   * thrown.
+   *
+   * If the destination is outside of this adapter's ability to modify, a
+   * BadGatewayError should be thrown.
+   *
+   * If the destination would be a member of a collection that doesn't exist
+   * (like a file in a folder that doesn't exist), a
+   * ResourceTreeNotCompleteError should be thrown.
+   *
+   * If the source and the destination ultimately resolve to the same resource,
+   * a ForbiddenError should be thrown.
+   */
+  copy(destination: URL, baseUrl: string, user: User): Promise<void>;
+
   getLength(): Promise<number>;
 
   getEtag(): Promise<string>;
@@ -76,6 +109,11 @@ export interface Resource {
   getMediaType(): Promise<string>;
 
   /**
+   * The canonical name of the resource. (The basename of its path.)
+   */
+  getCanonicalName(): Promise<string>;
+
+  /**
    * The canonical path relative to the root of the WebDAV server.
    */
   getCanonicalPath(): Promise<string>;
@@ -83,8 +121,10 @@ export interface Resource {
   /**
    * The canonical URL must be within the WebDAV server's namespace, and must
    * not have query parameters.
+   *
+   * The server's namespace in the current request is provided as `baseUrl`.
    */
-  getCanonicalUrl(): Promise<URL>;
+  getCanonicalUrl(baseUrl: URL): Promise<URL>;
 
   isCollection(): Promise<boolean>;
 

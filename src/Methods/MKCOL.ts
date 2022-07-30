@@ -15,7 +15,7 @@ export class MKCOL extends Method {
 
     await this.checkAuthorization(request, response, 'MKCOL');
 
-    let resource = await this.adapter.newCollection(url, request, response);
+    const resource = await this.adapter.newCollection(url, request.baseUrl);
 
     // Check if header for etag.
     const ifMatch = request.get('If-Match');
@@ -58,7 +58,9 @@ export class MKCOL extends Method {
 
     response.status(201); // Created
     response.set({
-      'Content-Location': (await resource.getCanonicalUrl()).pathname,
+      'Content-Location': (
+        await resource.getCanonicalUrl(this.getRequestBaseUrl(request))
+      ).pathname,
     });
     response.end();
   }

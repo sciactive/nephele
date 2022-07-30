@@ -52,6 +52,15 @@ export const defaults: Options = {
     response: AuthResponse,
     error?: Error
   ) => {
+    if (error) {
+      response.locals.error = error;
+    }
+
+    if (code === 500 && error) {
+      response.locals.debug('Unknown Error: ', error);
+    }
+
+    response.status(code);
     if (process.env.NODE_ENV !== 'production') {
       if (!response.headersSent) {
         response.setHeader('Content-Type', 'application/json');

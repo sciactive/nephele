@@ -7,6 +7,7 @@ import mmm, { Magic } from 'mmmagic';
 
 import type { Resource as ResourceInterface } from '../index.js';
 import {
+  BadGatewayError,
   ForbiddenError,
   MethodNotSupportedError,
   ResourceExistsError,
@@ -49,9 +50,7 @@ export default class Resource implements ResourceInterface {
     }
   }
 
-  private get absolutePath() {
-    // This is absolutely wrong for production, because '..' is illegal in a
-    // WebDAV path.
+  get absolutePath() {
     return path.join(this.adapter.root, this.path);
   }
 
@@ -89,7 +88,15 @@ export default class Resource implements ResourceInterface {
     try {
       await fsp.access(path.dirname(this.absolutePath), constants.F_OK);
     } catch (e: any) {
-      throw new ResourceTreeNotCompleteError();
+      throw new ResourceTreeNotCompleteError(
+        'One or more intermediate collections must be created before this resource.'
+      );
+    }
+
+    if (await this.isCollection()) {
+      throw new MethodNotSupportedError(
+        'This resource is an existing collection.'
+      );
     }
 
     try {
@@ -157,7 +164,7 @@ export default class Resource implements ResourceInterface {
 
   async delete(user: User) {
     if (!(await this.exists())) {
-      throw new ResourceNotFoundError("This resource doesn't exist.");
+      throw new ResourceNotFoundError("This resource couldn't be found.");
     }
 
     try {
@@ -215,6 +222,89 @@ export default class Resource implements ResourceInterface {
     }
   }
 
+  async copy(destination: URL, baseUrl: string, user: User) {
+    const destinationPath = this.adapter.urlToAbsolutePath(
+      destination,
+      baseUrl
+    );
+
+    if (destinationPath == null) {
+      throw new BadGatewayError(
+        'The destination URL is not under the namespace of this server.'
+      );
+    }
+
+    if (this.absolutePath === destinationPath) {
+      throw new ForbiddenError(
+        'The source and destination are the same resource.'
+      );
+    }
+
+    try {
+      await fsp.access(path.dirname(destinationPath), constants.F_OK);
+    } catch (e: any) {
+      throw new ResourceTreeNotCompleteError(
+        'One or more intermediate collections must be created before this resource.'
+      );
+    }
+
+    let propsFilePath: string | undefined = undefined;
+    if (await this.isCollection()) {
+      try {
+        const stat = await fsp.stat(destinationPath);
+        if (stat.isDirectory()) {
+          try {
+            await fsp.rm(path.join(destinationPath, '.nepheleprops'));
+          } catch (e: any) {
+            // Ignore errors deleting possible non-existent file.
+          }
+          await fsp.rmdir(destinationPath);
+        } else {
+          await fsp.unlink(destinationPath);
+        }
+      } catch (e: any) {
+        // Ignore errors stat-ing a possible non-existent directory.
+      }
+      await fsp.mkdir(destinationPath);
+      try {
+        propsFilePath = path.join(destinationPath, '.nepheleprops');
+        await fsp.copyFile(await this.getPropFilePath(), propsFilePath);
+      } catch (e: any) {
+        // Ignore errors while copying props files.
+        propsFilePath = undefined;
+      }
+    } else {
+      await fsp.copyFile(this.absolutePath, destinationPath);
+      try {
+        const dirname = path.dirname(destinationPath);
+        const basename = path.basename(destinationPath);
+        propsFilePath = path.join(dirname, `.${basename}.nepheleprops`);
+        await fsp.copyFile(await this.getPropFilePath(), propsFilePath);
+      } catch (e: any) {
+        // Ignore errors while copying props files.
+        propsFilePath = undefined;
+      }
+    }
+
+    if (this.adapter.pam) {
+      await fsp.chown(
+        destinationPath,
+        await user.getUid(),
+        await user.getGid()
+      );
+
+      if (propsFilePath != null) {
+        await fsp.chown(
+          propsFilePath,
+          await user.getUid(),
+          await user.getGid()
+        );
+      }
+    }
+
+    return;
+  }
+
   async getLength() {
     if (await this.isCollection()) {
       return 0;
@@ -254,6 +344,10 @@ export default class Resource implements ResourceInterface {
     return mediaType;
   }
 
+  async getCanonicalName() {
+    return path.basename(this.path);
+  }
+
   async getCanonicalPath() {
     if (await this.isCollection()) {
       return this.path.replace(/(?:$|\/$)/, () => '/');
@@ -261,26 +355,10 @@ export default class Resource implements ResourceInterface {
     return this.path;
   }
 
-  async getCanonicalUrl() {
-    const scheme = this.adapter.scheme;
-    const host = this.adapter.host;
-    const port = this.adapter.port;
-    const path = this.adapter.path;
+  async getCanonicalUrl(baseUrl: URL) {
+    let url = baseUrl.toString().replace(/(?:$|\/$)/, () => '/');
 
-    let url = `${scheme}://${host}`;
-
-    if (
-      !(
-        (scheme === 'http' && port === 80) ||
-        (scheme === 'https' && port === 443)
-      )
-    ) {
-      url += `:${port}`;
-    }
-
-    url += encodeURI(path);
-
-    url += encodeURI((await this.getCanonicalPath()).replace(/^\//, ''));
+    url += encodeURI((await this.getCanonicalPath()).replace(/^\//, () => ''));
 
     return new URL(url);
   }

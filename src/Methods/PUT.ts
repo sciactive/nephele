@@ -3,7 +3,6 @@ import type { Request } from 'express';
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
 import {
   BadRequestError,
-  MethodNotSupportedError,
   PreconditionFailedError,
   ResourceNotFoundError,
 } from '../Errors/index.js';
@@ -19,16 +18,10 @@ export class PUT extends Method {
     let resource: Resource;
     let newResource = false;
     try {
-      resource = await this.adapter.getResource(url, request, response);
-
-      if (await resource.isCollection()) {
-        throw new MethodNotSupportedError(
-          'This resource is an existing collection.'
-        );
-      }
+      resource = await this.adapter.getResource(url, request.baseUrl);
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
-        resource = await this.adapter.newResource(url, request, response);
+        resource = await this.adapter.newResource(url, request.baseUrl);
         newResource = true;
       } else {
         throw e;
@@ -58,15 +51,11 @@ export class PUT extends Method {
 
       // Check if header for etag.
       const ifMatch = request.get('If-Match');
-      if (ifMatch != null) {
-        const ifMatchEtags = ifMatch
-          .split(',')
-          .map((value) =>
-            value.trim().replace(/^["']/, '').replace(/["']$/, '')
-          );
-        if (ifMatchEtags.indexOf(etag) === -1) {
-          throw new PreconditionFailedError('If-Match header check failed.');
-        }
+      const ifMatchEtags = (ifMatch || '')
+        .split(',')
+        .map((value) => value.trim().replace(/^["']/, '').replace(/["']$/, ''));
+      if (ifMatch != null && !ifMatchEtags.includes(etag)) {
+        throw new PreconditionFailedError('If-Match header check failed.');
       }
 
       // Check if header for modified date.
@@ -116,7 +105,9 @@ export class PUT extends Method {
 
     response.status(newResource ? 201 : 204); // Created or No Content
     response.set({
-      'Content-Location': (await resource.getCanonicalUrl()).pathname,
+      'Content-Location': (
+        await resource.getCanonicalUrl(this.getRequestBaseUrl(request))
+      ).pathname,
     });
     response.end();
 

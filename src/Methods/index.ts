@@ -1,3 +1,4 @@
+export * from './COPY.js';
 export * from './DELETE.js';
 export * from './GET.js';
 export * from './HEAD.js';

@@ -24,7 +24,7 @@ export class GetOrHead extends Method {
 
     await this.checkAuthorization(request, response, method);
 
-    const resource = await this.adapter.getResource(url, request, response);
+    const resource = await this.adapter.getResource(url, request.baseUrl);
     const properties = await resource.getProperties();
     const etagPromise = resource.getEtag();
     const lastModifiedPromise = properties.get('getlastmodified');
@@ -48,13 +48,11 @@ export class GetOrHead extends Method {
     // TODO: use If-Range here. If-Match and If-Unmodified-Since are for PUT.
     // Check if header for etag.
     const ifMatch = request.get('If-Match');
-    if (ifMatch != null) {
-      const ifMatchEtags = ifMatch
-        .split(',')
-        .map((value) => value.trim().replace(/^["']/, '').replace(/["']$/, ''));
-      if (ifMatchEtags.indexOf(etag) === -1) {
-        throw new PreconditionFailedError('If-Match header check failed.');
-      }
+    const ifMatchEtags = (ifMatch || '')
+      .split(',')
+      .map((value) => value.trim().replace(/^["']/, '').replace(/["']$/, ''));
+    if (ifMatch != null && !ifMatchEtags.includes(etag)) {
+      throw new PreconditionFailedError('If-Match header check failed.');
     }
 
     // Check if header for modified date.

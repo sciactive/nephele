@@ -12,6 +12,7 @@ import { defaults } from './Options.js';
 import { catchErrors } from './catchErrors.js';
 import { ForbiddenError, UnauthorizedError } from './Errors/index.js';
 import {
+  COPY,
   DELETE,
   GET,
   HEAD,
@@ -178,64 +179,47 @@ export default function createServer(
   // Check the request path for '.' or '..' segments.
   app.use(checkRequestPath);
 
-  const opt = new OPTIONS(adapter, opts);
-  app.options('*', catchErrors(opt.run.bind(opt), opts.errorHandler));
-
-  const get = new GET(adapter, opts);
-  app.get('*', catchErrors(get.run.bind(get), opts.errorHandler));
-
-  const head = new HEAD(adapter, opts);
-  app.head('*', catchErrors(head.run.bind(head), opts.errorHandler));
-
-  const post = new POST(adapter, opts);
-  app.post('*', catchErrors(post.run.bind(post), opts.errorHandler));
-
-  const put = new PUT(adapter, opts);
-  app.put('*', catchErrors(put.run.bind(put), opts.errorHandler));
-
-  const del = new DELETE(adapter, opts);
-  app.delete('*', catchErrors(del.run.bind(del), opts.errorHandler));
-
-  const copy = new Method(adapter, opts);
-  app.copy('*', catchErrors(copy.run.bind(copy), opts.errorHandler));
-
-  const move = new Method(adapter, opts);
-  app.move('*', catchErrors(move.run.bind(move), opts.errorHandler));
-
-  const mkcol = new MKCOL(adapter, opts);
-  app.mkcol('*', catchErrors(mkcol.run.bind(mkcol), opts.errorHandler));
-
-  const lock = new Method(adapter, opts);
-  app.lock('*', catchErrors(lock.run.bind(lock), opts.errorHandler));
-
-  const unlock = new Method(adapter, opts);
-  app.unlock('*', catchErrors(unlock.run.bind(unlock), opts.errorHandler));
-
-  // TODO: Available once rfc5323 is implemented.
-  // const search = new SEARCH(adapter, opts);
-  // app.search('*', catchErrors(search.run.bind(search), opts.errorHandler));
-
-  const propfind = new PROPFIND(adapter, opts);
-  const proppatch = new Method(adapter, opts);
-
-  app.all(
-    '*',
-    catchErrors(async (request, response: AuthResponse) => {
-      switch (request.method) {
-        case 'PROPFIND':
-          await propfind.run(request, response);
-          break;
-        case 'PROPPATCH':
-          await proppatch.run(request, response);
-          break;
-        default:
-          const MethodClass = adapter.getMethod(request.method);
-          const method = new MethodClass(adapter, opts);
-          await method.run(request, response);
-          break;
+  const runMethodCatchErrors = (method: Method) => {
+    return catchErrors(
+      method.run.bind(method),
+      async (code, message, error, [request, response]) => {
+        await opts.errorHandler(code, message, request, response, error);
       }
-    }, opts.errorHandler)
-  );
+    );
+  };
+
+  app.options('*', runMethodCatchErrors(new OPTIONS(adapter, opts)));
+  app.get('*', runMethodCatchErrors(new GET(adapter, opts)));
+  app.head('*', runMethodCatchErrors(new HEAD(adapter, opts)));
+  app.post('*', runMethodCatchErrors(new POST(adapter, opts)));
+  app.put('*', runMethodCatchErrors(new PUT(adapter, opts)));
+  app.delete('*', runMethodCatchErrors(new DELETE(adapter, opts)));
+  app.copy('*', runMethodCatchErrors(new COPY(adapter, opts)));
+  app.move('*', runMethodCatchErrors(new Method(adapter, opts)));
+  app.mkcol('*', runMethodCatchErrors(new MKCOL(adapter, opts)));
+  app.lock('*', runMethodCatchErrors(new Method(adapter, opts)));
+  app.unlock('*', runMethodCatchErrors(new Method(adapter, opts)));
+  // TODO: Available once rfc5323 is implemented.
+  // app.search('*', runMethodCatchErrors(new SEARCH(adapter, opts)));
+
+  const propfind = runMethodCatchErrors(new PROPFIND(adapter, opts));
+  const proppatch = runMethodCatchErrors(new Method(adapter, opts));
+
+  app.all('*', async (request, response: AuthResponse) => {
+    switch (request.method) {
+      case 'PROPFIND':
+        await propfind(request, response);
+        break;
+      case 'PROPPATCH':
+        await proppatch(request, response);
+        break;
+      default:
+        const MethodClass = adapter.getMethod(request.method);
+        const run = runMethodCatchErrors(new MethodClass(adapter, opts));
+        await run(request, response);
+        break;
+    }
+  });
 
   debug('Nephele server set up. Ready to start listening.');
 

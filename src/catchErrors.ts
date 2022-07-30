@@ -1,7 +1,5 @@
-import { Request } from 'express';
-
-import type { AuthResponse } from './Interfaces/index.js';
 import {
+  BadGatewayError,
   BadRequestError,
   EncodingNotSupportedError,
   FailedDependencyError,
@@ -20,128 +18,123 @@ import {
   UnprocessableEntityError,
 } from './Errors/index.js';
 
-export function catchErrors(
-  fn: (request: Request, response: AuthResponse) => Promise<void>,
+export function catchErrors<A extends any[], R = void>(
+  fn: (...args: A) => Promise<R>,
   errorHandler: (
     code: number,
     message: string,
-    request: Request,
-    response: AuthResponse,
-    error?: Error
+    error: Error,
+    args: A
   ) => Promise<void>
 ) {
-  return async (request: Request, response: AuthResponse) => {
+  return async (...args: A) => {
     try {
-      await fn(request, response);
+      return await fn(...args);
     } catch (e: any) {
-      response.locals.error = e;
-
       if (e instanceof BadRequestError) {
-        response.status(400); // Bad Request
-        errorHandler(400, e.message, request, response, e);
+        // Bad Request
+        await errorHandler(400, e.message, e, args);
         return;
       }
 
       if (e instanceof UnauthorizedError) {
-        response.status(401); // Unauthorized
-        errorHandler(401, e.message, request, response);
+        // Unauthorized
+        await errorHandler(401, e.message, e, args);
         return;
       }
 
       if (e instanceof ForbiddenError) {
-        response.status(403); // Forbidden
-        errorHandler(403, e.message, request, response, e);
+        // Forbidden
+        await errorHandler(403, e.message, e, args);
         return;
       }
 
       if (e instanceof ResourceNotFoundError) {
-        response.status(404); // Not Found
-        errorHandler(404, e.message, request, response, e);
+        // Not Found
+        await errorHandler(404, e.message, e, args);
         return;
       }
 
       if (e instanceof MethodNotSupportedError) {
-        response.status(405); // Method Not Allowed
-        errorHandler(405, e.message, request, response, e);
+        // Method Not Allowed
+        await errorHandler(405, e.message, e, args);
         return;
       }
 
       if (e instanceof EncodingNotSupportedError) {
-        response.status(406); // Not Acceptable
-        errorHandler(406, e.message, request, response, e);
+        // Not Acceptable
+        await errorHandler(406, e.message, e, args);
         return;
       }
 
       if (e instanceof NotAcceptableError) {
-        response.status(406); // Not Acceptable
-        errorHandler(406, e.message, request, response, e);
+        // Not Acceptable
+        await errorHandler(406, e.message, e, args);
         return;
       }
 
       if (e instanceof PreconditionFailedError) {
-        response.status(412); // Precondition Failed
-        errorHandler(412, e.message, request, response, e);
+        // Precondition Failed
+        await errorHandler(412, e.message, e, args);
         return;
       }
 
       if (e instanceof RequestURITooLongError) {
-        response.status(414); // Request-URI Too Long
-        errorHandler(414, e.message, request, response, e);
+        // Request-URI Too Long
+        await errorHandler(414, e.message, e, args);
         return;
       }
 
       if (e instanceof MediaTypeNotSupportedError) {
-        response.status(415); // Unsupported Media Type
-        errorHandler(415, e.message, request, response, e);
+        // Unsupported Media Type
+        await errorHandler(415, e.message, e, args);
         return;
       }
 
       if (e instanceof ResourceExistsError) {
-        response.status(405); // Method Not Allowed
-        errorHandler(405, e.message, request, response, e);
+        // Method Not Allowed
+        await errorHandler(405, e.message, e, args);
         return;
       }
 
       if (e instanceof ResourceTreeNotCompleteError) {
-        response.status(409); // Conflict
-        errorHandler(409, e.message, request, response, e);
+        // Conflict
+        await errorHandler(409, e.message, e, args);
         return;
       }
 
       if (e instanceof UnprocessableEntityError) {
-        response.status(422); // Unprocessable Entity
-        errorHandler(422, e.message, request, response, e);
+        // Unprocessable Entity
+        await errorHandler(422, e.message, e, args);
         return;
       }
 
       if (e instanceof LockedError) {
-        response.status(423); // Locked
-        errorHandler(423, e.message, request, response, e);
+        // Locked
+        await errorHandler(423, e.message, e, args);
         return;
       }
 
       if (e instanceof FailedDependencyError) {
-        response.status(424); // Failed Dependency
-        errorHandler(424, e.message, request, response, e);
+        // Failed Dependency
+        await errorHandler(424, e.message, e, args);
+        return;
+      }
+
+      if (e instanceof BadGatewayError) {
+        // Bad Gateway
+        await errorHandler(502, e.message, e, args);
         return;
       }
 
       if (e instanceof InsufficientStorageError) {
-        response.status(507); // Insufficient Storage
-        errorHandler(507, e.message, request, response, e);
+        // Insufficient Storage
+        await errorHandler(507, e.message, e, args);
         return;
       }
 
-      response.locals.debug('Unknown Error: ', e);
-      response.status(500); // Internal Server Error
-      errorHandler(
-        500,
-        e.message || 'Internal server error.',
-        request,
-        response,
-        e
-      );
-      return;
+      // Internal Server Error
+      await errorHandler(500, e.message || 'Internal server error.', e, args);
     }
   };
 }

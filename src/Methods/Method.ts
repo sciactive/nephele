@@ -72,12 +72,19 @@ export class Method {
         url ||
           new URL(request.url, `${request.protocol}://${request.headers.host}`),
         method || request.method,
-        request,
-        response
+        request.baseUrl,
+        response.locals.user
       ))
     ) {
       throw new UnauthorizedError('Unauthorized.');
     }
+  }
+
+  getRequestBaseUrl(request: Request) {
+    return new URL(
+      request.baseUrl,
+      `${request.protocol}://${request.headers.host}`
+    );
   }
 
   getRequestedEncoding(request: Request, response: AuthResponse) {
@@ -92,7 +99,7 @@ export class Method {
       ]);
     encodings.sort((a, b) => b[1] - a[1]);
     let encoding = '';
-    while ([...supported, 'x-gzip', '*'].indexOf(encoding) === -1) {
+    while (![...supported, 'x-gzip', '*'].includes(encoding)) {
       if (!encodings.length) {
         throw new EncodingNotSupportedError(
           'Requested content encoding is not supported.'
