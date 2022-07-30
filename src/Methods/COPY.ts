@@ -13,6 +13,7 @@ import { catchErrors } from '../catchErrors';
 import { MultiStatus, Status } from '../MultiStatus.js';
 
 import { Method } from './Method.js';
+import { DELETE } from './DELETE.js';
 
 export class COPY extends Method {
   async run(request: Request, response: AuthResponse) {
@@ -115,11 +116,16 @@ export class COPY extends Method {
 
     const multiStatus = new MultiStatus();
 
-    const recursivelyCopy = async (resource: Resource, destination: URL) => {
+    const recursivelyCopy = async (
+      resource: Resource,
+      destination: URL,
+      topLevel = true
+    ) => {
       const run = catchErrors(
         async () => {
           let destinationResource: Resource;
           let destinationExists = true;
+          let destinationLocked = false;
           try {
             destinationResource = await this.adapter.getResource(
               destination,
@@ -154,19 +160,54 @@ export class COPY extends Method {
             );
           }
 
-          if (destinationExists && (await destinationResource.isCollection())) {
-            // According to the spec, if the destination is an existing
-            // collection, its contents mustn't be merged, but instead, replaced
-            // by the source resource. In order to comply, we're just going to
-            // delete all the destination's contents.
-            // TODO: delete all contents.
+          if (destinationExists) {
+            if (topLevel && (await destinationResource.isCollection())) {
+              // According to the spec, if the destination is an existing
+              // collection, its contents mustn't be merged, but instead,
+              // replaced by the source resource. In order to comply, we're just
+              // going to delete all the destination's contents.
+              const del = new DELETE(this.adapter, this.opts);
+              const childrenDeleted = await del.recursivelyDelete(
+                destinationResource,
+                request,
+                response,
+                multiStatus,
+                async () => {}
+              );
+
+              if (childrenDeleted) {
+                await destinationResource.delete(response.locals.user);
+              }
+            } else {
+              // If we get here, it either means the resource is locked,
+              // undeletable, or contains something that's undeletable.
+
+              const lockPermission = await this.getLockPermission(
+                destinationResource,
+                response.locals.user,
+                // TODO: locks.
+                []
+              );
+
+              if (lockPermission === 0) {
+                // It, and any contents are locked, so we can't continue into
+                // this resource tree.
+                return;
+              } else if (lockPermission === 1) {
+                // It is locked, but its contents aren't, so we can continue,
+                // just not copying the collection itself.
+                destinationLocked = true;
+              }
+            }
           }
 
-          await resource.copy(
-            destination,
-            request.baseUrl,
-            response.locals.user
-          );
+          if (!destinationLocked) {
+            await resource.copy(
+              destination,
+              request.baseUrl,
+              response.locals.user
+            );
+          }
 
           if (depth === 'infinity' && collection) {
             try {
@@ -182,7 +223,7 @@ export class COPY extends Method {
                     encodeURIComponent(name)
                 );
 
-                await recursivelyCopy(child, destinationUrl);
+                await recursivelyCopy(child, destinationUrl, false);
               }
             } catch (e: any) {
               if (e instanceof UnauthorizedError) {

@@ -2,6 +2,7 @@ import type { Request } from 'express';
 
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
 import {
+  LockedError,
   MediaTypeNotSupportedError,
   NotAcceptableError,
   PreconditionFailedError,
@@ -84,68 +85,13 @@ export class DELETE extends Method {
     if (await resource.isCollection()) {
       const multiStatus = new MultiStatus();
 
-      const recursivelyDelete = async (
-        collection: Resource
-      ): Promise<boolean> => {
-        try {
-          const children = await collection.getInternalMembers(
-            response.locals.user
-          );
-
-          let allDeleted = true;
-          for (let child of children) {
-            const run = catchErrors(
-              async () => {
-                let deleteThisOne = true;
-                if (await child.isCollection()) {
-                  deleteThisOne = await recursivelyDelete(child);
-                  allDeleted = allDeleted && deleteThisOne;
-                }
-
-                if (deleteThisOne) {
-                  await checkConditionalHeaders(child);
-                  await child.delete(response.locals.user);
-                }
-              },
-              async (code, message) => {
-                const url = (
-                  await child.getCanonicalUrl(this.getRequestBaseUrl(request))
-                ).toString();
-                let error = new Status(url, code);
-
-                if (message) {
-                  error.description = message;
-                }
-
-                multiStatus.addStatus(error);
-
-                allDeleted = false;
-              }
-            );
-
-            await run();
-          }
-
-          return allDeleted;
-        } catch (e: any) {
-          const url = (
-            await collection.getCanonicalUrl(this.getRequestBaseUrl(request))
-          ).toString();
-          let error = new Status(url, 500);
-          if (e instanceof UnauthorizedError) {
-            error = new Status(url, 401);
-          }
-
-          if (e.message) {
-            error.description = e.message;
-          }
-          multiStatus.addStatus(error);
-
-          return false;
-        }
-      };
-
-      await recursivelyDelete(resource);
+      await this.recursivelyDelete(
+        resource,
+        request,
+        response,
+        multiStatus,
+        checkConditionalHeaders
+      );
 
       if (multiStatus.statuses.length === 0) {
         await checkConditionalHeaders(resource);
@@ -170,6 +116,94 @@ export class DELETE extends Method {
 
       response.status(204); // No Content
       response.end();
+    }
+  }
+
+  async recursivelyDelete(
+    collection: Resource,
+    request: Request,
+    response: AuthResponse,
+    multiStatus: MultiStatus,
+    checkConditionalHeaders: (resource: Resource) => Promise<void>
+  ): Promise<boolean> {
+    try {
+      const children = await collection.getInternalMembers(
+        response.locals.user
+      );
+
+      let allDeleted = true;
+      for (let child of children) {
+        const run = catchErrors(
+          async () => {
+            let deleteThisOne = true;
+            let locked = false;
+
+            const lockPermission = await this.getLockPermission(
+              child,
+              response.locals.user,
+              // TODO: locks.
+              []
+            );
+            if (lockPermission === 0) {
+              throw new LockedError('This resource is locked.');
+            } else if (lockPermission === 1) {
+              deleteThisOne = false;
+              locked = true;
+            }
+
+            if (await child.isCollection()) {
+              deleteThisOne = await this.recursivelyDelete(
+                child,
+                request,
+                response,
+                multiStatus,
+                checkConditionalHeaders
+              );
+              allDeleted = allDeleted && deleteThisOne;
+            }
+
+            if (deleteThisOne) {
+              await checkConditionalHeaders(child);
+              await child.delete(response.locals.user);
+            } else if (locked) {
+              throw new LockedError('This resource is locked.');
+            }
+          },
+          async (code, message) => {
+            const url = (
+              await child.getCanonicalUrl(this.getRequestBaseUrl(request))
+            ).toString();
+            let error = new Status(url, code);
+
+            if (message) {
+              error.description = message;
+            }
+
+            multiStatus.addStatus(error);
+
+            allDeleted = false;
+          }
+        );
+
+        await run();
+      }
+
+      return allDeleted;
+    } catch (e: any) {
+      const url = (
+        await collection.getCanonicalUrl(this.getRequestBaseUrl(request))
+      ).toString();
+      let error = new Status(url, 500);
+      if (e instanceof UnauthorizedError) {
+        error = new Status(url, 401);
+      }
+
+      if (e.message) {
+        error.description = e.message;
+      }
+      multiStatus.addStatus(error);
+
+      return false;
     }
   }
 }

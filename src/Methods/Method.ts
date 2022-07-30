@@ -5,7 +5,14 @@ import xml2js from 'xml2js';
 import contentType from 'content-type';
 import splitn from '@sciactive/splitn';
 
-import type { Adapter, AuthResponse, Options } from '../index.js';
+import type {
+  Adapter,
+  AuthResponse,
+  Lock,
+  Options,
+  Resource,
+  User,
+} from '../index.js';
 import {
   EncodingNotSupportedError,
   MediaTypeNotSupportedError,
@@ -78,6 +85,61 @@ export class Method {
     ) {
       throw new UnauthorizedError('Unauthorized.');
     }
+  }
+
+  /**
+   * Check if the user has permission to modify the resource, given a set of
+   * locks they have submitted.
+   *
+   * Returns 0 if the user has no permissions to modify this resource or any
+   * resource this one may contain. (Depth infinity locked.)
+   *
+   * Returns 1 if this resource is a collection and the user has no permission
+   * to modify the resource, but it can modify the members of this resource.
+   * (Depth 0 locked.)
+   *
+   * Returns 2 if the user has full permissions to modify this resource (either
+   * it is not locked or the user owns the lock and has provided it).
+   *
+   * @param resource The resource to check.
+   * @param user The user to check.
+   * @param lockGuids The lock guids provided by the user.
+   */
+  async getLockPermission(
+    resource: Resource,
+    user: User,
+    lockGuids: string[]
+  ): Promise<0 | 1 | 2> {
+    const resourceLocks = await resource.getLocks();
+
+    if (!resourceLocks.length) {
+      return 2;
+    }
+
+    const userLocks = await resource.getLocksByUser(user);
+    const lockGuidsSet = new Set(lockGuids);
+
+    if (userLocks.find((userLock) => lockGuidsSet.has(userLock.guid))) {
+      // The user owns the lock and has provided it.
+      return 2;
+    }
+
+    if (!(await resource.isCollection())) {
+      return 0;
+    }
+
+    // Find the most restrictive lock.
+    let restrictiveLock: Lock = resourceLocks[0];
+    for (let lock of resourceLocks) {
+      if (restrictiveLock.depth === '0') {
+        restrictiveLock = lock;
+      }
+      if (restrictiveLock.depth === 'infinity') {
+        break;
+      }
+    }
+
+    return restrictiveLock.depth === 'infinity' ? 0 : 1;
   }
 
   getRequestBaseUrl(request: Request) {

@@ -263,11 +263,26 @@ export default class Resource implements ResourceInterface {
           await fsp.unlink(destinationPath);
         }
       } catch (e: any) {
-        // Ignore errors stat-ing a possible non-existent directory.
+        // Ignore errors stat-ing a possible non-existent directory and deleting
+        // a possibly non-empty directory.
       }
-      await fsp.mkdir(destinationPath);
+      try {
+        await fsp.mkdir(destinationPath);
+      } catch (e: any) {
+        // We don't care if the function failed just because it's a directory
+        // that already exists.
+        const stat = await fsp.stat(destinationPath);
+        if (!stat.isDirectory()) {
+          throw e;
+        }
+      }
       try {
         propsFilePath = path.join(destinationPath, '.nepheleprops');
+        try {
+          await fsp.unlink(propsFilePath);
+        } catch (e: any) {
+          // Ignore errors deleting a possibly non-existend file.
+        }
         await fsp.copyFile(await this.getPropFilePath(), propsFilePath);
       } catch (e: any) {
         // Ignore errors while copying props files.
@@ -279,6 +294,11 @@ export default class Resource implements ResourceInterface {
         const dirname = path.dirname(destinationPath);
         const basename = path.basename(destinationPath);
         propsFilePath = path.join(dirname, `.${basename}.nepheleprops`);
+        try {
+          await fsp.unlink(propsFilePath);
+        } catch (e: any) {
+          // Ignore errors deleting a possibly non-existend file.
+        }
         await fsp.copyFile(await this.getPropFilePath(), propsFilePath);
       } catch (e: any) {
         // Ignore errors while copying props files.
