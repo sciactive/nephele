@@ -74,7 +74,10 @@ export default class Adapter implements AdapterInterface {
       return null;
     }
 
-    return path.join('/', url.pathname.substring(baseUrl.length));
+    return path.join(
+      '/',
+      decodeURIComponent(url.pathname.substring(baseUrl.length))
+    );
   }
 
   urlToAbsolutePath(url: URL, baseUrl: string) {

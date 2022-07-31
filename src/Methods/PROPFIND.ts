@@ -41,22 +41,20 @@ export class PROPFIND extends Method {
     const multiStatus = new MultiStatus();
 
     if (xml != null) {
-      const requestXml = await this.parseXml(xml);
-
-      if (!('propfind' in requestXml)) {
+      if (!('propfind' in xml)) {
         throw new BadRequestError(
           'PROPFIND methods requires a propfind element.'
         );
       }
 
-      if ('propname' in requestXml.propfind) {
+      if ('propname' in xml.propfind) {
         propname = true;
       }
 
-      if (!('allprop' in requestXml.propfind)) {
+      if (!('allprop' in xml.propfind)) {
         allprop = false;
-      } else if ('include' in requestXml.propfind) {
-        for (let include of requestXml.propfind.include) {
+      } else if ('include' in xml.propfind) {
+        for (let include of xml.propfind.include) {
           requestedProps = [
             ...requestedProps,
             ...Object.keys(include).filter((name) => name !== '$'),
@@ -64,8 +62,8 @@ export class PROPFIND extends Method {
         }
       }
 
-      if ('prop' in requestXml.propfind) {
-        for (let prop of requestXml.propfind.prop) {
+      if ('prop' in xml.propfind) {
+        for (let prop of xml.propfind.prop) {
           requestedProps = [
             ...requestedProps,
             ...Object.keys(prop).filter((name) => name !== '$'),
@@ -206,20 +204,22 @@ export class PROPFIND extends Method {
         return;
       }
 
-      let children: Resource[] = [];
-      try {
-        children = await resource.getInternalMembers(response.locals.user);
-      } catch (e: any) {
-        if (!(e instanceof UnauthorizedError)) {
-          throw e;
+      if (await resource.isCollection()) {
+        let children: Resource[] = [];
+        try {
+          children = await resource.getInternalMembers(response.locals.user);
+        } catch (e: any) {
+          if (!(e instanceof UnauthorizedError)) {
+            throw e;
+          }
+          // Silently exclude members not visible to the user.
         }
-        // Silently exclude members not visible to the user.
+        level++;
+        for (let child of children) {
+          await addResourceProps(child);
+        }
+        level--;
       }
-      level++;
-      for (let child of children) {
-        await addResourceProps(child);
-      }
-      level--;
     };
     await addResourceProps(resource);
 

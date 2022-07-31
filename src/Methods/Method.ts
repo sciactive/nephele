@@ -324,7 +324,7 @@ export class Method {
       return null;
     }
 
-    return await this.xmlParser.parseStringPromise(xml);
+    return await this.parseXml(xml);
   }
 
   /**
