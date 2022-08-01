@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
+import cp from 'node:child_process';
 
 import type { Request } from 'express';
 import basicAuth from 'basic-auth';
@@ -88,6 +89,54 @@ export default class Adapter implements AdapterInterface {
     }
 
     return path.join(this.root, relativePath);
+  }
+
+  async getUsername(uid: number): Promise<string> {
+    if (!this.pam) {
+      return 'nobody';
+    }
+
+    return await new Promise((resolve, reject) => {
+      let name = '';
+      const p = cp.spawn('id', ['-n', '-u', `${uid}`]);
+      p.stdout.on('data', (data) => {
+        name += `${data}`.trim();
+      });
+      p.stderr.on('error', (err) => {
+        reject(`${err}`);
+      });
+      p.on('close', () => {
+        if (name) {
+          resolve(name);
+        } else {
+          reject('No such user.');
+        }
+      });
+    });
+  }
+
+  async getGroupname(gid: number): Promise<string> {
+    if (!this.pam) {
+      return 'nobody';
+    }
+
+    return await new Promise((resolve, reject) => {
+      let name = '';
+      const p = cp.spawn('id', ['-n', '-g', `${gid}`]);
+      p.stdout.on('data', (data) => {
+        name += `${data}`.trim();
+      });
+      p.stderr.on('error', (err) => {
+        reject(`${err}`);
+      });
+      p.on('close', () => {
+        if (name) {
+          resolve(name);
+        } else {
+          reject('No such group.');
+        }
+      });
+    });
   }
 
   async getComplianceClasses(

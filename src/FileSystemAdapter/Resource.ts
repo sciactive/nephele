@@ -4,6 +4,7 @@ import { constants } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import mmm, { Magic } from 'mmmagic';
+import checkDiskSpace from 'check-disk-space';
 
 import type { Resource as ResourceInterface } from '../index.js';
 import {
@@ -454,6 +455,24 @@ export default class Resource implements ResourceInterface {
 
   async getStats() {
     return await fsp.stat(this.absolutePath);
+  }
+
+  async setMode(mode: number) {
+    await fsp.chmod(this.absolutePath, mode);
+  }
+
+  async getFreeSpace() {
+    const directory = (await this.isCollection())
+      ? this.absolutePath
+      : path.dirname(this.absolutePath);
+    return (await checkDiskSpace(directory)).free;
+  }
+
+  async getTotalSpace() {
+    const directory = (await this.isCollection())
+      ? this.absolutePath
+      : path.dirname(this.absolutePath);
+    return (await checkDiskSpace(directory)).size;
   }
 
   async getPropFilePath() {

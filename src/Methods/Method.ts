@@ -595,19 +595,39 @@ export class Method {
               prefix = curPrefixEntry[0];
             }
 
-            // Look for a prefix in the first child. It should override the
-            // current prefix.
+            // Look for a prefix in the children. It should override the current
+            // prefix.
             const child = Array.isArray(input[name])
               ? input[name][0]
               : input[name];
-            if (
-              '$' in child &&
-              !('xmlns' in child.$ && child.$.xmlns === uri)
-            ) {
+            if (typeof child === 'object' && '$' in child) {
+              let foundPrefix = '';
               for (let attr in child.$) {
                 if (attr.startsWith('xmlns:') && child.$[attr] === uri) {
-                  prefix = attr.substring(6);
+                  foundPrefix = attr.substring(6);
                   break;
+                }
+              }
+
+              // Make sure every child has the same prefix.
+              if (foundPrefix) {
+                if (Array.isArray(input[name])) {
+                  let prefixIsGood = true;
+                  for (let child of input[name]) {
+                    if (
+                      typeof child !== 'object' ||
+                      !('$' in child) ||
+                      child.$[`xmlns:${foundPrefix}`] !== uri
+                    ) {
+                      prefixIsGood = false;
+                      break;
+                    }
+                  }
+                  if (prefixIsGood) {
+                    prefix = foundPrefix;
+                  }
+                } else {
+                  prefix = foundPrefix;
                 }
               }
             }

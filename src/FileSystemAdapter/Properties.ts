@@ -27,7 +27,7 @@ export default class Properties implements PropertiesInterface {
         return await this.resource.getEtag();
       case 'getlastmodified': {
         const stats = await this.resource.getStats();
-        return stats.mtime.toISOString();
+        return stats.mtime.toUTCString();
       }
       case 'lockdiscovery':
         // TODO: Implement this. (Page 94)
@@ -51,6 +51,23 @@ export default class Properties implements PropertiesInterface {
             },
           ],
         };
+      case 'quota-available-bytes':
+        return `${await this.resource.getFreeSpace()}`;
+      case 'quota-used-bytes':
+        return `${await this.resource.getTotalSpace()}`;
+      case 'LCGDM:%%mode':
+        const stats = await this.resource.getStats();
+        return `${stats.mode.toString(8)}`;
+      case 'owner':
+        if (this.resource.adapter.pam) {
+          const stats = await this.resource.getStats();
+          return await this.resource.adapter.getUsername(stats.uid);
+        }
+      case 'group':
+        if (this.resource.adapter.pam) {
+          const stats = await this.resource.getStats();
+          return await this.resource.adapter.getGroupname(stats.gid);
+        }
     }
 
     // Fall back to a file based prop store.
@@ -91,9 +108,21 @@ export default class Properties implements PropertiesInterface {
         'lockdiscovery',
         'resourcetype',
         'supportedlock',
+        'quota-available-bytes',
+        'quota-used-bytes',
+        'owner',
+        'group',
       ].includes(name)
     ) {
       throw new PropertyIsProtectedError(`${name} is a protected property.`);
+    }
+
+    if (name === 'LCGDM:%%mode') {
+      const stats = await this.resource.getStats();
+      const safeMode = parseInt(value, 8) % 0o1000;
+      const mode = stats.mode & 0o777000 & safeMode;
+      await this.resource.setMode(mode);
+      return;
     }
 
     // Fall back to a file based prop store.
@@ -163,6 +192,15 @@ export default class Properties implements PropertiesInterface {
       lockdiscovery: await this.get('lockdiscovery'),
       resourcetype: await this.get('resourcetype'),
       supportedlock: await this.get('supportedlock'),
+      'quota-available-bytes': await this.get('quota-available-bytes'),
+      'quota-used-bytes': await this.get('quota-used-bytes'),
+      'LCGDM:%%mode': await this.get('LCGDM:%%mode'),
+      ...(this.resource.adapter.pam
+        ? {
+            owner: await this.get('owner'),
+            group: await this.get('group'),
+          }
+        : {}),
     };
   }
 
@@ -188,6 +226,10 @@ export default class Properties implements PropertiesInterface {
       'lockdiscovery',
       'resourcetype',
       'supportedlock',
+      'quota-available-bytes',
+      'quota-used-bytes',
+      'LCGDM:%%mode',
+      ...(this.resource.adapter.pam ? ['owner', 'group'] : []),
     ];
   }
 
