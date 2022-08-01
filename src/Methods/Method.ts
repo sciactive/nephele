@@ -264,15 +264,19 @@ export class Method {
   async getBodyXML(request: Request) {
     const stream = await this.getBodyStream(request);
     const contentTypeHeader = request.get('Content-Type');
+    const contentLengthHeader = request.get('Content-Length');
+    // TODO: transfer-encoding chunked.
 
-    if (contentTypeHeader == null) {
-      return null;
+    if (contentTypeHeader == null && contentLengthHeader === '0') {
+      return { output: null, prefixes: {} };
     }
 
-    const requestType = contentType.parse(contentTypeHeader);
+    // Be nice to clients who don't send a Content-Type header.
+    const requestType = contentType.parse(
+      contentTypeHeader || 'application/xml'
+    );
 
     if (
-      requestType.type != null &&
       requestType.type !== 'text/xml' &&
       requestType.type !== 'application/xml'
     ) {
@@ -321,7 +325,7 @@ export class Method {
     });
 
     if (xml.trim() === '') {
-      return null;
+      return { output: null, prefixes: {} };
     }
 
     return await this.parseXml(xml);
@@ -331,10 +335,11 @@ export class Method {
    * Parse XML into a form that uses the DAV: namespace.
    *
    * Tags and attributes from other namespaces will have their namespace and the
-   * string '::' prepended to their name.
+   * string '%%' prepended to their name.
    */
   async parseXml(xml: string) {
     let parsed = await this.xmlParser.parseStringPromise(xml);
+    let prefixes: { [k: string]: string } = {};
 
     const rewriteAttributes = (
       input: {
@@ -362,7 +367,7 @@ export class Method {
         ) {
           output[input[name].local] = input[name].value;
         } else {
-          output[`${input[name].uri || namespace}::${input[name].local}`] =
+          output[`${input[name].uri || namespace}%%${input[name].local}`] =
             input[name].value;
         }
       }
@@ -436,9 +441,9 @@ export class Method {
           output.$['xml:lang'] = curLang;
         }
 
-        if (element.includes('::') && prefix !== '') {
-          const uri = element.split('::', 1)[0];
-          if (prefix in curNamespaces) {
+        if (element.includes('%%') && prefix !== '') {
+          const uri = element.split('%%', 1)[0];
+          if (prefix in curNamespaces && curNamespaces[prefix] === uri) {
             output.$ = output.$ || {};
             output.$[`xmlns:${prefix}`] = curNamespaces[prefix];
           }
@@ -456,9 +461,12 @@ export class Method {
           let prefix = '';
           if (name.includes(':')) {
             prefix = name.split(':', 1)[0];
+            if (!(prefix in prefixes)) {
+              prefixes[prefix] = ns.uri;
+            }
           }
 
-          const el = ns.uri === 'DAV:' ? ns.local : `${ns.uri}::${ns.local}`;
+          const el = ns.uri === 'DAV:' ? ns.local : `${ns.uri}%%${ns.local}`;
           output[el] = recursivelyRewrite(
             input[name],
             curLang,
@@ -475,29 +483,34 @@ export class Method {
       }
     };
 
-    return recursivelyRewrite(parsed);
+    const output = recursivelyRewrite(parsed);
+    return { output, prefixes };
   }
 
   /**
    * Render XML that's in the form returned by `parseXml`.
    */
-  async renderXml(xml: any) {
+  async renderXml(xml: any, prefixes: { [k: string]: string } = {}) {
     let topLevelObject: { [k: string]: any } | undefined = undefined;
+    const prefixEntries = Object.entries(prefixes);
+    const davPrefix = (prefixEntries.find(
+      ([_prefix, value]) => value === 'DAV:'
+    ) || ['', 'DAV:'])[0];
 
     const recursivelyRewrite = (
       input: any,
+      namespacePrefixes: { [k: string]: string } = {},
       element = '',
       currentUri = 'DAV:',
-      namespacePrefixes: { [k: string]: string } = {},
       addNamespace?: string
     ): any => {
       if (Array.isArray(input)) {
         return input.map((value) =>
           recursivelyRewrite(
             value,
+            namespacePrefixes,
             element,
             currentUri,
-            namespacePrefixes,
             addNamespace
           )
         );
@@ -515,13 +528,13 @@ export class Method {
 
         if ('$' in input) {
           for (let attr in input.$) {
-            // Translate uri::name attributes to prefix:name.
+            // Translate uri%%name attributes to prefix:name.
             if (
-              attr.includes('::') ||
+              attr.includes('%%') ||
               (currentUri !== 'DAV:' && !attr.includes(':') && attr !== 'xmlns')
             ) {
-              const [uri, name] = attr.includes('::')
-                ? splitn(attr, '::', 2)
+              const [uri, name] = attr.includes('%%')
+                ? splitn(attr, '%%', 2)
                 : ['DAV:', attr];
 
               if (currentUri === uri) {
@@ -558,41 +571,52 @@ export class Method {
           }
         }
 
+        const curNamespacePrefixEntries = Object.entries(curNamespacePrefixes);
         for (let name in input) {
           if (name === '$') {
             continue;
           }
 
           let el = name;
-          let prefix = '';
+          let prefix = davPrefix;
           let namespaceToAdd: string | undefined = undefined;
           let uri = 'DAV:';
           let local = el;
-          if (name.includes('::')) {
-            [uri, local] = splitn(name, '::', 2);
+          if (name.includes('%%')) {
+            [uri, local] = splitn(name, '%%', 2);
+            // Reset prefix because we're not in the DAV: namespace.
+            prefix = '';
+
+            // Look for a prefix in the current prefixes.
+            const curPrefixEntry = curNamespacePrefixEntries.find(
+              ([_prefix, value]) => value === uri
+            );
+            if (curPrefixEntry) {
+              prefix = curPrefixEntry[0];
+            }
+
+            // Look for a prefix in the first child. It should override the
+            // current prefix.
             const child = Array.isArray(input[name])
               ? input[name][0]
               : input[name];
-
-            if ('$' in child) {
-              if ('xmlns' in child.$ && child.$.xmlns === uri) {
-                el = local;
-              } else {
-                for (let attr in child.$) {
-                  if (attr.startsWith('xmlns:') && child.$[attr] === uri) {
-                    prefix = attr.substring(6);
-                    break;
-                  }
-                }
-
-                if (prefix) {
-                  el = `${prefix}:${local}`;
-                } else {
-                  namespaceToAdd = uri;
-                  el = local;
+            if (
+              '$' in child &&
+              !('xmlns' in child.$ && child.$.xmlns === uri)
+            ) {
+              for (let attr in child.$) {
+                if (attr.startsWith('xmlns:') && child.$[attr] === uri) {
+                  prefix = attr.substring(6);
+                  break;
                 }
               }
+            }
+
+            if (prefix) {
+              el = `${prefix}:${local}`;
             } else {
+              // If we haven't found a prefix at all, we need to attach the
+              // namespace directly to the element.
               namespaceToAdd = uri;
               el = local;
             }
@@ -605,9 +629,9 @@ export class Method {
 
           output[el] = recursivelyRewrite(
             input[name],
+            curNamespacePrefixes,
             el,
             uri,
-            curNamespacePrefixes,
             namespaceToAdd
           );
 
@@ -618,14 +642,26 @@ export class Method {
 
         return output;
       } else {
+        if (addNamespace != null) {
+          return {
+            $: { xmlns: addNamespace },
+            _: input,
+          };
+        }
         return input;
       }
     };
 
-    const obj = recursivelyRewrite(xml);
+    const obj = recursivelyRewrite(xml, prefixes);
     if (topLevelObject != null) {
+      const obj = topLevelObject as { [k: string]: any };
+
       // Explicitly set the top level namespace to 'DAV:'.
-      (topLevelObject as { [k: string]: any }).$.xmlns = 'DAV:';
+      obj.$.xmlns = 'DAV:';
+
+      for (let prefix in prefixes) {
+        obj.$[`xmlns:${prefix}`] = prefixes[prefix];
+      }
     }
     return this.xmlBuilder.buildObject(obj);
   }

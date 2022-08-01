@@ -1,4 +1,3 @@
-import { inspect } from 'node:util';
 import type { Request } from 'express';
 
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
@@ -33,7 +32,7 @@ export class PROPFIND extends Method {
       );
     }
 
-    const xml = await this.getBodyXML(request);
+    const { output: xml, prefixes } = await this.getBodyXML(request);
 
     let requestedProps: string[] = [];
     let allprop = true;
@@ -148,9 +147,11 @@ export class PROPFIND extends Method {
 
           if (forbiddenProps.length) {
             const propStatStatus = new PropStatStatus(403);
-            propStatStatus.description = `The user does not have access to the ${forbiddenProps.join(
-              ', '
-            )} propert${forbiddenProps.length === 1 ? 'y' : 'ies'}.`;
+            propStatStatus.description = `The user does not have access to the ${forbiddenProps
+              .map((name) => name.replace('%%', ''))
+              .join(', ')} propert${
+              forbiddenProps.length === 1 ? 'y' : 'ies'
+            }.`;
             propStatStatus.setProp(
               Object.fromEntries(forbiddenProps.map((name) => [name, {}]))
             );
@@ -159,9 +160,11 @@ export class PROPFIND extends Method {
 
           if (unauthorizedProps.length) {
             const propStatStatus = new PropStatStatus(401);
-            propStatStatus.description = `The user is not authorized to retrieve the ${unauthorizedProps.join(
-              ', '
-            )} propert${unauthorizedProps.length === 1 ? 'y' : 'ies'}.`;
+            propStatStatus.description = `The user is not authorized to retrieve the ${unauthorizedProps
+              .map((name) => name.replace('%%', ''))
+              .join(', ')} propert${
+              unauthorizedProps.length === 1 ? 'y' : 'ies'
+            }.`;
             propStatStatus.setProp(
               Object.fromEntries(unauthorizedProps.map((name) => [name, {}]))
             );
@@ -170,9 +173,9 @@ export class PROPFIND extends Method {
 
           if (notFoundProps.length) {
             const propStatStatus = new PropStatStatus(404);
-            propStatStatus.description = `The ${notFoundProps.join(
-              ', '
-            )} propert${
+            propStatStatus.description = `The ${notFoundProps
+              .map((name) => name.replace('%%', ''))
+              .join(', ')} propert${
               notFoundProps.length === 1 ? 'y was' : 'ies were'
             } not found.`;
             propStatStatus.setProp(
@@ -183,9 +186,9 @@ export class PROPFIND extends Method {
 
           if (errorProps.length) {
             const propStatStatus = new PropStatStatus(500);
-            propStatStatus.description = `An error occurred while trying to retrieve the ${errorProps.join(
-              ', '
-            )} propert${errorProps.length === 1 ? 'y' : 'ies'}.`;
+            propStatStatus.description = `An error occurred while trying to retrieve the ${errorProps
+              .map((name) => name.replace('%%', ''))
+              .join(', ')} propert${errorProps.length === 1 ? 'y' : 'ies'}.`;
             propStatStatus.setProp(
               Object.fromEntries(errorProps.map((name) => [name, {}]))
             );
@@ -223,7 +226,7 @@ export class PROPFIND extends Method {
     };
     await addResourceProps(resource);
 
-    const responseXml = await this.renderXml(multiStatus.render());
+    const responseXml = await this.renderXml(multiStatus.render(), prefixes);
     response.status(207); // Multi-Status
     response.set({
       'Content-Type': contentType,

@@ -25,7 +25,7 @@ export interface Properties {
    * - supportedlock
    *
    * Any property not in the DAV: namespace will have its namespace and the
-   * string '::' prepended to its name.
+   * string '%%' prepended to its name, like "LCGDM:%%mode".
    */
   get(name: string): Promise<string | Object | Object[] | undefined>;
   getByUser(
