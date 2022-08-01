@@ -58,7 +58,7 @@ export default class Properties implements PropertiesInterface {
     try {
       const props = JSON.parse((await fsp.readFile(filepath)).toString());
 
-      if (!(name in props['*'])) {
+      if (!('*' in props) || !(name in props['*'])) {
         throw new PropertyNotFoundError(
           `${name} property doesn't exist on resource.`
         );

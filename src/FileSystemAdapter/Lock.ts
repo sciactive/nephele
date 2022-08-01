@@ -8,22 +8,30 @@ export default class Lock implements LockInterface {
   user: User;
   date: Date;
   timeout: number;
+  guid: string;
+  depth: '0' | 'infinity';
 
   constructor({
     resource,
     user,
     date,
     timeout,
+    guid,
+    depth,
   }: {
     resource: Resource;
     user: User;
     date: Date;
     timeout: number;
+    guid: string;
+    depth: '0' | 'infinity';
   }) {
     this.resource = resource;
     this.user = user;
     this.date = date;
     this.timeout = timeout;
+    this.guid = guid;
+    this.depth = depth;
   }
 
   async save() {

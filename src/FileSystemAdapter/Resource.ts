@@ -216,6 +216,7 @@ export default class Resource implements ResourceInterface {
     }
 
     if (await this.isCollection()) {
+      await this.deleteOrphanedConfigFiles();
       await fsp.rmdir(this.absolutePath);
     } else {
       await fsp.unlink(this.absolutePath);
@@ -293,7 +294,7 @@ export default class Resource implements ResourceInterface {
       try {
         const dirname = path.dirname(destinationPath);
         const basename = path.basename(destinationPath);
-        propsFilePath = path.join(dirname, `.${basename}.nepheleprops`);
+        propsFilePath = path.join(dirname, `${basename}.nepheleprops`);
         try {
           await fsp.unlink(propsFilePath);
         } catch (e: any) {
@@ -461,7 +462,40 @@ export default class Resource implements ResourceInterface {
     } else {
       const dirname = path.dirname(this.absolutePath);
       const basename = path.basename(this.absolutePath);
-      return path.join(dirname, `.${basename}.nepheleprops`);
+      return path.join(dirname, `${basename}.nepheleprops`);
+    }
+  }
+
+  async deleteOrphanedConfigFiles() {
+    if (!(await this.isCollection())) {
+      throw new MethodNotSupportedError('This is not a collection.');
+    }
+
+    const listing = await fsp.readdir(this.absolutePath);
+    const files: Set<string> = new Set();
+    const propsFiles: Set<string> = new Set();
+
+    for (let name of listing) {
+      if (name === '.nepheleprops') {
+        continue;
+      }
+
+      if (name.endsWith('.nepheleprops')) {
+        propsFiles.add(name);
+      } else {
+        files.add(name);
+      }
+    }
+
+    for (let name of files) {
+      propsFiles.delete(`${name}.nepheleprops`);
+    }
+
+    const orphans = Array.from(propsFiles);
+
+    for (let name of orphans) {
+      const orphanPath = path.join(this.absolutePath, name);
+      await fsp.unlink(orphanPath);
     }
   }
 }
