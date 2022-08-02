@@ -67,7 +67,7 @@ export class DELETE extends Method {
       Date: new Date().toUTCString(),
     });
 
-    let stream = await this.getBodyStream(request);
+    let stream = await this.getBodyStream(request, response);
 
     stream.on('data', () => {
       response.locals.debug('Provided body to DELETE.');
@@ -169,17 +169,21 @@ export class DELETE extends Method {
               throw new LockedError('This resource is locked.');
             }
           },
-          async (code, message) => {
+          async (code, message, error) => {
+            if (code === 500 && error) {
+              response.locals.debug('Unknown Error: ', error);
+            }
+
             const url = (
               await child.getCanonicalUrl(this.getRequestBaseUrl(request))
             ).toString();
-            let error = new Status(url, code);
+            let status = new Status(url, code);
 
             if (message) {
-              error.description = message;
+              status.description = message;
             }
 
-            multiStatus.addStatus(error);
+            multiStatus.addStatus(status);
 
             allDeleted = false;
           }

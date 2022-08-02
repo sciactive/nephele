@@ -227,11 +227,14 @@ export default class Adapter implements AdapterInterface {
 
     // First make sure the server process and user has access to all
     // directories in the tree.
-    const pathname = this.urlToAbsolutePath(url, baseUrl);
+    const pathname = this.urlToRelativePath(url, baseUrl);
     if (pathname == null) {
       return false;
     }
-    const parts = pathname.split(path.sep).filter((str) => str !== '');
+    const parts = [
+      this.root,
+      ...pathname.split(path.sep).filter((str) => str !== ''),
+    ];
     let exists = true;
 
     try {

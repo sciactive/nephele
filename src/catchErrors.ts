@@ -10,6 +10,7 @@ import {
   MethodNotSupportedError,
   NotAcceptableError,
   PreconditionFailedError,
+  RequestTimeoutError,
   RequestURITooLongError,
   ResourceExistsError,
   ResourceNotFoundError,
@@ -70,6 +71,12 @@ export function catchErrors<A extends any[], R = void>(
       if (e instanceof NotAcceptableError) {
         // Not Acceptable
         await errorHandler(406, e.message, e, args);
+        return;
+      }
+
+      if (e instanceof RequestTimeoutError) {
+        // Request Timeout
+        await errorHandler(408, e.message, e, args);
         return;
       }
 

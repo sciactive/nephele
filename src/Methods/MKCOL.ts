@@ -39,7 +39,7 @@ export class MKCOL extends Method {
       Date: new Date().toUTCString(),
     });
 
-    let stream = await this.getBodyStream(request);
+    let stream = await this.getBodyStream(request, response);
 
     stream.on('data', () => {
       response.locals.debug('Provided body to MKCOL.');

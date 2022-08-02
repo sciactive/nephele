@@ -17,6 +17,7 @@ import {
   EncodingNotSupportedError,
   MediaTypeNotSupportedError,
   MethodNotSupportedError,
+  RequestTimeoutError,
   UnauthorizedError,
 } from '../index.js';
 
@@ -213,7 +214,9 @@ export class Method {
     return { url, encoding, cacheControl };
   }
 
-  async getBodyStream(request: Request) {
+  async getBodyStream(request: Request, response: AuthResponse) {
+    response.locals.debug('Getting body stream.');
+
     let stream: Readable = request;
     let encoding = request.get('Content-Encoding');
     switch (encoding) {
@@ -250,6 +253,43 @@ export class Method {
         break;
     }
 
+    let timeout: NodeJS.Timeout;
+    const setStreamTimeout = () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+
+      timeout = setTimeout(() => {
+        response.locals.debug(
+          `Timed out after waiting ${
+            this.opts.timeout / 1000
+          } seconds for data.`
+        );
+        stream.destroy(
+          new RequestTimeoutError(
+            `Timed out after waiting ${
+              this.opts.timeout / 1000
+            } seconds for data.`
+          )
+        );
+      }, this.opts.timeout);
+    };
+    setStreamTimeout();
+
+    stream.on('data', setStreamTimeout);
+
+    stream.on('end', () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    });
+
+    stream.on('error', () => {
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    });
+
     return stream;
   }
 
@@ -261,11 +301,16 @@ export class Method {
    *
    * If the body is empty, it will return null.
    */
-  async getBodyXML(request: Request) {
-    const stream = await this.getBodyStream(request);
+  async getBodyXML(request: Request, response: AuthResponse) {
+    const stream = await this.getBodyStream(request, response);
     const contentTypeHeader = request.get('Content-Type');
     const contentLengthHeader = request.get('Content-Length');
-    // TODO: transfer-encoding chunked.
+    const transferEncoding = request.get('Transfer-Encoding');
+
+    if (transferEncoding === 'chunked') {
+      // TODO: transfer-encoding chunked.
+      response.locals.debug('Request transfer encoding is chunked.');
+    }
 
     if (contentTypeHeader == null && contentLengthHeader === '0') {
       return { output: null, prefixes: {} };

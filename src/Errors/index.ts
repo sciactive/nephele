@@ -11,6 +11,7 @@ export * from './NotAcceptableError.js';
 export * from './PreconditionFailedError.js';
 export * from './PropertyIsProtectedError.js';
 export * from './PropertyNotFoundError.js';
+export * from './RequestTimeoutError.js';
 export * from './RequestURITooLongError.js';
 export * from './ResourceExistsError.js';
 export * from './ResourceNotFoundError.js';

@@ -9,6 +9,9 @@ import type Adapter from './Adapter.js';
 export default class User implements UserInterface {
   username: string;
   adapter: Adapter;
+  uidResult: number | undefined = undefined;
+  gidResult: number | undefined = undefined;
+  gidsResult: number[] | undefined = undefined;
 
   private authenticated = false;
 
@@ -44,61 +47,109 @@ export default class User implements UserInterface {
   }
 
   async getUid(): Promise<number> {
+    if (this.uidResult) {
+      return this.uidResult;
+    }
+
     if (!this.adapter.pam) {
       return -1;
     }
 
     return await new Promise((resolve, reject) => {
       let id = '';
-      const p = cp.spawn('id', ['-u', this.username]);
+      const p = cp.spawn('id', ['-u', this.username], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 2000,
+      });
       p.stdout.on('data', (data) => {
         id += data;
+        // This part here is really bad in a production environment. It results
+        // in leaving zombie processes around. I don't know why Node isn't
+        // clearing the zombie processes.
+        setTimeout(() => {
+          if (p.exitCode == null) {
+            p.emit('close');
+          }
+        }, 500);
       });
       p.stderr.on('error', (err) => {
         reject(`${err}`);
       });
       p.on('close', () => {
-        resolve(parseInt(id.trim()));
+        this.uidResult = parseInt(id.trim());
+        resolve(this.uidResult);
       });
     });
   }
 
   async getGid(): Promise<number> {
+    if (this.gidResult) {
+      return this.gidResult;
+    }
+
     if (!this.adapter.pam) {
       return -1;
     }
 
     return await new Promise((resolve, reject) => {
       let gid = '';
-      const p = cp.spawn('id', ['-g', this.username]);
+      const p = cp.spawn('id', ['-g', this.username], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 2000,
+      });
       p.stdout.on('data', (data) => {
         gid += data;
+        // This part here is really bad in a production environment. It results
+        // in leaving zombie processes around. I don't know why Node isn't
+        // clearing the zombie processes.
+        setTimeout(() => {
+          if (p.exitCode == null) {
+            p.emit('close');
+          }
+        }, 500);
       });
       p.stderr.on('error', (err) => {
         reject(`${err}`);
       });
       p.on('close', () => {
-        resolve(parseInt(gid.trim()));
+        this.gidResult = parseInt(gid.trim());
+        resolve(this.gidResult);
       });
     });
   }
 
   async getGids(): Promise<number[]> {
+    if (this.gidsResult) {
+      return this.gidsResult;
+    }
+
     if (!this.adapter.pam) {
       return [];
     }
 
     return await new Promise((resolve, reject) => {
       let gids = '';
-      const p = cp.spawn('id', ['-G', this.username]);
+      const p = cp.spawn('id', ['-G', this.username], {
+        stdio: ['ignore', 'pipe', 'pipe'],
+        timeout: 2000,
+      });
       p.stdout.on('data', (data) => {
         gids += data;
+        // This part here is really bad in a production environment. It results
+        // in leaving zombie processes around. I don't know why Node isn't
+        // clearing the zombie processes.
+        setTimeout(() => {
+          if (p.exitCode == null) {
+            p.emit('close');
+          }
+        }, 500);
       });
       p.stderr.on('error', (err) => {
         reject(err);
       });
       p.on('close', () => {
-        resolve(gids.trim().split(' ').map(parseInt));
+        this.gidsResult = gids.trim().split(' ').map(parseInt);
+        resolve(this.gidsResult);
       });
     });
   }

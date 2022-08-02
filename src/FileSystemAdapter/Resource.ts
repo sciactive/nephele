@@ -9,6 +9,7 @@ import checkDiskSpace from 'check-disk-space';
 import type { Resource as ResourceInterface } from '../index.js';
 import {
   BadGatewayError,
+  BadRequestError,
   ForbiddenError,
   MethodNotSupportedError,
   ResourceExistsError,
@@ -19,12 +20,15 @@ import {
 
 import type Adapter from './Adapter.js';
 import {
-  userExecuteBit,
+  userReadBit,
   userWriteBit,
-  groupExecuteBit,
+  userExecuteBit,
+  groupReadBit,
   groupWriteBit,
-  otherExecuteBit,
+  groupExecuteBit,
+  otherReadBit,
   otherWriteBit,
+  otherExecuteBit,
 } from './FileSystemBits.js';
 import Properties from './Properties.js';
 import type User from './User.js';
@@ -192,8 +196,8 @@ export default class Resource implements ResourceInterface {
     }
 
     // We need the user and group IDs.
-    const uid = await (user as User).getUid();
-    const gids = await (user as User).getGids();
+    const uid = await user.getUid();
+    const gids = await user.getGids();
 
     if (this.adapter.pam) {
       // Check if the user can delete it.
@@ -236,9 +240,15 @@ export default class Resource implements ResourceInterface {
       );
     }
 
-    if (this.absolutePath === destinationPath) {
+    if (
+      this.absolutePath === destinationPath ||
+      ((await this.isCollection()) &&
+        destinationPath.startsWith(
+          this.absolutePath.replace(/(?:$|\/$)/, () => '/')
+        ))
+    ) {
       throw new ForbiddenError(
-        'The source and destination are the same resource.'
+        'The destination cannot be the same as or contained within the source.'
       );
     }
 
@@ -248,6 +258,39 @@ export default class Resource implements ResourceInterface {
       throw new ResourceTreeNotCompleteError(
         'One or more intermediate collections must be created before this resource.'
       );
+    }
+
+    // We need the user and group IDs.
+    const uid = await user.getUid();
+    const gids = await user.getGids();
+
+    if (this.adapter.pam) {
+      // Check if the user can put it in the destination.
+      const dstats = await fsp.stat(path.dirname(destinationPath));
+
+      if (
+        !(
+          dstats.mode & otherReadBit ||
+          (dstats.uid === uid && dstats.mode & userReadBit) ||
+          (gids.includes(dstats.gid) && dstats.mode & groupReadBit)
+        )
+      ) {
+        throw new UnauthorizedError(
+          'You do not have permission to access the destination.'
+        );
+      }
+
+      if (
+        !(
+          dstats.mode & otherWriteBit ||
+          (dstats.uid === uid && dstats.mode & userWriteBit) ||
+          (gids.includes(dstats.gid) && dstats.mode & groupWriteBit)
+        )
+      ) {
+        throw new UnauthorizedError(
+          'You do not have permission to write to the destination.'
+        );
+      }
     }
 
     let propsFilePath: string | undefined = undefined;
@@ -309,6 +352,7 @@ export default class Resource implements ResourceInterface {
     }
 
     if (this.adapter.pam) {
+      // Copy owner info.
       await fsp.chown(
         destinationPath,
         await user.getUid(),
@@ -322,6 +366,124 @@ export default class Resource implements ResourceInterface {
           await user.getGid()
         );
       }
+    }
+
+    const stat = await fsp.stat(this.absolutePath);
+
+    // Copy mode.
+    try {
+      await fsp.chmod(destinationPath, stat.mode);
+    } catch (e: any) {
+      // Ignore errors copying mode.
+    }
+
+    // Copy dates.
+    try {
+      await fsp.utimes(destinationPath, stat.atime, stat.mtime);
+    } catch (e: any) {
+      // Ignore errors copying dates.
+    }
+
+    return;
+  }
+
+  async move(destination: URL, baseUrl: string, user: User) {
+    if (await this.isCollection()) {
+      throw new BadRequestError('Move called move on a collection resource.');
+    }
+
+    const destinationPath = this.adapter.urlToAbsolutePath(
+      destination,
+      baseUrl
+    );
+
+    if (destinationPath == null) {
+      throw new BadGatewayError(
+        'The destination URL is not under the namespace of this server.'
+      );
+    }
+
+    if (
+      this.absolutePath === destinationPath ||
+      ((await this.isCollection()) &&
+        destinationPath.startsWith(
+          this.absolutePath.replace(/(?:$|\/$)/, () => '/')
+        ))
+    ) {
+      throw new ForbiddenError(
+        'The destination cannot be the same as or contained within the source.'
+      );
+    }
+
+    try {
+      await fsp.access(path.dirname(destinationPath), constants.F_OK);
+    } catch (e: any) {
+      throw new ResourceTreeNotCompleteError(
+        'One or more intermediate collections must be created before this resource.'
+      );
+    }
+
+    // We need the user and group IDs.
+    const uid = await user.getUid();
+    const gids = await user.getGids();
+
+    if (this.adapter.pam) {
+      // Check if the user can move it.
+      const stats = await fsp.stat(this.absolutePath);
+
+      if (
+        !(
+          stats.mode & otherWriteBit ||
+          (stats.uid === uid && stats.mode & userWriteBit) ||
+          (gids.includes(stats.gid) && stats.mode & groupWriteBit)
+        )
+      ) {
+        throw new UnauthorizedError(
+          'You do not have permission to move this resource.'
+        );
+      }
+
+      // Check if the user can put it in the destination.
+      const dstats = await fsp.stat(path.dirname(destinationPath));
+
+      if (
+        !(
+          dstats.mode & otherReadBit ||
+          (dstats.uid === uid && dstats.mode & userReadBit) ||
+          (gids.includes(dstats.gid) && dstats.mode & groupReadBit)
+        )
+      ) {
+        throw new UnauthorizedError(
+          'You do not have permission to access the destination.'
+        );
+      }
+
+      if (
+        !(
+          dstats.mode & otherWriteBit ||
+          (dstats.uid === uid && dstats.mode & userWriteBit) ||
+          (gids.includes(dstats.gid) && dstats.mode & groupWriteBit)
+        )
+      ) {
+        throw new UnauthorizedError(
+          'You do not have permission to write to the destination.'
+        );
+      }
+    }
+
+    await fsp.rename(this.absolutePath, destinationPath);
+    try {
+      const dirname = path.dirname(destinationPath);
+      const basename = path.basename(destinationPath);
+      const propsFilePath = path.join(dirname, `${basename}.nepheleprops`);
+      try {
+        await fsp.unlink(propsFilePath);
+      } catch (e: any) {
+        // Ignore errors deleting a possibly non-existend file.
+      }
+      await fsp.rename(await this.getPropFilePath(), propsFilePath);
+    } catch (e: any) {
+      // Ignore errors while moving props files.
     }
 
     return;

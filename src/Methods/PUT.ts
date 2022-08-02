@@ -100,7 +100,7 @@ export class PUT extends Method {
     });
 
     const contentLanguage = request.get('Content-Language');
-    let stream = await this.getBodyStream(request);
+    let stream = await this.getBodyStream(request, response);
     await resource.setStream(stream, response.locals.user);
 
     response.status(newResource ? 201 : 204); // Created or No Content

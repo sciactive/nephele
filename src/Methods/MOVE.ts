@@ -15,11 +15,11 @@ import { MultiStatus, Status } from '../MultiStatus.js';
 import { Method } from './Method.js';
 import { DELETE } from './DELETE.js';
 
-export class COPY extends Method {
+export class MOVE extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url } = this.getRequestData(request, response);
 
-    await this.checkAuthorization(request, response, 'COPY');
+    await this.checkAuthorization(request, response, 'MOVE');
 
     const contentType = request.accepts('application/xml', 'text/xml');
     if (!contentType) {
@@ -27,7 +27,10 @@ export class COPY extends Method {
     }
 
     const destinationHeader = request.get('Destination');
-    const depth = request.get('Depth') || 'infinity';
+    // According to the spec, the depth header on a MOVE on a collection doesn't
+    // matter. The server MUST act as if it's set to "infinity". This is here as
+    // a reminder of that fact.
+    const _depth = 'infinity';
     const overwrite = request.get('Overwrite');
     const ifMatch = request.get('If-Match');
     const ifMatchEtags = (ifMatch || '')
@@ -47,14 +50,8 @@ export class COPY extends Method {
       throw new BadRequestError('Destination header is required.');
     }
 
-    if (!['0', 'infinity'].includes(depth)) {
-      throw new BadRequestError(
-        'Depth header must be one of "0", or "infinity".'
-      );
-    }
-
-    // According to the spec, any header included with COPY *MUST* be applied
-    // in processing every resource to be copied.
+    // According to the spec, any header included with MOVE *MUST* be applied
+    // in processing every resource to be moved.
     const checkConditionalHeaders = async (
       resource: Resource,
       destinationExists: boolean
@@ -102,7 +99,7 @@ export class COPY extends Method {
     let stream = await this.getBodyStream(request, response);
 
     stream.on('data', () => {
-      response.locals.debug('Provided body to COPY.');
+      response.locals.debug('Provided body to MOVE.');
       throw new MediaTypeNotSupportedError(
         "This server doesn't understand the body sent in the request."
       );
@@ -116,7 +113,7 @@ export class COPY extends Method {
 
     const multiStatus = new MultiStatus();
 
-    const recursivelyCopy = async (
+    const recursivelyMove = async (
       resource: Resource,
       destination: URL,
       topLevel = true
@@ -200,13 +197,15 @@ export class COPY extends Method {
             }
           }
 
-          await resource.copy(
-            destination,
-            request.baseUrl,
-            response.locals.user
-          );
+          if (collection) {
+            await resource.copy(
+              destination,
+              request.baseUrl,
+              response.locals.user
+            );
 
-          if (depth === 'infinity' && collection) {
+            let allMoved = true;
+
             try {
               const children = await resource.getInternalMembers(
                 response.locals.user
@@ -220,19 +219,35 @@ export class COPY extends Method {
                     encodeURIComponent(name)
                 );
 
-                await recursivelyCopy(child, destinationUrl, false);
+                const { result } = (await recursivelyMove(
+                  child,
+                  destinationUrl,
+                  false
+                )) || { result: false };
+
+                allMoved = allMoved && result;
               }
             } catch (e: any) {
               if (e instanceof UnauthorizedError) {
-                // Silently fail to copy unlistable members.
+                // Silently fail to move unlistable members.
                 return;
               }
 
               throw e;
             }
+
+            if (allMoved) {
+              await resource.delete(response.locals.user);
+            }
+          } else {
+            await resource.move(
+              destination,
+              request.baseUrl,
+              response.locals.user
+            );
           }
 
-          return destinationExists;
+          return { existed: destinationExists, result: true };
         },
         async (code, message, error) => {
           if (code === 500 && error) {
@@ -253,7 +268,9 @@ export class COPY extends Method {
       return await run();
     };
 
-    const existed = await recursivelyCopy(resource, destination);
+    const { existed } = (await recursivelyMove(resource, destination)) || {
+      existed: false,
+    };
 
     if (multiStatus.statuses.length === 0) {
       response.status(existed ? 204 : 201); // No Content : Created

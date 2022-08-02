@@ -32,7 +32,7 @@ export class PROPFIND extends Method {
       );
     }
 
-    const { output: xml, prefixes } = await this.getBodyXML(request);
+    const { output: xml, prefixes } = await this.getBodyXML(request, response);
 
     let requestedProps: string[] = [];
     let allprop = true;
@@ -69,6 +69,18 @@ export class PROPFIND extends Method {
           ];
         }
       }
+    }
+
+    if (propname) {
+      response.locals.debug(`Requested prop names.`);
+    } else if (allprop) {
+      response.locals.debug(
+        `Requested all props.${
+          requestedProps.length ? ` Includes: ${requestedProps.join(', ')}` : ''
+        }`
+      );
+    } else {
+      response.locals.debug(`Requested props: ${requestedProps.join(', ')}`);
     }
 
     let level = 0;

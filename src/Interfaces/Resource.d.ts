@@ -93,9 +93,37 @@ export interface Resource {
    * ResourceTreeNotCompleteError should be thrown.
    *
    * If the source and the destination ultimately resolve to the same resource,
-   * a ForbiddenError should be thrown.
+   * or the destination falls under the source itself, a ForbiddenError should
+   * be thrown.
    */
   copy(destination: URL, baseUrl: string, user: User): Promise<void>;
+
+  /**
+   * Move the resource to the destination.
+   *
+   * This will only be called on non-collection resources. Collection resources
+   * will instead by copied, have their contents moved, then be deleted.
+   *
+   * If the resource doesn't exist, a ResourceNotFoundError should be thrown.
+   *
+   * If the user doesn't have permission to move the resource, an
+   * UnauthorizedError should be thrown.
+   *
+   * If no one has permission to move the resource, a ForbiddenError should be
+   * thrown.
+   *
+   * If the destination is outside of this adapter's ability to modify, a
+   * BadGatewayError should be thrown.
+   *
+   * If the destination would be a member of a collection that doesn't exist
+   * (like a file in a folder that doesn't exist), a
+   * ResourceTreeNotCompleteError should be thrown.
+   *
+   * If the source and the destination ultimately resolve to the same resource,
+   * or the destination falls under the source itself, a ForbiddenError should
+   * be thrown.
+   */
+  move(destination: URL, baseUrl: string, user: User): Promise<void>;
 
   getLength(): Promise<number>;
 

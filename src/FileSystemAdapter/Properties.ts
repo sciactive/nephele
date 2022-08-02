@@ -56,17 +56,47 @@ export default class Properties implements PropertiesInterface {
       case 'quota-used-bytes':
         return `${await this.resource.getTotalSpace()}`;
       case 'LCGDM:%%mode':
-        const stats = await this.resource.getStats();
-        return `${stats.mode.toString(8)}`;
+        try {
+          const stats = await this.resource.getStats();
+          return `${stats.mode.toString(8)}`;
+        } catch (e: any) {
+          if (e.code === 'ENOENT') {
+            throw new PropertyNotFoundError(
+              `${name} property doesn't exist on resource.`
+            );
+          } else {
+            throw e;
+          }
+        }
       case 'owner':
         if (this.resource.adapter.pam) {
-          const stats = await this.resource.getStats();
-          return await this.resource.adapter.getUsername(stats.uid);
+          try {
+            const stats = await this.resource.getStats();
+            return await this.resource.adapter.getUsername(stats.uid);
+          } catch (e: any) {
+            if (e.code === 'ENOENT') {
+              throw new PropertyNotFoundError(
+                `${name} property doesn't exist on resource.`
+              );
+            } else {
+              throw e;
+            }
+          }
         }
       case 'group':
         if (this.resource.adapter.pam) {
-          const stats = await this.resource.getStats();
-          return await this.resource.adapter.getGroupname(stats.gid);
+          try {
+            const stats = await this.resource.getStats();
+            return await this.resource.adapter.getGroupname(stats.gid);
+          } catch (e: any) {
+            if (e.code === 'ENOENT') {
+              throw new PropertyNotFoundError(
+                `${name} property doesn't exist on resource.`
+              );
+            } else {
+              throw e;
+            }
+          }
         }
     }
 

@@ -29,6 +29,13 @@ export interface Options {
    */
   realm: string;
   /**
+   * Timeout for reading data from the request.
+   *
+   * If the client doesn't provide data for this many milliseconds, the server
+   * will give up waiting and issue an error.
+   */
+  timeout: number;
+  /**
    * The error handler is used to send a human readable error message back to
    * the user. When called, the response code will have already been set, but no
    * body content will have been sent.
@@ -45,6 +52,7 @@ export interface Options {
 export const defaults: Options = {
   compression: false,
   realm: 'Nephele WebDAV Service',
+  timeout: 30000,
   errorHandler: async (
     code: number,
     message: string,

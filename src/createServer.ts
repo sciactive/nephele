@@ -17,6 +17,7 @@ import {
   GET,
   HEAD,
   MKCOL,
+  MOVE,
   OPTIONS,
   POST,
   PROPFIND,
@@ -195,7 +196,7 @@ export default function createServer(
   app.put('*', runMethodCatchErrors(new PUT(adapter, opts)));
   app.delete('*', runMethodCatchErrors(new DELETE(adapter, opts)));
   app.copy('*', runMethodCatchErrors(new COPY(adapter, opts)));
-  app.move('*', runMethodCatchErrors(new Method(adapter, opts)));
+  app.move('*', runMethodCatchErrors(new MOVE(adapter, opts)));
   app.mkcol('*', runMethodCatchErrors(new MKCOL(adapter, opts)));
   app.lock('*', runMethodCatchErrors(new Method(adapter, opts)));
   app.unlock('*', runMethodCatchErrors(new Method(adapter, opts)));
