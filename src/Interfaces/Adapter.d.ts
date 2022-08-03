@@ -100,6 +100,9 @@ export interface Adapter {
   /**
    * See whether the request is authorized, based on a URL and a method.
    *
+   * Don't take locks into consideration. Those are handled separately by
+   * Nephele.
+   *
    * @param url Resource URL.
    * @param method Request method.
    * @param baseUrl The root of the WebDav server's namespace on the server.

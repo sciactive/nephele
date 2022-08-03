@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
 import {
   BadRequestError,
+  LockedError,
   MediaTypeNotSupportedError,
   NotAcceptableError,
   PreconditionFailedError,
@@ -149,6 +150,46 @@ export class MOVE extends Method {
             );
           }
 
+          const lockPermission = await this.getLockPermission(
+            request,
+            resource,
+            response.locals.user
+          );
+
+          // Check that the resource wouldn't be removed from a locked collection.
+          if (lockPermission === 1) {
+            throw new LockedError(
+              'The user does not have permission to move a resource from the locked collection.'
+            );
+          }
+
+          if (lockPermission === 0) {
+            throw new LockedError(
+              'The user does not have permission to move the locked resource.'
+            );
+          }
+
+          if (topLevel) {
+            const lockPermission = await this.getLockPermission(
+              request,
+              destinationResource,
+              response.locals.user
+            );
+
+            // Check that the resource wouldn't be added to a locked collection.
+            if (lockPermission === 1) {
+              throw new LockedError(
+                'The user does not have permission to add a new resource to the locked collection.'
+              );
+            }
+
+            if (lockPermission === 0) {
+              throw new LockedError(
+                'The user does not have permission to modify the locked resource.'
+              );
+            }
+          }
+
           if (destinationExists) {
             if (topLevel && (await destinationResource.isCollection())) {
               // According to the spec, if the destination is an existing
@@ -172,10 +213,9 @@ export class MOVE extends Method {
               // undeletable, or contains something that's undeletable.
 
               const lockPermission = await this.getLockPermission(
+                request,
                 destinationResource,
-                response.locals.user,
-                // TODO: locks.
-                []
+                response.locals.user
               );
 
               if (lockPermission !== 2) {

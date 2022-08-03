@@ -82,6 +82,25 @@ export class DELETE extends Method {
       });
     });
 
+    const lockPermission = await this.getLockPermission(
+      request,
+      resource,
+      response.locals.user
+    );
+
+    // Check that the resource wouldn't be removed from a locked collection.
+    if (lockPermission === 1) {
+      throw new LockedError(
+        'The user does not have permission to remove a resource from the locked collection.'
+      );
+    }
+
+    if (lockPermission === 0) {
+      throw new LockedError(
+        'The user does not have permission to delete the locked resource.'
+      );
+    }
+
     if (await resource.isCollection()) {
       const multiStatus = new MultiStatus();
 
@@ -135,39 +154,29 @@ export class DELETE extends Method {
       for (let child of children) {
         const run = catchErrors(
           async () => {
-            let deleteThisOne = true;
-            let locked = false;
-
             const lockPermission = await this.getLockPermission(
+              request,
               child,
-              response.locals.user,
-              // TODO: locks.
-              []
+              response.locals.user
             );
-            if (lockPermission === 0) {
+            if (lockPermission !== 2) {
               throw new LockedError('This resource is locked.');
-            } else if (lockPermission === 1) {
-              deleteThisOne = false;
-              locked = true;
             }
 
             if (await child.isCollection()) {
-              deleteThisOne = await this.recursivelyDelete(
-                child,
-                request,
-                response,
-                multiStatus,
-                checkConditionalHeaders
-              );
-              allDeleted = allDeleted && deleteThisOne;
+              allDeleted =
+                allDeleted &&
+                (await this.recursivelyDelete(
+                  child,
+                  request,
+                  response,
+                  multiStatus,
+                  checkConditionalHeaders
+                ));
             }
 
-            if (deleteThisOne) {
-              await checkConditionalHeaders(child);
-              await child.delete(response.locals.user);
-            } else if (locked) {
-              throw new LockedError('This resource is locked.');
-            }
+            await checkConditionalHeaders(child);
+            await child.delete(response.locals.user);
           },
           async (code, message, error) => {
             if (code === 500 && error) {

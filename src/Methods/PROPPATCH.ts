@@ -5,6 +5,7 @@ import type { AuthResponse } from '../Interfaces/index.js';
 import {
   BadRequestError,
   FailedDependencyError,
+  LockedError,
   NotAcceptableError,
   PropertyIsProtectedError,
 } from '../Errors/index.js';
@@ -50,6 +51,18 @@ export class PROPPATCH extends Method {
     if (!('propertyupdate' in xml)) {
       throw new BadRequestError(
         'PROPPATCH methods requires a propertyupdate element.'
+      );
+    }
+
+    const lockPermission = await this.getLockPermission(
+      request,
+      resource,
+      response.locals.user
+    );
+
+    if (lockPermission === 0) {
+      throw new LockedError(
+        'The user does not have permission to modify the locked resource.'
       );
     }
 

@@ -36,6 +36,14 @@ export interface Options {
    */
   timeout: number;
   /**
+   * The minimum length of time a lock can be granted for, in milliseconds.
+   */
+  minLockTimeout: number;
+  /**
+   * The maximum length of time a lock can be granted for, in milliseconds.
+   */
+  maxLockTimeout: number;
+  /**
    * The error handler is used to send a human readable error message back to
    * the user. When called, the response code will have already been set, but no
    * body content will have been sent.
@@ -53,6 +61,8 @@ export const defaults: Options = {
   compression: false,
   realm: 'Nephele WebDAV Service',
   timeout: 30000,
+  minLockTimeout: 30000,
+  maxLockTimeout: 1000 * 60 * 60 * 12, // 12 hours.
   errorHandler: async (
     code: number,
     message: string,

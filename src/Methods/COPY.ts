@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
 import {
   BadRequestError,
+  LockedError,
   MediaTypeNotSupportedError,
   NotAcceptableError,
   PreconditionFailedError,
@@ -152,6 +153,27 @@ export class COPY extends Method {
             );
           }
 
+          if (topLevel) {
+            const lockPermission = await this.getLockPermission(
+              request,
+              destinationResource,
+              response.locals.user
+            );
+
+            // Check that the resource wouldn't be added to a locked collection.
+            if (lockPermission === 1) {
+              throw new LockedError(
+                'The user does not have permission to add a new resource to the locked collection.'
+              );
+            }
+
+            if (lockPermission === 0) {
+              throw new LockedError(
+                'The user does not have permission to modify the locked resource.'
+              );
+            }
+          }
+
           if (destinationExists) {
             if (topLevel && (await destinationResource.isCollection())) {
               // According to the spec, if the destination is an existing
@@ -175,10 +197,9 @@ export class COPY extends Method {
               // undeletable, or contains something that's undeletable.
 
               const lockPermission = await this.getLockPermission(
+                request,
                 destinationResource,
-                response.locals.user,
-                // TODO: locks.
-                []
+                response.locals.user
               );
 
               if (lockPermission !== 2) {
@@ -187,7 +208,7 @@ export class COPY extends Method {
                 // internal members of the collection, not all members, but
                 // merging members below its internal members would a. be very
                 // complicated, and b. probably not result in what a user would
-                // expect.
+                // expect or want.
                 return;
               }
             }

@@ -1,5 +1,3 @@
-import fsp from 'node:fs/promises';
-
 import type { Properties as PropertiesInterface } from '../index.js';
 import {
   ForbiddenError,
@@ -7,6 +5,7 @@ import {
   PropertyNotFoundError,
 } from '../index.js';
 
+import type { MetaStorage } from './Resource.js';
 import Resource from './Resource.js';
 import User from './User.js';
 
@@ -43,6 +42,7 @@ export default class Properties implements PropertiesInterface {
           return {};
         }
       case 'supportedlock':
+        // This adapter supports exclusive and shared write locks.
         return {
           lockentry: [
             {
@@ -104,27 +104,16 @@ export default class Properties implements PropertiesInterface {
         }
     }
 
-    // Fall back to a file based prop store.
-    const filepath = await this.resource.getPropFilePath();
-    try {
-      const props = JSON.parse((await fsp.readFile(filepath)).toString());
+    // Fall back to a metadata file based prop store.
+    const meta = await this.resource.readMetadataFile();
 
-      if (!('*' in props) || !(name in props['*'])) {
-        throw new PropertyNotFoundError(
-          `${name} property doesn't exist on resource.`
-        );
-      }
-
-      return props['*'][name];
-    } catch (e: any) {
-      if (e.code === 'ENOENT') {
-        throw new PropertyNotFoundError(
-          `${name} property doesn't exist on resource.`
-        );
-      } else {
-        throw e;
-      }
+    if (meta.props == null || !(name in meta.props)) {
+      throw new PropertyNotFoundError(
+        `${name} property doesn't exist on resource.`
+      );
     }
+
+    return meta.props[name];
   }
 
   async getByUser(name: string, _user: User) {
@@ -156,9 +145,7 @@ export default class Properties implements PropertiesInterface {
   }
 
   async runInstructions(instructions: ['set' | 'remove', string, any][]) {
-    // Prepare file based prop store.
-    const filepath = await this.resource.getPropFilePath();
-    let props: { [k: string]: any } = {};
+    let meta: MetaStorage = {};
     let changed = false;
     let errors: [string, Error][] = [];
     let setMode: number | undefined = undefined;
@@ -172,11 +159,9 @@ export default class Properties implements PropertiesInterface {
     };
 
     try {
-      props = JSON.parse((await fsp.readFile(filepath)).toString());
+      meta = await this.resource.readMetadataFile();
     } catch (e: any) {
-      if (e.code !== 'ENOENT') {
-        return errorEverything(e);
-      }
+      return errorEverything(e);
     }
 
     for (let instruction of instructions) {
@@ -211,11 +196,11 @@ export default class Properties implements PropertiesInterface {
           continue;
         }
 
-        if (!('*' in props)) {
-          props['*'] = {};
+        if (meta.props == null) {
+          meta.props = {};
         }
 
-        props['*'][name] = value;
+        meta.props[name] = value;
         changed = true;
       } else {
         if (name === 'LCGDM:%%mode') {
@@ -226,8 +211,8 @@ export default class Properties implements PropertiesInterface {
           continue;
         }
 
-        if ('*' in props && name in props['*']) {
-          delete props['*'][name];
+        if (meta.props != null && name in meta.props) {
+          delete meta.props[name];
           changed = true;
         }
       }
@@ -258,16 +243,7 @@ export default class Properties implements PropertiesInterface {
 
     if (changed) {
       try {
-        await fsp.writeFile(filepath, JSON.stringify(props, null, 2));
-
-        if (this.resource.adapter.pam) {
-          const stat = await fsp.stat(this.resource.absolutePath);
-          try {
-            await fsp.chown(filepath, stat.uid, stat.gid);
-          } catch (e: any) {
-            // Ignore errors on setting ownership of props file.
-          }
-        }
+        await this.resource.saveMetadataFile(meta);
       } catch (e: any) {
         await unsetMode();
         return errorEverything(e);
@@ -287,19 +263,10 @@ export default class Properties implements PropertiesInterface {
   }
 
   async getAll() {
-    const filepath = await this.resource.getPropFilePath();
-    let props: { [k: string]: any } = {};
-
-    try {
-      props = JSON.parse((await fsp.readFile(filepath)).toString());
-    } catch (e: any) {
-      if (e.code !== 'ENOENT') {
-        throw e;
-      }
-    }
+    const meta = await this.resource.readMetadataFile();
 
     return {
-      ...props['*'],
+      ...meta.props,
       creationdate: await this.get('creationdate'),
       getcontentlength: await this.get('getcontentlength'),
       getcontenttype: await this.get('getcontenttype'),
@@ -354,22 +321,13 @@ export default class Properties implements PropertiesInterface {
   }
 
   async listDead() {
-    const filepath = await this.resource.getPropFilePath();
-    let props: { [k: string]: any } = {};
-
-    try {
-      props = JSON.parse((await fsp.readFile(filepath)).toString());
-    } catch (e: any) {
-      if (e.code !== 'ENOENT') {
-        throw e;
-      }
-    }
+    let meta = await this.resource.readMetadataFile();
 
     return [
       // TODO: Should these be included if they're not defined yet.
       // 'displayname',
       // 'getcontentlanguage',
-      ...Object.keys(props['*'] || {}),
+      ...Object.keys(meta.props || {}),
     ];
   }
 

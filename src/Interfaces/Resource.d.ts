@@ -6,32 +6,34 @@ import type { User } from './User.js';
 
 export interface Resource {
   /**
-   * Return any locks that apply to this resource, including any lock for
-   * collection resources that contain this resource where the lock has a depth
-   * such that this resource is included.
+   * Return any locks currently saved for this resource.
    *
-   * A depth 1 lock applies to a collection and its immediate children, while a
-   * depth infinity lock applies to a collection and all of its descendents.
+   * This includes any provisional locks.
+   *
+   * Don't worry about timed out locks. Nephele will check for them and delete
+   * them.
    */
   getLocks(): Promise<Lock[]>;
 
   /**
-   * Return any locks that apply to this resource and were issued to the given
-   * user, including any lock for collection resources that contain this
-   * resource where the lock has a depth such that this resource is included.
+   * Return any locks currently saved for this resource for the given user.
    *
-   * A depth 1 lock applies to a collection and its immediate children, while a
-   * depth infinity lock applies to a collection and all of its descendents.
+   * This includes any provisional locks.
+   *
+   * Don't worry about timed out locks. Nephele will check for them and delete
+   * them.
    */
   getLocksByUser(user: User): Promise<Lock[]>;
 
-  getProperties(): Promise<Properties>;
+  /**
+   * Create a new lock for this user.
+   *
+   * The defaults for the lock don't matter. They will be assigned by Nephele
+   * before being saved to storage.
+   */
+  createLockForUser(user: User): Promise<Lock>;
 
-  // /**
-  //  * Note: This can be dangerous to use, since the body could be gigabytes in length.
-  //  */
-  // getBody(): Promise<Buffer | string>;
-  // setBody(input: Buffer | string): Promise<void>;
+  getProperties(): Promise<Properties>;
 
   getStream(): Promise<Readable>;
 

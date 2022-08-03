@@ -168,7 +168,7 @@ export default class Adapter implements AdapterInterface {
     return 'max-age=604800';
   }
 
-  async authenticate(request: Request, response: AuthResponse) {
+  async authenticate(request: Request, _response: AuthResponse) {
     const authorization = request.get('Authorization');
     let username = 'nobody';
     let password = '';
@@ -213,8 +213,9 @@ export default class Adapter implements AdapterInterface {
     }
 
     if (['LOCK', 'UNLOCK'].includes(method)) {
-      // TODO: What should this be?
-      access = 'r';
+      // Require the user to have write permission to lock and unlock a
+      // resource.
+      access = 'w';
     }
 
     if (access === 'u') {

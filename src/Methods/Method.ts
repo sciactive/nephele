@@ -18,7 +18,6 @@ import {
   EncodingNotSupportedError,
   MediaTypeNotSupportedError,
   MethodNotSupportedError,
-  RequestTimeoutError,
   UnauthorizedError,
 } from '../index.js';
 
@@ -90,58 +89,184 @@ export class Method {
   }
 
   /**
-   * Check if the user has permission to modify the resource, given a set of
-   * locks they have submitted.
+   * Return the collection of which the given resource is an internal member.
+   *
+   * Returns `undefined` if the resource is the root of the WebDAV server.
+   */
+  async getParentResource(request: Request, resource: Resource) {
+    const url = await resource.getCanonicalUrl(this.getRequestBaseUrl(request));
+
+    const splitPath = url.pathname.replace(/(?:$|\/$)/, () => '').split('/');
+    const newPath = splitPath
+      .slice(0, -1)
+      .join('/')
+      .replace(/(?:$|\/$)/, () => '/');
+
+    if (newPath === request.baseUrl.replace(/(?:$|\/$)/, () => '/')) {
+      return undefined;
+    }
+
+    return await this.adapter.getResource(
+      new URL(newPath, this.getRequestBaseUrl(request)),
+      request.baseUrl
+    );
+  }
+
+  async removeAndDeleteTimedOutLocks(locks: Lock[]) {
+    const currentLocks: Lock[] = [];
+
+    for (let lock of locks) {
+      if (lock.date.getTime() + lock.timeout <= new Date().getTime()) {
+        try {
+          await lock.delete();
+        } catch (e: any) {
+          // Ignore errors deleting timed out locks.
+        }
+      } else {
+        currentLocks.push(lock);
+      }
+    }
+
+    return currentLocks;
+  }
+
+  async getCurrentResourceLocks(resource: Resource) {
+    const locks = await resource.getLocks();
+    return await this.removeAndDeleteTimedOutLocks(locks);
+  }
+
+  async getCurrentResourceLocksByUser(resource: Resource, user: User) {
+    const locks = await resource.getLocksByUser(user);
+    return await this.removeAndDeleteTimedOutLocks(locks);
+  }
+
+  async getLocks(request: Request, resource: Resource) {
+    const resourceLocks = await this.getCurrentResourceLocks(resource);
+    const locks: {
+      all: Lock[];
+      resource: Lock[];
+      depthZero: Lock[];
+      depthInfinity: Lock[];
+    } = {
+      all: [...resourceLocks],
+      resource: resourceLocks,
+      depthZero: [],
+      depthInfinity: [],
+    };
+
+    let parent = await this.getParentResource(request, resource);
+    let firstLevelParent = true;
+    while (parent) {
+      const parentLocks = await this.getCurrentResourceLocks(parent);
+
+      for (let lock of parentLocks) {
+        if (lock.depth === 'infinity') {
+          locks.depthInfinity.push(lock);
+          locks.all.push(lock);
+        } else if (firstLevelParent && lock.depth === '0') {
+          locks.depthZero.push(lock);
+          locks.all.push(lock);
+        }
+      }
+
+      parent = await this.getParentResource(request, parent);
+      firstLevelParent = false;
+    }
+
+    return locks;
+  }
+
+  async getLocksByUser(request: Request, resource: Resource, user: User) {
+    const resourceLocks = await this.getCurrentResourceLocksByUser(
+      resource,
+      user
+    );
+    const locks: {
+      all: Lock[];
+      resource: Lock[];
+      depthZero: Lock[];
+      depthInfinity: Lock[];
+    } = {
+      all: [...resourceLocks],
+      resource: resourceLocks,
+      depthZero: [],
+      depthInfinity: [],
+    };
+
+    let parent = await this.getParentResource(request, resource);
+    let firstLevelParent = true;
+    while (parent) {
+      const parentLocks = await this.getCurrentResourceLocksByUser(
+        parent,
+        user
+      );
+
+      for (let lock of parentLocks) {
+        if (lock.depth === 'infinity') {
+          locks.depthInfinity.push(lock);
+          locks.all.push(lock);
+        } else if (firstLevelParent && lock.depth === '0') {
+          locks.depthZero.push(lock);
+          locks.all.push(lock);
+        }
+      }
+
+      parent = await this.getParentResource(request, parent);
+      firstLevelParent = false;
+    }
+
+    return locks;
+  }
+
+  /**
+   * Check if the user has permission to modify the resource, taking into
+   * account the set of locks they have submitted.
    *
    * Returns 0 if the user has no permissions to modify this resource or any
-   * resource this one may contain. (Depth infinity locked.)
+   * resource this one may contain. (Directly locked or depth infinity locked.)
    *
-   * Returns 1 if this resource is a collection and the user has no permission
-   * to modify the resource, but it can modify the members of this resource.
-   * (Depth 0 locked.)
+   * Returns 1 if this resource is within a collection and the user has no
+   * permission to modify the mapping of the internal members of the collection,
+   * but it can modify the contents of members. This means the user cannot
+   * create, move, or delete the resource, but can change its contents. (Depth 0
+   * locked.)
    *
    * Returns 2 if the user has full permissions to modify this resource (either
    * it is not locked or the user owns the lock and has provided it).
    *
    * @param resource The resource to check.
    * @param user The user to check.
-   * @param lockGuids The lock guids provided by the user.
    */
   async getLockPermission(
+    request: Request,
     resource: Resource,
-    user: User,
-    lockGuids: string[]
+    user: User
   ): Promise<0 | 1 | 2> {
-    const resourceLocks = await resource.getLocks();
+    const locks = await this.getLocks(request, resource);
+    // TODO: extract lock tokens from request.
+    const lockTokens: string[] = [];
 
-    if (!resourceLocks.length) {
+    if (!locks.all.length) {
       return 2;
     }
 
-    const userLocks = await resource.getLocksByUser(user);
-    const lockGuidsSet = new Set(lockGuids);
+    const userLocks = await this.getLocksByUser(request, resource, user);
+    const lockTokenSet = new Set(lockTokens);
 
-    if (userLocks.find((userLock) => lockGuidsSet.has(userLock.guid))) {
+    if (userLocks.all.find((userLock) => lockTokenSet.has(userLock.token))) {
       // The user owns the lock and has provided it.
       return 2;
     }
 
-    if (!(await resource.isCollection())) {
+    if (locks.depthInfinity.length || locks.resource.length) {
       return 0;
     }
 
-    // Find the most restrictive lock.
-    let restrictiveLock: Lock = resourceLocks[0];
-    for (let lock of resourceLocks) {
-      if (restrictiveLock.depth === '0') {
-        restrictiveLock = lock;
-      }
-      if (restrictiveLock.depth === 'infinity') {
-        break;
-      }
+    if (locks.depthZero.length) {
+      return 1;
     }
 
-    return restrictiveLock.depth === 'infinity' ? 0 : 1;
+    return 0;
   }
 
   getRequestBaseUrl(request: Request) {

@@ -31,7 +31,24 @@ import {
   otherExecuteBit,
 } from './FileSystemBits.js';
 import Properties from './Properties.js';
-import type User from './User.js';
+import User from './User.js';
+import Lock from './Lock.js';
+
+export type MetaStorage = {
+  props?: {
+    [name: string]: any;
+  };
+  locks?: {
+    [token: string]: {
+      username: string;
+      date: number;
+      timeout: number;
+      exclusive: boolean;
+      depth: '0' | 'infinity';
+      provisional: boolean;
+    };
+  };
+};
 
 export default class Resource implements ResourceInterface {
   path: string;
@@ -60,11 +77,55 @@ export default class Resource implements ResourceInterface {
   }
 
   async getLocks() {
-    return [];
+    const meta = await this.readMetadataFile();
+
+    if (meta.locks == null) {
+      return [];
+    }
+
+    return Object.entries(meta.locks).map(([token, entry]) => {
+      const user = new User({
+        username: entry.username,
+        adapter: this.adapter,
+      });
+      const lock = new Lock({ resource: this, user });
+
+      lock.token = token;
+      lock.date = new Date(entry.date);
+      lock.timeout = entry.timeout;
+      lock.exclusive = entry.exclusive;
+      lock.depth = entry.depth;
+      lock.provisional = entry.provisional;
+
+      return lock;
+    });
   }
 
-  async getLocksByUser(_user: User) {
-    return [];
+  async getLocksByUser(user: User) {
+    const meta = await this.readMetadataFile();
+
+    if (meta.locks == null) {
+      return [];
+    }
+
+    return Object.entries(meta.locks)
+      .filter(([_token, entry]) => user.username === entry.username)
+      .map(([token, entry]) => {
+        const lock = new Lock({ resource: this, user });
+
+        lock.token = token;
+        lock.date = new Date(entry.date);
+        lock.timeout = entry.timeout;
+        lock.exclusive = entry.exclusive;
+        lock.depth = entry.depth;
+        lock.provisional = entry.provisional;
+
+        return lock;
+      });
+  }
+
+  async createLockForUser(user: User) {
+    return new Lock({ resource: this, user });
   }
 
   async getProperties() {
@@ -178,18 +239,18 @@ export default class Resource implements ResourceInterface {
       throw new ForbiddenError('This resource cannot be deleted.');
     }
 
-    const propsFilePath = await this.getPropFilePath();
-    let propsFileExists = false;
+    const metaFilePath = await this.getMetadataFilePath();
+    let metaFileExists = false;
     try {
-      await fsp.access(propsFilePath, constants.F_OK);
-      propsFileExists = true;
+      await fsp.access(metaFilePath, constants.F_OK);
+      metaFileExists = true;
     } catch (e: any) {
-      propsFileExists = false;
+      metaFileExists = false;
     }
 
-    if (propsFileExists) {
+    if (metaFileExists) {
       try {
-        await fsp.access(propsFilePath, constants.W_OK);
+        await fsp.access(metaFilePath, constants.W_OK);
       } catch (e: any) {
         throw new ForbiddenError('This resource cannot be deleted.');
       }
@@ -216,12 +277,12 @@ export default class Resource implements ResourceInterface {
       }
     }
 
-    if (propsFileExists) {
-      await fsp.unlink(propsFilePath);
+    if (metaFileExists) {
+      await fsp.unlink(metaFilePath);
     }
 
     if (await this.isCollection()) {
-      await this.deleteOrphanedConfigFiles();
+      await this.deleteOrphanedMetadataFiles();
       await fsp.rmdir(this.absolutePath);
     } else {
       await fsp.unlink(this.absolutePath);
@@ -293,13 +354,13 @@ export default class Resource implements ResourceInterface {
       }
     }
 
-    let propsFilePath: string | undefined = undefined;
+    let metaFilePath: string | undefined = undefined;
     if (await this.isCollection()) {
       try {
         const stat = await fsp.stat(destinationPath);
         if (stat.isDirectory()) {
           try {
-            await fsp.rm(path.join(destinationPath, '.nepheleprops'));
+            await fsp.rm(path.join(destinationPath, '.nephelemeta'));
           } catch (e: any) {
             // Ignore errors deleting possible non-existent file.
           }
@@ -322,49 +383,48 @@ export default class Resource implements ResourceInterface {
         }
       }
       try {
-        propsFilePath = path.join(destinationPath, '.nepheleprops');
+        metaFilePath = path.join(destinationPath, '.nephelemeta');
         try {
-          await fsp.unlink(propsFilePath);
+          await fsp.unlink(metaFilePath);
         } catch (e: any) {
           // Ignore errors deleting a possibly non-existend file.
         }
-        await fsp.copyFile(await this.getPropFilePath(), propsFilePath);
+        await fsp.copyFile(await this.getMetadataFilePath(), metaFilePath);
       } catch (e: any) {
-        // Ignore errors while copying props files.
-        propsFilePath = undefined;
+        // Ignore errors while copying metadata files.
+        metaFilePath = undefined;
       }
     } else {
       await fsp.copyFile(this.absolutePath, destinationPath);
       try {
         const dirname = path.dirname(destinationPath);
         const basename = path.basename(destinationPath);
-        propsFilePath = path.join(dirname, `${basename}.nepheleprops`);
+        metaFilePath = path.join(dirname, `${basename}.nephelemeta`);
         try {
-          await fsp.unlink(propsFilePath);
+          await fsp.unlink(metaFilePath);
         } catch (e: any) {
           // Ignore errors deleting a possibly non-existend file.
         }
-        await fsp.copyFile(await this.getPropFilePath(), propsFilePath);
+        await fsp.copyFile(await this.getMetadataFilePath(), metaFilePath);
       } catch (e: any) {
-        // Ignore errors while copying props files.
-        propsFilePath = undefined;
+        // Ignore errors while copying metadata files.
+        metaFilePath = undefined;
       }
     }
 
     if (this.adapter.pam) {
-      // Copy owner info.
-      await fsp.chown(
-        destinationPath,
-        await user.getUid(),
-        await user.getGid()
-      );
+      const uid = await user.getUid();
+      const gid = await user.getGid();
 
-      if (propsFilePath != null) {
-        await fsp.chown(
-          propsFilePath,
-          await user.getUid(),
-          await user.getGid()
-        );
+      // Set owner info.
+      await fsp.chown(destinationPath, uid, gid);
+      const stat = await fsp.stat(this.absolutePath);
+      // Set permissions.
+      await fsp.chmod(destinationPath, stat.mode % 0o1000);
+
+      if (metaFilePath != null) {
+        await fsp.chown(metaFilePath, uid, gid);
+        await fsp.chmod(destinationPath, stat.mode % 0o1000);
       }
     }
 
@@ -475,15 +535,15 @@ export default class Resource implements ResourceInterface {
     try {
       const dirname = path.dirname(destinationPath);
       const basename = path.basename(destinationPath);
-      const propsFilePath = path.join(dirname, `${basename}.nepheleprops`);
+      const metaFilePath = path.join(dirname, `${basename}.nephelemeta`);
       try {
-        await fsp.unlink(propsFilePath);
+        await fsp.unlink(metaFilePath);
       } catch (e: any) {
         // Ignore errors deleting a possibly non-existend file.
       }
-      await fsp.rename(await this.getPropFilePath(), propsFilePath);
+      await fsp.rename(await this.getMetadataFilePath(), metaFilePath);
     } catch (e: any) {
-      // Ignore errors while moving props files.
+      // Ignore errors while moving metadata files.
     }
 
     return;
@@ -590,7 +650,7 @@ export default class Resource implements ResourceInterface {
     const resources: Resource[] = [];
 
     for (let name of listing) {
-      if (name.endsWith('.nepheleprops')) {
+      if (name.endsWith('.nephelemeta')) {
         continue;
       }
 
@@ -621,6 +681,7 @@ export default class Resource implements ResourceInterface {
 
   async setMode(mode: number) {
     await fsp.chmod(this.absolutePath, mode);
+    await fsp.chmod(await this.getMetadataFilePath(), mode);
   }
 
   async getFreeSpace() {
@@ -637,42 +698,90 @@ export default class Resource implements ResourceInterface {
     return (await checkDiskSpace(directory)).size;
   }
 
-  async getPropFilePath() {
+  async getMetadataFilePath() {
     if (await this.isCollection()) {
-      return path.join(this.absolutePath, '.nepheleprops');
+      return path.join(this.absolutePath, '.nephelemeta');
     } else {
       const dirname = path.dirname(this.absolutePath);
       const basename = path.basename(this.absolutePath);
-      return path.join(dirname, `${basename}.nepheleprops`);
+      return path.join(dirname, `${basename}.nephelemeta`);
     }
   }
 
-  async deleteOrphanedConfigFiles() {
+  async readMetadataFile() {
+    const filepath = await this.getMetadataFilePath();
+    let meta: MetaStorage = {};
+
+    try {
+      meta = JSON.parse((await fsp.readFile(filepath)).toString());
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') {
+        throw e;
+      }
+    }
+
+    return meta;
+  }
+
+  async saveMetadataFile(meta: MetaStorage) {
+    const filepath = await this.getMetadataFilePath();
+    let exists = true;
+
+    try {
+      await fsp.access(filepath, constants.F_OK);
+    } catch (e: any) {
+      exists = false;
+    }
+
+    if (
+      (meta.props == null || Object.keys(meta.props).length === 0) &&
+      (meta.locks == null || Object.keys(meta.locks).length === 0)
+    ) {
+      if (exists) {
+        // Delete metadata file, since it should now be empty.
+        await fsp.unlink(filepath);
+      }
+    } else {
+      await fsp.writeFile(filepath, JSON.stringify(meta, null, 2));
+
+      if (!exists && this.adapter.pam) {
+        const stat = await fsp.stat(this.absolutePath);
+        try {
+          await fsp.chown(filepath, stat.uid, stat.gid);
+          await fsp.chmod(filepath, stat.mode % 0o1000);
+        } catch (e: any) {
+          // Ignore errors on setting ownership of meta file.
+        }
+      }
+    }
+  }
+
+  async deleteOrphanedMetadataFiles() {
     if (!(await this.isCollection())) {
       throw new MethodNotSupportedError('This is not a collection.');
     }
 
     const listing = await fsp.readdir(this.absolutePath);
     const files: Set<string> = new Set();
-    const propsFiles: Set<string> = new Set();
+    const metaFiles: Set<string> = new Set();
 
     for (let name of listing) {
-      if (name === '.nepheleprops') {
+      if (name === '.nephelemeta') {
         continue;
       }
 
-      if (name.endsWith('.nepheleprops')) {
-        propsFiles.add(name);
+      if (name.endsWith('.nephelemeta')) {
+        metaFiles.add(name);
       } else {
         files.add(name);
       }
     }
 
     for (let name of files) {
-      propsFiles.delete(`${name}.nepheleprops`);
+      metaFiles.delete(`${name}.nephelemeta`);
     }
 
-    const orphans = Array.from(propsFiles);
+    const orphans = Array.from(metaFiles);
 
     for (let name of orphans) {
       const orphanPath = path.join(this.absolutePath, name);

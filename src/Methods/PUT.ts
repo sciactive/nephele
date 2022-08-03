@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
 import {
   BadRequestError,
+  LockedError,
   PreconditionFailedError,
   ResourceNotFoundError,
 } from '../Errors/index.js';
@@ -35,6 +36,25 @@ export class PUT extends Method {
       // It's a new resource, so any etag should fail.
       if (ifMatch != null) {
         throw new PreconditionFailedError('If-Match header check failed.');
+      }
+
+      const lockPermission = await this.getLockPermission(
+        request,
+        resource,
+        response.locals.user
+      );
+
+      // Check that the resource wouldn't be added to a locked collection.
+      if (lockPermission === 1) {
+        throw new LockedError(
+          'The user does not have permission to add a new resource to the locked collection.'
+        );
+      }
+
+      if (lockPermission === 0) {
+        throw new LockedError(
+          'The user does not have permission to create the locked resource.'
+        );
       }
     } else {
       const properties = await resource.getProperties();
@@ -77,6 +97,18 @@ export class PUT extends Method {
       //     'Overwriting existing resource requires the use of a conditional header, If-Match or If-Unmodified-Since.'
       //   );
       // }
+
+      const lockPermission = await this.getLockPermission(
+        request,
+        resource,
+        response.locals.user
+      );
+
+      if (lockPermission === 0) {
+        throw new LockedError(
+          'The user does not have permission to modify the locked resource.'
+        );
+      }
     }
 
     const ifNoneMatch = request.get('If-None-Match');

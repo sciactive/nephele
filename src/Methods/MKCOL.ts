@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import type { AuthResponse } from '../Interfaces/index.js';
 import {
   BadRequestError,
+  LockedError,
   MediaTypeNotSupportedError,
   PreconditionFailedError,
 } from '../Errors/index.js';
@@ -53,6 +54,25 @@ export class MKCOL extends Method {
         resolve();
       });
     });
+
+    const lockPermission = await this.getLockPermission(
+      request,
+      resource,
+      response.locals.user
+    );
+
+    // Check that the resource wouldn't be added to a locked collection.
+    if (lockPermission === 1) {
+      throw new LockedError(
+        'The user does not have permission to add a new resource to the locked collection.'
+      );
+    }
+
+    if (lockPermission === 0) {
+      throw new LockedError(
+        'The user does not have permission to create the locked resource.'
+      );
+    }
 
     await resource.create(response.locals.user);
 
