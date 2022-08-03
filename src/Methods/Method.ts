@@ -233,6 +233,16 @@ export class Method {
   async getBodyStream(request: Request, response: AuthResponse) {
     response.locals.debug('Getting body stream.');
 
+    request.setTimeout(this.opts.timeout);
+
+    request.on('timeout', () => {
+      response.locals.debug(
+        `Timed out after waiting ${this.opts.timeout / 1000} seconds for data.`
+      );
+
+      stream.destroy();
+    });
+
     let stream: Readable = request;
     let encoding = request.get('Content-Encoding');
     switch (encoding) {
@@ -268,43 +278,6 @@ export class Method {
         }
         break;
     }
-
-    let timeout: NodeJS.Timeout;
-    const setStreamTimeout = () => {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-
-      timeout = setTimeout(() => {
-        response.locals.debug(
-          `Timed out after waiting ${
-            this.opts.timeout / 1000
-          } seconds for data.`
-        );
-        stream.destroy(
-          new RequestTimeoutError(
-            `Timed out after waiting ${
-              this.opts.timeout / 1000
-            } seconds for data.`
-          )
-        );
-      }, this.opts.timeout);
-    };
-    setStreamTimeout();
-
-    stream.on('data', setStreamTimeout);
-
-    stream.on('end', () => {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-    });
-
-    stream.on('error', () => {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-    });
 
     return stream;
   }

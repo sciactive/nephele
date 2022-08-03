@@ -181,30 +181,31 @@ export default class Properties implements PropertiesInterface {
 
     for (let instruction of instructions) {
       const [action, name, value] = instruction;
-      if (action === 'set') {
-        if (
-          [
-            'creationdate',
-            'getcontentlength',
-            'getcontenttype',
-            'getetag',
-            'getlastmodified',
-            'lockdiscovery',
-            'resourcetype',
-            'supportedlock',
-            'quota-available-bytes',
-            'quota-used-bytes',
-            'owner',
-            'group',
-          ].includes(name)
-        ) {
-          errors.push([
-            name,
-            new PropertyIsProtectedError(`${name} is a protected property.`),
-          ]);
-          continue;
-        }
 
+      if (
+        [
+          'creationdate',
+          'getcontentlength',
+          'getcontenttype',
+          'getetag',
+          'getlastmodified',
+          'lockdiscovery',
+          'resourcetype',
+          'supportedlock',
+          'quota-available-bytes',
+          'quota-used-bytes',
+          'owner',
+          'group',
+        ].includes(name)
+      ) {
+        errors.push([
+          name,
+          new PropertyIsProtectedError(`${name} is a protected property.`),
+        ]);
+        continue;
+      }
+
+      if (action === 'set') {
         if (name === 'LCGDM:%%mode') {
           setMode = parseInt(value, 8);
           continue;
@@ -217,29 +218,6 @@ export default class Properties implements PropertiesInterface {
         props['*'][name] = value;
         changed = true;
       } else {
-        if (
-          [
-            'creationdate',
-            'getcontentlength',
-            'getcontenttype',
-            'getetag',
-            'getlastmodified',
-            'lockdiscovery',
-            'resourcetype',
-            'supportedlock',
-            'quota-available-bytes',
-            'quota-used-bytes',
-            'owner',
-            'group',
-          ].includes(name)
-        ) {
-          errors.push([
-            name,
-            new PropertyIsProtectedError(`${name} is a protected property.`),
-          ]);
-          continue;
-        }
-
         if (name === 'LCGDM:%%mode') {
           errors.push([
             name,
