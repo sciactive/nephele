@@ -1,7 +1,11 @@
 import fsp from 'node:fs/promises';
 
 import type { Properties as PropertiesInterface } from '../index.js';
-import { PropertyIsProtectedError, PropertyNotFoundError } from '../index.js';
+import {
+  ForbiddenError,
+  PropertyIsProtectedError,
+  PropertyNotFoundError,
+} from '../index.js';
 
 import Resource from './Resource.js';
 import User from './User.js';
@@ -128,76 +132,180 @@ export default class Properties implements PropertiesInterface {
   }
 
   async set(name: string, value: string) {
-    if (
-      [
-        'creationdate',
-        'getcontentlength',
-        'getcontenttype',
-        'getetag',
-        'getlastmodified',
-        'lockdiscovery',
-        'resourcetype',
-        'supportedlock',
-        'quota-available-bytes',
-        'quota-used-bytes',
-        'owner',
-        'group',
-      ].includes(name)
-    ) {
-      throw new PropertyIsProtectedError(`${name} is a protected property.`);
-    }
+    const errors = await this.runInstructions([['set', name, value]]);
 
-    if (name === 'LCGDM:%%mode') {
-      const stats = await this.resource.getStats();
-      const safeMode = parseInt(value, 8) % 0o1000;
-      const mode = stats.mode & 0o777000 & safeMode;
-      await this.resource.setMode(mode);
-      return;
-    }
-
-    // Fall back to a file based prop store.
-    const filepath = await this.resource.getPropFilePath();
-    let props: { [k: string]: any } = {};
-
-    try {
-      props = JSON.parse((await fsp.readFile(filepath)).toString());
-    } catch (e: any) {
-      if (e.code !== 'ENOENT') {
-        throw e;
-      }
-    }
-
-    let changed = false;
-    if (value === undefined) {
-      if ('*' in props && name in props['*']) {
-        delete props['*'][name];
-        changed = true;
-      }
-    } else {
-      if (!('*' in props)) {
-        props['*'] = {};
-      }
-
-      props['*'][name] = value;
-      changed = true;
-    }
-
-    if (changed) {
-      await fsp.writeFile(filepath, JSON.stringify(props, null, 2));
-
-      if (this.resource.adapter.pam) {
-        const stat = await fsp.stat(this.resource.absolutePath);
-        try {
-          await fsp.chown(filepath, stat.uid, stat.gid);
-        } catch (e: any) {
-          // Ignore errors on setting ownership of props file.
-        }
-      }
+    if (errors != null && errors.length) {
+      throw errors[0][1];
     }
   }
 
   async setByUser(name: string, value: string, _user: User) {
     await this.set(name, value);
+  }
+
+  async remove(name: string) {
+    const errors = await this.runInstructions([['remove', name, undefined]]);
+
+    if (errors != null && errors.length) {
+      throw errors[0][1];
+    }
+  }
+
+  async removeByUser(name: string, _user: User) {
+    await this.remove(name);
+  }
+
+  async runInstructions(instructions: ['set' | 'remove', string, any][]) {
+    // Prepare file based prop store.
+    const filepath = await this.resource.getPropFilePath();
+    let props: { [k: string]: any } = {};
+    let changed = false;
+    let errors: [string, Error][] = [];
+    let setMode: number | undefined = undefined;
+
+    const errorEverything = (e: Error) => {
+      const errProps: { [k: string]: Error } = {};
+      for (let instruction of instructions) {
+        errProps[instruction[1]] = e;
+      }
+      return Object.entries(errProps);
+    };
+
+    try {
+      props = JSON.parse((await fsp.readFile(filepath)).toString());
+    } catch (e: any) {
+      if (e.code !== 'ENOENT') {
+        return errorEverything(e);
+      }
+    }
+
+    for (let instruction of instructions) {
+      const [action, name, value] = instruction;
+      if (action === 'set') {
+        if (
+          [
+            'creationdate',
+            'getcontentlength',
+            'getcontenttype',
+            'getetag',
+            'getlastmodified',
+            'lockdiscovery',
+            'resourcetype',
+            'supportedlock',
+            'quota-available-bytes',
+            'quota-used-bytes',
+            'owner',
+            'group',
+          ].includes(name)
+        ) {
+          errors.push([
+            name,
+            new PropertyIsProtectedError(`${name} is a protected property.`),
+          ]);
+          continue;
+        }
+
+        if (name === 'LCGDM:%%mode') {
+          setMode = parseInt(value, 8);
+          continue;
+        }
+
+        if (!('*' in props)) {
+          props['*'] = {};
+        }
+
+        props['*'][name] = value;
+        changed = true;
+      } else {
+        if (
+          [
+            'creationdate',
+            'getcontentlength',
+            'getcontenttype',
+            'getetag',
+            'getlastmodified',
+            'lockdiscovery',
+            'resourcetype',
+            'supportedlock',
+            'quota-available-bytes',
+            'quota-used-bytes',
+            'owner',
+            'group',
+          ].includes(name)
+        ) {
+          errors.push([
+            name,
+            new PropertyIsProtectedError(`${name} is a protected property.`),
+          ]);
+          continue;
+        }
+
+        if (name === 'LCGDM:%%mode') {
+          errors.push([
+            name,
+            new ForbiddenError("This property can't be deleted."),
+          ]);
+          continue;
+        }
+
+        if ('*' in props && name in props['*']) {
+          delete props['*'][name];
+          changed = true;
+        }
+      }
+    }
+
+    if (errors.length) {
+      return errors;
+    }
+
+    let unsetMode = async () => {};
+    if (setMode != null) {
+      try {
+        const stats = await this.resource.getStats();
+        const safeMode = setMode % 0o1000;
+        const mode = stats.mode & 0o777000 & safeMode;
+        unsetMode = async () => {
+          try {
+            await this.resource.setMode(stats.mode);
+          } catch (e: any) {
+            // Ignore errors unsetting mode. Nothing we can do about it.
+          }
+        };
+        await this.resource.setMode(mode);
+      } catch (e: any) {
+        return [...errors, ['LCGDM:%%mode', e] as [string, Error]];
+      }
+    }
+
+    if (changed) {
+      try {
+        await fsp.writeFile(filepath, JSON.stringify(props, null, 2));
+
+        if (this.resource.adapter.pam) {
+          const stat = await fsp.stat(this.resource.absolutePath);
+          try {
+            await fsp.chown(filepath, stat.uid, stat.gid);
+          } catch (e: any) {
+            // Ignore errors on setting ownership of props file.
+          }
+        }
+      } catch (e: any) {
+        await unsetMode();
+        return errorEverything(e);
+      }
+    }
+
+    if (errors.length) {
+      return errors;
+    }
+  }
+
+  async runInstructionsByUser(
+    instructions: ['set' | 'remove', string, any][],
+    _user: User
+  ) {
+    return await this.runInstructions(instructions);
   }
 
   async getAll() {

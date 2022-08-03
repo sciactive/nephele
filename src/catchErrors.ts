@@ -10,6 +10,7 @@ import {
   MethodNotSupportedError,
   NotAcceptableError,
   PreconditionFailedError,
+  PropertyIsProtectedError,
   RequestTimeoutError,
   RequestURITooLongError,
   ResourceExistsError,
@@ -45,6 +46,12 @@ export function catchErrors<A extends any[], R = void>(
       }
 
       if (e instanceof ForbiddenError) {
+        // Forbidden
+        await errorHandler(403, e.message, e, args);
+        return;
+      }
+
+      if (e instanceof PropertyIsProtectedError) {
         // Forbidden
         await errorHandler(403, e.message, e, args);
         return;

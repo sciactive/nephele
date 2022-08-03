@@ -17,6 +17,50 @@ const parser = new xml2js.Parser({
   xmlns: true,
 });
 
+const parseproppatch = async () => {
+  const xml = `<?xml version="1.0" encoding="utf-8" ?>
+<D:propertyupdate xmlns:D="DAV:" xmlns:Z="http://ns.example.com/standards/z39.50">
+  <D:set>
+    <D:prop>
+      <Z:Authors>
+        <Z:Author>Jim Whitehead</Z:Author>
+        <Z:Author>Roy Fielding</Z:Author>
+      </Z:Authors>
+    </D:prop>
+  </D:set>
+  <D:remove>
+    <D:prop>
+      <Z:Copyright-Owner/>
+    </D:prop>
+  </D:remove>
+  <D:set>
+    <D:prop>
+      <Z:Authors>
+        <Z:Author>Nully McNullface</Z:Author>
+      </Z:Authors>
+    </D:prop>
+  </D:set>
+  <D:remove>
+    <D:prop>
+      <Z:Copyright-Owner/>
+    </D:prop>
+  </D:remove>
+  <D:remove>
+    <D:prop>
+      <Z:Copyright-Owner/>
+    </D:prop>
+  </D:remove>
+</D:propertyupdate>
+`;
+
+  const method = new Method({} as Adapter, defaults);
+  // const parsed = await parser.parseStringPromise(xml);
+  const { output: parsed } = await method.parseXml(xml);
+
+  console.log(inspect(parsed, false, null));
+};
+await parseproppatch();
+
 const parsexml = async () => {
   const xml = `<?xml version="1.0" encoding="utf-8" ?>
 <D:propfind xmlns:D="DAV:" xml:lang="en">
@@ -32,18 +76,16 @@ const parsexml = async () => {
 `;
 
   const method = new Method({} as Adapter, defaults);
-
-  const parsed = await parser.parseStringPromise(xml);
-  const parsed2 = await method.parseXml(xml);
+  // const parsed = await parser.parseStringPromise(xml);
+  const { output: parsed } = await method.parseXml(xml);
 
   // console.log(inspect(parsed, false, null));
-  // console.log(inspect(parsed2, false, null));
 
-  let testxml = await method.renderXml(parsed2);
+  let testxml = await method.renderXml(parsed);
 
   console.log(testxml);
 };
-await parsexml();
+// await parsexml();
 
 const multistatuspropstat = async () => {
   const multistatus = new MultiStatus();

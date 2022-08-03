@@ -7,6 +7,7 @@ export * from './MOVE.js';
 export * from './OPTIONS.js';
 export * from './POST.js';
 export * from './PROPFIND.js';
+export * from './PROPPATCH.js';
 export * from './PUT.js';
 
 export * from './Method.js';

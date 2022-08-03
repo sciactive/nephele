@@ -9,7 +9,7 @@ import {
   ResourceNotFoundError,
   UnauthorizedError,
 } from '../Errors/index.js';
-import { catchErrors } from '../catchErrors';
+import { catchErrors } from '../catchErrors.js';
 import { MultiStatus, Status } from '../MultiStatus.js';
 
 import { Method } from './Method.js';
@@ -26,7 +26,7 @@ export class MOVE extends Method {
       throw new NotAcceptableError('Requested content type is not supported.');
     }
 
-    const destinationHeader = request.get('Destination');
+    const destination = this.getRequestDestination(request);
     // According to the spec, the depth header on a MOVE on a collection doesn't
     // matter. The server MUST act as if it's set to "infinity". This is here as
     // a reminder of that fact.
@@ -39,14 +39,7 @@ export class MOVE extends Method {
     const ifUnmodifiedSince = request.get('If-Unmodified-Since');
     const resource = await this.adapter.getResource(url, request.baseUrl);
 
-    let destination: URL;
-    if (destinationHeader != null) {
-      try {
-        destination = new URL(destinationHeader);
-      } catch (e: any) {
-        throw new BadRequestError('Destination header must be a valid URI.');
-      }
-    } else {
+    if (!destination) {
       throw new BadRequestError('Destination header is required.');
     }
 

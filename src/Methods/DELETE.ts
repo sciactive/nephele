@@ -8,7 +8,7 @@ import {
   PreconditionFailedError,
   UnauthorizedError,
 } from '../Errors/index.js';
-import { catchErrors } from '../catchErrors';
+import { catchErrors } from '../catchErrors.js';
 import { MultiStatus, Status } from '../MultiStatus.js';
 
 import { Method } from './Method.js';
@@ -181,6 +181,10 @@ export class DELETE extends Method {
 
             if (message) {
               status.description = message;
+            }
+
+            if (error instanceof LockedError) {
+              status.setBody({ error: [{ 'lock-token-submitted': {} }] });
             }
 
             multiStatus.addStatus(status);

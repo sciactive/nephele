@@ -21,6 +21,7 @@ import {
   OPTIONS,
   POST,
   PROPFIND,
+  PROPPATCH,
   PUT,
   Method,
 } from './Methods/index.js';
@@ -204,7 +205,7 @@ export default function createServer(
   // app.search('*', runMethodCatchErrors(new SEARCH(adapter, opts)));
 
   const propfind = runMethodCatchErrors(new PROPFIND(adapter, opts));
-  const proppatch = runMethodCatchErrors(new Method(adapter, opts));
+  const proppatch = runMethodCatchErrors(new PROPPATCH(adapter, opts));
 
   app.all('*', async (request, response: AuthResponse) => {
     switch (request.method) {

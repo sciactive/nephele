@@ -14,6 +14,7 @@ import type {
   User,
 } from '../index.js';
 import {
+  BadRequestError,
   EncodingNotSupportedError,
   MediaTypeNotSupportedError,
   MethodNotSupportedError,
@@ -214,6 +215,21 @@ export class Method {
     return { url, encoding, cacheControl };
   }
 
+  getRequestDestination(request: Request) {
+    const destinationHeader = request.get('Destination');
+
+    let destination: URL | undefined = undefined;
+    if (destinationHeader != null) {
+      try {
+        destination = new URL(destinationHeader);
+      } catch (e: any) {
+        throw new BadRequestError('Destination header must be a valid URI.');
+      }
+    }
+
+    return destination;
+  }
+
   async getBodyStream(request: Request, response: AuthResponse) {
     response.locals.debug('Getting body stream.');
 
@@ -313,7 +329,7 @@ export class Method {
     }
 
     if (contentTypeHeader == null && contentLengthHeader === '0') {
-      return { output: null, prefixes: {} };
+      return null;
     }
 
     // Be nice to clients who don't send a Content-Type header.
@@ -370,10 +386,10 @@ export class Method {
     });
 
     if (xml.trim() === '') {
-      return { output: null, prefixes: {} };
+      return null;
     }
 
-    return await this.parseXml(xml);
+    return xml;
   }
 
   /**
@@ -474,7 +490,7 @@ export class Method {
             curLang = input.$['xml:lang'].value as string;
           }
 
-          output.$ = rewriteAttributes(input.$, input['$ns'].uri);
+          output.$ = rewriteAttributes(input.$, input.$ns.uri);
           curNamespaces = {
             ...curNamespaces,
             ...extractNamespaces(input.$),
@@ -500,8 +516,8 @@ export class Method {
           }
 
           const ns = (Array.isArray(input[name])
-            ? input[name][0]['$ns']
-            : input[name]['$ns']) || { local: name, uri: 'DAV:' };
+            ? input[name][0].$ns
+            : input[name].$ns) || { local: name, uri: 'DAV:' };
 
           let prefix = '';
           if (name.includes(':')) {

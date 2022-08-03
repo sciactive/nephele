@@ -32,7 +32,10 @@ export class PROPFIND extends Method {
       );
     }
 
-    const { output: xml, prefixes } = await this.getBodyXML(request, response);
+    const xmlBody = await this.getBodyXML(request, response);
+    const { output: xml, prefixes } = xmlBody
+      ? await this.parseXml(xmlBody)
+      : { output: null, prefixes: {} };
 
     let requestedProps: string[] = [];
     let allprop = true;

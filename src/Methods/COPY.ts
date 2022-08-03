@@ -9,7 +9,7 @@ import {
   ResourceNotFoundError,
   UnauthorizedError,
 } from '../Errors/index.js';
-import { catchErrors } from '../catchErrors';
+import { catchErrors } from '../catchErrors.js';
 import { MultiStatus, Status } from '../MultiStatus.js';
 
 import { Method } from './Method.js';
@@ -26,7 +26,7 @@ export class COPY extends Method {
       throw new NotAcceptableError('Requested content type is not supported.');
     }
 
-    const destinationHeader = request.get('Destination');
+    const destination = this.getRequestDestination(request);
     const depth = request.get('Depth') || 'infinity';
     const overwrite = request.get('Overwrite');
     const ifMatch = request.get('If-Match');
@@ -36,14 +36,7 @@ export class COPY extends Method {
     const ifUnmodifiedSince = request.get('If-Unmodified-Since');
     const resource = await this.adapter.getResource(url, request.baseUrl);
 
-    let destination: URL;
-    if (destinationHeader != null) {
-      try {
-        destination = new URL(destinationHeader);
-      } catch (e: any) {
-        throw new BadRequestError('Destination header must be a valid URI.');
-      }
-    } else {
+    if (!destination) {
       throw new BadRequestError('Destination header is required.');
     }
 

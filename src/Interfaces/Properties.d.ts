@@ -40,9 +40,6 @@ export interface Properties {
    * setting an object value that represents an XML structure that can be
    * understood by xml2js, or an array of such objects.
    *
-   * If value is undefined, it doesn't need to be saved into storage. It can
-   * instead be removed.
-   *
    * If a property is protected, this function should throw a
    * PropertyIsProtectedError.
    *
@@ -66,6 +63,40 @@ export interface Properties {
     value: string | Object | Object[] | undefined,
     user: User
   ): Promise<void>;
+
+  /**
+   * Completely remove a property.
+   */
+  remove(name: string): Promise<void>;
+  removeByUser(name: string, user: User): Promise<void>;
+
+  /**
+   * Perform the given instructions, atomically.
+   *
+   * Either all instructions should succeed, or no instructions should succeed.
+   * Practically, this means that in the event of any failure at all, this
+   * function should return errors for any instruction(s) that failed, and no
+   * change to any of the properties should take place.
+   *
+   * Do not throw errors in this function. Instead, return an array of error
+   * arrays. Error arrays contain the name of the property that caused the error
+   * and the Error that would have been thrown.
+   *
+   * An instruction is an array that contains exactly three elements:
+   *
+   * - An action, 'set', meaning to set the property, or 'remove', meaning to
+   *   remove the property.
+   * - The name of the property.
+   * - The value of the property if it is being set, or `undefined` if it is
+   *   being removed.
+   */
+  runInstructions(
+    instructions: ['set' | 'remove', string, any][]
+  ): Promise<undefined | [string, Error][]>;
+  runInstructionsByUser(
+    instructions: ['set' | 'remove', string, any][],
+    user: User
+  ): Promise<undefined | [string, Error][]>;
 
   /**
    * Return all the defined properties.
