@@ -361,53 +361,6 @@ export default class Adapter implements AdapterInterface {
     });
   }
 
-  async formatLocks(locks: Lock[], baseUrl: URL) {
-    const xml = { activelock: [] as any[] };
-
-    if (locks != null) {
-      for (let lock of locks) {
-        const secondsLeft =
-          lock.timeout === Infinity
-            ? Infinity
-            : (lock.date.getTime() + lock.timeout - new Date().getTime()) /
-              1000;
-
-        if (secondsLeft <= 0) {
-          continue;
-        }
-
-        xml.activelock.push({
-          locktype: {
-            write: {},
-          },
-          lockscope: {
-            [lock.scope]: {},
-          },
-          depth: {
-            _: `${lock.depth}`,
-          },
-          owner: lock.owner,
-          timeout:
-            secondsLeft === Infinity
-              ? { _: 'Infinite' }
-              : { _: `Second-${secondsLeft}` },
-          locktoken: { href: { _: lock.token } },
-          lockroot: {
-            href: {
-              _: (await lock.resource.getCanonicalUrl(baseUrl)).pathname,
-            },
-          },
-        });
-      }
-    }
-
-    if (!xml.activelock.length) {
-      return {};
-    }
-
-    return xml;
-  }
-
   getMethod(method: string): typeof Method {
     // No additional methods to handle.
     if (method === 'POST' || method === 'PATCH') {

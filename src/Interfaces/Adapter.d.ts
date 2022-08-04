@@ -152,11 +152,6 @@ export interface Adapter {
   newCollection(url: URL, baseUrl: string): Promise<Resource>;
 
   /**
-   * Format a list of locks into an object acceptable by xml2js.
-   */
-  formatLocks(locks: Lock[], baseUrl: URL): Promise<any>;
-
-  /**
    * Get a handler class for an additional method.
    *
    * Any thrown errors will be caught and reported in the response, along with

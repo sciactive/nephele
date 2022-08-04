@@ -1,6 +1,11 @@
+import { Resource } from '../index.js';
 import type { User } from './User.js';
 
 export interface Lock {
+  /**
+   * The lock-root resource of this lock.
+   */
+  resource: Resource;
   /**
    * A unique token representing this lock.
    */

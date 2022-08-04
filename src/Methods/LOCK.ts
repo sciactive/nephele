@@ -123,7 +123,7 @@ export class LOCK extends Method {
       const currentLocks = await this.getLocks(request, resource);
       const responseObj = {
         prop: {
-          lockdiscovery: await this.adapter.formatLocks(
+          lockdiscovery: await this.formatLocks(
             currentLocks.all,
             this.getRequestBaseUrl(request)
           ),
@@ -456,7 +456,7 @@ export class LOCK extends Method {
     const currentLocks = await this.getLocks(request, resource);
     const responseObj = {
       prop: {
-        lockdiscovery: await this.adapter.formatLocks(
+        lockdiscovery: await this.formatLocks(
           currentLocks.all,
           this.getRequestBaseUrl(request)
         ),

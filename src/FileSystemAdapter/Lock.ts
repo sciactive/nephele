@@ -5,7 +5,6 @@ import User from './User.js';
 
 export default class Lock implements LockInterface {
   resource: Resource;
-  user: User;
   token: string = '';
   date: Date = new Date();
   timeout: number = 1000 * 60 * 60 * 24 * 2; // Default to two day timeout.
@@ -13,6 +12,7 @@ export default class Lock implements LockInterface {
   depth: '0' | 'infinity' = '0';
   provisional: boolean = false;
   owner: any = {};
+  user: User;
 
   constructor({ resource, user }: { resource: Resource; user: User }) {
     this.resource = resource;

@@ -176,7 +176,7 @@ export class PROPFIND extends Method {
             (allprop || requestedProps.includes('lockdiscovery'))
           ) {
             const currentLocks = await this.getLocks(request, resource);
-            propObj.lockdiscovery = await this.adapter.formatLocks(
+            propObj.lockdiscovery = await this.formatLocks(
               currentLocks.all,
               this.getRequestBaseUrl(request)
             );
