@@ -74,7 +74,7 @@ export const defaults: Options = {
     }
 
     if (code === 500 && error) {
-      response.locals.debug('Unknown Error: ', error);
+      response.locals.debug('Unknown Error: %o', error);
     }
 
     if (response.destroyed) {

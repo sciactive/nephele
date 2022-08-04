@@ -250,7 +250,7 @@ export class COPY extends Method {
         },
         async (code, message, error) => {
           if (code === 500 && error) {
-            response.locals.debug('Unknown Error: ', error);
+            response.locals.debug('Unknown Error: %o', error);
           }
 
           let status = new Status(destination, code);

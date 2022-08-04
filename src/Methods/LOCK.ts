@@ -291,7 +291,7 @@ export class LOCK extends Method {
             },
             async (code, message, error) => {
               if (code === 500 && error) {
-                response.locals.debug('Unknown Error: ', error);
+                response.locals.debug('Unknown Error: %o', error);
               }
 
               const url = await child.getCanonicalUrl(
@@ -392,7 +392,7 @@ export class LOCK extends Method {
             },
             async (code, message, error) => {
               if (code === 500 && error) {
-                response.locals.debug('Unknown Error: ', error);
+                response.locals.debug('Unknown Error: %o', error);
               }
 
               const url = await child.getCanonicalUrl(

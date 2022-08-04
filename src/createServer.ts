@@ -122,7 +122,7 @@ export default function createServer(
         return;
       }
 
-      response.locals.debug('Error: ', e);
+      response.locals.debug('Error: %o', e);
       response.status(500);
       opts.errorHandler(500, 'Internal server error.', request, response, e);
       return;
@@ -142,7 +142,7 @@ export default function createServer(
       try {
         await adapter.cleanAuthentication(request, response);
       } catch (e: any) {
-        response.locals.debug('Error during authentication cleanup: ', e);
+        response.locals.debug('Error during authentication cleanup: %o', e);
       }
     });
     next();

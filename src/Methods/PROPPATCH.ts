@@ -149,7 +149,7 @@ export class PROPPATCH extends Method {
           },
           async (code, message, error) => {
             if (code === 500 && error) {
-              response.locals.debug('Unknown Error: ', error);
+              response.locals.debug('Unknown Error: %o', error);
             }
 
             const propStatStatus = new PropStatStatus(code);
