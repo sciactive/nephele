@@ -15,7 +15,7 @@ import { Method } from './Method.js';
 
 export class DELETE extends Method {
   async run(request: Request, response: AuthResponse) {
-    const { url } = this.getRequestData(request, response);
+    const { url, encoding } = this.getRequestData(request, response);
 
     await this.checkAuthorization(request, response, 'DELETE');
 
@@ -124,10 +124,9 @@ export class DELETE extends Method {
         const responseXml = await this.renderXml(multiStatus.render());
         response.status(207); // Multi-Status
         response.set({
-          'Content-Type': contentType,
-          'Content-Length': responseXml.length,
+          'Content-Type': `${contentType}; charset=utf-8`,
         });
-        response.send(responseXml);
+        this.sendBodyContent(response, responseXml, encoding);
       }
     } else {
       await checkConditionalHeaders(resource);
@@ -183,9 +182,9 @@ export class DELETE extends Method {
               response.locals.debug('Unknown Error: ', error);
             }
 
-            const url = (
-              await child.getCanonicalUrl(this.getRequestBaseUrl(request))
-            ).toString();
+            const url = await child.getCanonicalUrl(
+              this.getRequestBaseUrl(request)
+            );
             let status = new Status(url, code);
 
             if (message) {
@@ -207,9 +206,9 @@ export class DELETE extends Method {
 
       return allDeleted;
     } catch (e: any) {
-      const url = (
-        await collection.getCanonicalUrl(this.getRequestBaseUrl(request))
-      ).toString();
+      const url = await collection.getCanonicalUrl(
+        this.getRequestBaseUrl(request)
+      );
       let error = new Status(url, 500);
       if (e instanceof UnauthorizedError) {
         error = new Status(url, 401);

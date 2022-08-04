@@ -22,7 +22,7 @@ export class PROPPATCH extends Method {
   });
 
   async run(request: Request, response: AuthResponse) {
-    const { url } = this.getRequestData(request, response);
+    const { url, encoding } = this.getRequestData(request, response);
 
     await this.checkAuthorization(request, response, 'PROPPATCH');
 
@@ -41,8 +41,6 @@ export class PROPPATCH extends Method {
     }
 
     const { output: xml, prefixes } = await this.parseXml(xmlBody);
-
-    const multiStatus = new MultiStatus();
 
     if (xml == null) {
       throw new BadRequestError('PROPPATCH method requires a body.');
@@ -66,8 +64,9 @@ export class PROPPATCH extends Method {
       );
     }
 
+    const multiStatus = new MultiStatus();
     const order = await this.getPropPatchOrder(xmlBody);
-    const status = new Status(url.toString(), 207);
+    const status = new Status(url, 207);
     const propErrors: { [k: string]: Error } = {};
 
     const setArray: any[] =
@@ -102,6 +101,12 @@ export class PROPPATCH extends Method {
           const values = Array.isArray(propEl[prop])
             ? propEl[prop]
             : [propEl[prop]];
+
+          if (prop === 'lockdiscovery') {
+            propErrors[prop] = new PropertyIsProtectedError(
+              `${prop} is a protected property.`
+            );
+          }
 
           for (let value of values) {
             if (action === 'set') {
@@ -179,10 +184,9 @@ export class PROPPATCH extends Method {
     const responseXml = await this.renderXml(multiStatus.render(), prefixes);
     response.status(207); // Multi-Status
     response.set({
-      'Content-Type': contentType,
-      'Content-Length': responseXml.length,
+      'Content-Type': `${contentType}; charset=utf-8`,
     });
-    response.send(responseXml);
+    this.sendBodyContent(response, responseXml, encoding);
   }
 
   async getPropPatchOrder(xmlBody: string) {

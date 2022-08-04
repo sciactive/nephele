@@ -18,15 +18,14 @@ export interface Lock {
    */
   timeout: number;
   /**
-   * Whether this is an exclusive lock.
+   * Whether this is an exclusive or shared lock.
    *
    * Exclusive locks mean that only the principal of this lock can perform
-   * privileged actions. This is in contrast to shared locks, which mean that
-   * any principal who has a shared lock can perform privileged actions. Shared
-   * locks are still unique, in that every principal has their own unique lock
-   * token.
+   * privileged actions. Shared locks mean that any principal who has a shared
+   * lock can perform privileged actions. Shared locks are still unique, in that
+   * every principal has their own unique lock token.
    */
-  exclusive: boolean;
+  scope: 'exclusive' | 'shared';
   /**
    * A depth '0' lock prevents only the resource itself from being modified. A
    * depth 'infinity' lock prevents the resource and all of its members from
@@ -47,6 +46,13 @@ export interface Lock {
    * technically not yet been granted.
    */
   provisional: boolean;
+  /**
+   * The owner, provided by the user who requested the lock.
+   *
+   * This will be an XML object, presumably with information about how to
+   * contact the owner of the lock.
+   */
+  owner: any;
 
   /**
    * Save the lock to storage.
@@ -59,6 +65,9 @@ export interface Lock {
    * The timeout for a provisional lock will be substantially shorter than the
    * timeout for a real lock. Timeouts for both should be considered a genuine
    * way to tell whether the lock is expired.
+   *
+   * If the lock is not valid for the resource, a BadRequestError should be
+   * thrown.
    */
   save(): Promise<void>;
 

@@ -25,16 +25,19 @@ export default class Properties implements PropertiesInterface {
       case 'getcontentlength':
         return `${await this.resource.getLength()}`;
       case 'getcontenttype':
-        return await this.resource.getMediaType();
+        const mediaType = await this.resource.getMediaType();
+        if (mediaType == null) {
+          throw new PropertyNotFoundError(
+            `${name} property doesn't exist on resource.`
+          );
+        }
+        return mediaType;
       case 'getetag':
         return await this.resource.getEtag();
       case 'getlastmodified': {
         const stats = await this.resource.getStats();
         return stats.mtime.toUTCString();
       }
-      case 'lockdiscovery':
-        // TODO: Implement this. (Page 94)
-        return '';
       case 'resourcetype':
         if (await this.resource.isCollection()) {
           return { collection: {} };
@@ -174,7 +177,6 @@ export default class Properties implements PropertiesInterface {
           'getcontenttype',
           'getetag',
           'getlastmodified',
-          'lockdiscovery',
           'resourcetype',
           'supportedlock',
           'quota-available-bytes',
@@ -272,7 +274,6 @@ export default class Properties implements PropertiesInterface {
       getcontenttype: await this.get('getcontenttype'),
       getetag: await this.get('getetag'),
       getlastmodified: await this.get('getlastmodified'),
-      lockdiscovery: await this.get('lockdiscovery'),
       resourcetype: await this.get('resourcetype'),
       supportedlock: await this.get('supportedlock'),
       'quota-available-bytes': await this.get('quota-available-bytes'),
@@ -306,7 +307,6 @@ export default class Properties implements PropertiesInterface {
       'getcontenttype',
       'getetag',
       'getlastmodified',
-      'lockdiscovery',
       'resourcetype',
       'supportedlock',
       'quota-available-bytes',

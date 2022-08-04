@@ -10,11 +10,10 @@ export interface Options {
    * bars, since it's not feasible for the server to know the total size of the
    * transfer before it begins sending data and report that to the client.
    *
-   * In the interest of being more user-friendly by default, this feature is
-   * turned off. If you regularly transfer large, uncompressed files, you might
-   * want to enable this feature. If you mostly transfer files that are already
-   * compressed (encoded video, images, audio, compressed file archives, etc)
-   * this option won't make a big difference.
+   * Even with this option turned on, Nephele will check if the content has
+   * already been compressed (based on its media type), and if it has, such as a
+   * zip archive, it will be transmitted without the additional compression
+   * step.
    *
    * Compression from client to server is always supported and can't be turned
    * off.
@@ -58,11 +57,11 @@ export interface Options {
 }
 
 export const defaults: Options = {
-  compression: false,
+  compression: true,
   realm: 'Nephele WebDAV Service',
   timeout: 30000,
-  minLockTimeout: 30000,
-  maxLockTimeout: 1000 * 60 * 60 * 12, // 12 hours.
+  minLockTimeout: 1000 * 10, // 10 seconds
+  maxLockTimeout: 1000 * 60 * 60 * 18, // 18 hours.
   errorHandler: async (
     code: number,
     message: string,
@@ -78,12 +77,14 @@ export const defaults: Options = {
       response.locals.debug('Unknown Error: ', error);
     }
 
-    response.status(code);
+    if (response.destroyed) {
+      return;
+    }
+
+    let body = `Error ${code}: ${message}`;
+    let contentType = 'text/plain';
     if (process.env.NODE_ENV !== 'production') {
-      if (!response.headersSent) {
-        response.setHeader('Content-Type', 'application/json');
-      }
-      response.send({
+      body = JSON.stringify({
         code,
         message,
         ...(error
@@ -94,11 +95,15 @@ export const defaults: Options = {
             }
           : {}),
       });
-    } else {
-      if (!response.headersSent) {
-        response.setHeader('Content-Type', 'text/plain');
-      }
-      response.send(`Error ${code}: ${message}`);
+      contentType = 'application/json';
     }
+    if (!response.headersSent) {
+      response.status(code);
+      response.set({
+        'Content-Type': `${contentType}; charset=utf-8`,
+        'Content-Length': body.length,
+      });
+    }
+    response.send(body);
   },
 };

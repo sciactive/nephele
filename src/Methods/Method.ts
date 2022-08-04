@@ -4,6 +4,7 @@ import type { Request } from 'express';
 import xml2js from 'xml2js';
 import contentType from 'content-type';
 import splitn from '@sciactive/splitn';
+import vary from 'vary';
 
 import type {
   Adapter,
@@ -57,7 +58,7 @@ export class Method {
    */
   async run(request: Request, _response: AuthResponse) {
     throw new MethodNotSupportedError(
-      `${request.method} is not implemented on this server.`
+      `${request.method} is not supported on this server.`
     );
   }
 
@@ -140,8 +141,12 @@ export class Method {
     return await this.removeAndDeleteTimedOutLocks(locks);
   }
 
-  async getLocks(request: Request, resource: Resource) {
-    const resourceLocks = await this.getCurrentResourceLocks(resource);
+  private async getLocksGeneral(
+    request: Request,
+    resource: Resource,
+    getLocks: (resource: Resource) => Promise<Lock[]>
+  ) {
+    const resourceLocks = await getLocks(resource);
     const locks: {
       all: Lock[];
       resource: Lock[];
@@ -157,7 +162,7 @@ export class Method {
     let parent = await this.getParentResource(request, resource);
     let firstLevelParent = true;
     while (parent) {
-      const parentLocks = await this.getCurrentResourceLocks(parent);
+      const parentLocks = await getLocks(parent);
 
       for (let lock of parentLocks) {
         if (lock.depth === 'infinity') {
@@ -176,46 +181,37 @@ export class Method {
     return locks;
   }
 
-  async getLocksByUser(request: Request, resource: Resource, user: User) {
-    const resourceLocks = await this.getCurrentResourceLocksByUser(
+  async getLocks(request: Request, resource: Resource) {
+    return await this.getLocksGeneral(
+      request,
       resource,
-      user
+      async (resource: Resource) =>
+        (
+          await this.getCurrentResourceLocks(resource)
+        ).filter((lock) => !lock.provisional)
     );
-    const locks: {
-      all: Lock[];
-      resource: Lock[];
-      depthZero: Lock[];
-      depthInfinity: Lock[];
-    } = {
-      all: [...resourceLocks],
-      resource: resourceLocks,
-      depthZero: [],
-      depthInfinity: [],
-    };
+  }
 
-    let parent = await this.getParentResource(request, resource);
-    let firstLevelParent = true;
-    while (parent) {
-      const parentLocks = await this.getCurrentResourceLocksByUser(
-        parent,
-        user
-      );
+  async getLocksByUser(request: Request, resource: Resource, user: User) {
+    return await this.getLocksGeneral(
+      request,
+      resource,
+      async (resource: Resource) =>
+        (
+          await this.getCurrentResourceLocksByUser(resource, user)
+        ).filter((lock) => !lock.provisional)
+    );
+  }
 
-      for (let lock of parentLocks) {
-        if (lock.depth === 'infinity') {
-          locks.depthInfinity.push(lock);
-          locks.all.push(lock);
-        } else if (firstLevelParent && lock.depth === '0') {
-          locks.depthZero.push(lock);
-          locks.all.push(lock);
-        }
-      }
-
-      parent = await this.getParentResource(request, parent);
-      firstLevelParent = false;
-    }
-
-    return locks;
+  async getProvisionalLocks(request: Request, resource: Resource) {
+    return await this.getLocksGeneral(
+      request,
+      resource,
+      async (resource: Resource) =>
+        (
+          await this.getCurrentResourceLocks(resource)
+        ).filter((lock) => lock.provisional)
+    );
   }
 
   /**
@@ -234,6 +230,11 @@ export class Method {
    * Returns 2 if the user has full permissions to modify this resource (either
    * it is not locked or the user owns the lock and has provided it).
    *
+   * Returns 3 if the user does not have full permission to modify this
+   * resource, but does have permission to lock it with a shared lock. This is
+   * only returned if `request.method === 'LOCK'`.
+   *
+   * @param request The request to check the lock permission for.
    * @param resource The resource to check.
    * @param user The user to check.
    */
@@ -241,10 +242,9 @@ export class Method {
     request: Request,
     resource: Resource,
     user: User
-  ): Promise<0 | 1 | 2> {
+  ): Promise<0 | 1 | 2 | 3> {
     const locks = await this.getLocks(request, resource);
-    // TODO: extract lock tokens from request.
-    const lockTokens: string[] = [];
+    const lockTokens = this.getRequestLockTockens(request);
 
     if (!locks.all.length) {
       return 2;
@@ -254,19 +254,79 @@ export class Method {
     const lockTokenSet = new Set(lockTokens);
 
     if (userLocks.all.find((userLock) => lockTokenSet.has(userLock.token))) {
-      // The user owns the lock and has provided it.
+      // The user owns the lock and has submitted it.
       return 2;
     }
 
-    if (locks.depthInfinity.length || locks.resource.length) {
+    if (request.method === 'LOCK') {
+      let code: 0 | 3 = 0;
+
+      for (let lock of locks.resource) {
+        if (lock.scope === 'exclusive') {
+          return 0;
+        } else if (lock.scope === 'shared') {
+          code = 3;
+        }
+      }
+
+      for (let lock of locks.depthInfinity) {
+        if (lock.scope === 'exclusive') {
+          return 0;
+        } else if (lock.scope === 'shared') {
+          code = 3;
+        }
+      }
+
+      for (let lock of locks.depthZero) {
+        if (lock.scope === 'exclusive') {
+          return 1;
+        } else if (lock.scope === 'shared') {
+          code = 3;
+        }
+      }
+
+      return code;
+    } else {
+      if (locks.depthInfinity.length || locks.resource.length) {
+        return 0;
+      }
+
+      if (locks.depthZero.length) {
+        return 1;
+      }
+
       return 0;
     }
+  }
 
-    if (locks.depthZero.length) {
-      return 1;
+  /**
+   * Extract the submitted lock tokens.
+   *
+   * Note that this is different than checking the conditional "If" header. That
+   * must be done separately from checking submitted lock tokens.
+   */
+  getRequestLockTockens(request: Request) {
+    const lockTokens: string[] = [];
+    const ifHeader = request.get('If') || '';
+
+    const matches = ifHeader.match(
+      /<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}>/g
+    );
+
+    if (matches) {
+      for (let match of matches) {
+        lockTokens.push(match.slice(1, -1));
+      }
     }
 
-    return 0;
+    return lockTokens;
+  }
+
+  chekIfHeader(request: Request, etag: string, lockTokens: string[]) {
+    // TODO: process the if header list. (page 73)
+    const ifHeader = request.get('If') || '';
+
+    return true;
   }
 
   getRequestBaseUrl(request: Request) {
@@ -277,7 +337,8 @@ export class Method {
   }
 
   getRequestedEncoding(request: Request, response: AuthResponse) {
-    const acceptEncoding = request.get('Accept-Encoding') || '*';
+    const acceptEncoding =
+      request.get('Accept-Encoding') || 'identity, *;q=0.5';
     const supported = ['gzip', 'deflate', 'br', 'identity'];
     const encodings: [string, number][] = acceptEncoding
       .split(',')
@@ -303,7 +364,7 @@ export class Method {
           (check) => encodings.find(([check2]) => check === check2) == null
         ) || 'gzip';
     }
-    response.locals.debug(`Requested encoding is ${encoding}.`);
+    response.locals.debug(`Requested encoding: ${encoding}.`);
     return encoding as 'gzip' | 'x-gzip' | 'deflate' | 'br' | 'identity';
   }
 
@@ -405,6 +466,63 @@ export class Method {
     }
 
     return stream;
+  }
+
+  async sendDavHeader(request: Request, response: AuthResponse, url: URL) {
+    const complianceClasses = [
+      '1',
+      '3',
+      ...(await this.adapter.getComplianceClasses(url, request, response)),
+    ];
+
+    response.set({
+      DAV: complianceClasses.join(', '),
+    });
+  }
+
+  async sendBodyContent(
+    response: AuthResponse,
+    content: string,
+    encoding: 'gzip' | 'x-gzip' | 'deflate' | 'br' | 'identity'
+  ) {
+    vary(response, 'Accept-Encoding');
+
+    // First, check cache-control.
+    const cacheControl = response.getHeader('Cache-Control');
+    const noTransform =
+      typeof cacheControl === 'string' &&
+      cacheControl.match(/(?:^|,)\s*?no-transform\s*?(?:,|$)/);
+
+    if (!this.opts.compression || encoding === 'identity' || noTransform) {
+      response.locals.debug(`Response encoding: identity`);
+      const unencodedContent = Buffer.from(content, 'utf-8');
+      response.set({
+        'Content-Length': unencodedContent.byteLength,
+      });
+      response.send(unencodedContent);
+    } else {
+      response.locals.debug(`Response encoding: ${encoding}`);
+      let transform: (content: Buffer) => Buffer = (content) => content;
+      switch (encoding) {
+        case 'gzip':
+        case 'x-gzip':
+          transform = (content) => zlib.gzipSync(content);
+          break;
+        case 'deflate':
+          transform = (content) => zlib.deflateSync(content);
+          break;
+        case 'br':
+          transform = (content) => zlib.brotliCompressSync(content);
+          break;
+      }
+      const unencodedContent = Buffer.from(content, 'utf-8');
+      const encodedContent = transform(unencodedContent);
+      response.set({
+        'Content-Encoding': encoding,
+        'Content-Length': encodedContent.byteLength,
+      });
+      response.send(encodedContent);
+    }
   }
 
   /**

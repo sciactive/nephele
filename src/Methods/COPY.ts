@@ -18,7 +18,7 @@ import { DELETE } from './DELETE.js';
 
 export class COPY extends Method {
   async run(request: Request, response: AuthResponse) {
-    const { url } = this.getRequestData(request, response);
+    const { url, encoding } = this.getRequestData(request, response);
 
     await this.checkAuthorization(request, response, 'COPY');
 
@@ -253,8 +253,7 @@ export class COPY extends Method {
             response.locals.debug('Unknown Error: ', error);
           }
 
-          const url = destination.toString();
-          let status = new Status(url, code);
+          let status = new Status(destination, code);
 
           if (message) {
             status.description = message;
@@ -281,10 +280,9 @@ export class COPY extends Method {
       const responseXml = await this.renderXml(multiStatus.render());
       response.status(207); // Multi-Status
       response.set({
-        'Content-Type': contentType,
-        'Content-Length': responseXml.length,
+        'Content-Type': `${contentType}; charset=utf-8`,
       });
-      response.send(responseXml);
+      this.sendBodyContent(response, responseXml, encoding);
     }
   }
 }

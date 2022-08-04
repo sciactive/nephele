@@ -1,6 +1,7 @@
 import zlib from 'node:zlib';
 import { pipeline, Readable } from 'node:stream';
 import type { Request } from 'express';
+import vary from 'vary';
 
 import type { AuthResponse } from '../Interfaces/index.js';
 import {
@@ -68,14 +69,18 @@ export class GetOrHead extends Method {
 
     const mediaType = await resource.getMediaType();
 
-    if (!this.opts.compression || isMediaTypeCompressed(mediaType)) {
+    if (
+      !this.opts.compression ||
+      mediaType == null ||
+      isMediaTypeCompressed(mediaType)
+    ) {
       encoding = 'identity';
     }
 
+    vary(response, 'Accept-Encoding');
     response.set({
       'Cache-Control': 'private, no-cache',
       Date: new Date().toUTCString(),
-      Vary: 'Accept-Encoding',
     });
     if (contentLanguage != null && contentLanguage !== '') {
       response.set({
@@ -110,9 +115,24 @@ export class GetOrHead extends Method {
     // TODO: put If-Range check here for partial content responses.
 
     response.status(200); // Ok
+
+    if (mediaType == null) {
+      response.set({
+        'Content-Type': 'text/plain',
+      });
+
+      if (method === 'GET') {
+        response.set({
+          'Content-Length': 0,
+        });
+      }
+
+      response.end();
+      return;
+    }
+
     response.set({
       'Content-Type': mediaType,
-      'Content-Encoding': encoding,
       Etag: JSON.stringify(etag),
       'Last-Modified': lastModified.toUTCString(),
     });
@@ -124,7 +144,10 @@ export class GetOrHead extends Method {
         'Transfer-Encoding': 'chunked',
       });
     }
-    if (method === 'GET') {
+    response.locals.debug(`Response encoding: ${encoding}`);
+    if (method === 'HEAD') {
+      response.end();
+    } else {
       let stream: Readable = await resource.getStream();
       if (encoding === 'identity') {
         response.set({
@@ -133,6 +156,10 @@ export class GetOrHead extends Method {
 
         stream.pipe(response);
       } else {
+        response.set({
+          'Content-Encoding': encoding,
+        });
+
         switch (encoding) {
           case 'gzip':
           case 'x-gzip':

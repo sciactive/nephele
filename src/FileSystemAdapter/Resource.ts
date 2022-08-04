@@ -43,9 +43,10 @@ export type MetaStorage = {
       username: string;
       date: number;
       timeout: number;
-      exclusive: boolean;
+      scope: 'exclusive' | 'shared';
       depth: '0' | 'infinity';
       provisional: boolean;
+      owner: any;
     };
   };
 };
@@ -93,9 +94,10 @@ export default class Resource implements ResourceInterface {
       lock.token = token;
       lock.date = new Date(entry.date);
       lock.timeout = entry.timeout;
-      lock.exclusive = entry.exclusive;
+      lock.scope = entry.scope;
       lock.depth = entry.depth;
       lock.provisional = entry.provisional;
+      lock.owner = entry.owner;
 
       return lock;
     });
@@ -116,9 +118,10 @@ export default class Resource implements ResourceInterface {
         lock.token = token;
         lock.date = new Date(entry.date);
         lock.timeout = entry.timeout;
-        lock.exclusive = entry.exclusive;
+        lock.scope = entry.scope;
         lock.depth = entry.depth;
         lock.provisional = entry.provisional;
+        lock.owner = entry.owner;
 
         return lock;
       });
@@ -574,6 +577,10 @@ export default class Resource implements ResourceInterface {
   }
 
   async getMediaType() {
+    if (await this.isCollection()) {
+      return null;
+    }
+
     const mediaType = await new Promise<string>((resolve, reject) => {
       const magic = new Magic(mmm.MAGIC_MIME_TYPE);
       magic.detectFile(this.absolutePath, function (err, result) {
@@ -726,6 +733,14 @@ export default class Resource implements ResourceInterface {
   async saveMetadataFile(meta: MetaStorage) {
     const filepath = await this.getMetadataFilePath();
     let exists = true;
+
+    try {
+      await fsp.access(path.dirname(filepath), constants.F_OK);
+    } catch (e: any) {
+      throw new ResourceTreeNotCompleteError(
+        'One or more intermediate collections must be created before this resource.'
+      );
+    }
 
     try {
       await fsp.access(filepath, constants.F_OK);

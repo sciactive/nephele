@@ -16,13 +16,14 @@ import {
   DELETE,
   GET,
   HEAD,
+  LOCK,
   MKCOL,
   MOVE,
   OPTIONS,
-  POST,
   PROPFIND,
   PROPPATCH,
   PUT,
+  UNLOCK,
   Method,
 } from './Methods/index.js';
 
@@ -193,14 +194,13 @@ export default function createServer(
   app.options('*', runMethodCatchErrors(new OPTIONS(adapter, opts)));
   app.get('*', runMethodCatchErrors(new GET(adapter, opts)));
   app.head('*', runMethodCatchErrors(new HEAD(adapter, opts)));
-  app.post('*', runMethodCatchErrors(new POST(adapter, opts)));
   app.put('*', runMethodCatchErrors(new PUT(adapter, opts)));
   app.delete('*', runMethodCatchErrors(new DELETE(adapter, opts)));
   app.copy('*', runMethodCatchErrors(new COPY(adapter, opts)));
   app.move('*', runMethodCatchErrors(new MOVE(adapter, opts)));
   app.mkcol('*', runMethodCatchErrors(new MKCOL(adapter, opts)));
-  app.lock('*', runMethodCatchErrors(new Method(adapter, opts)));
-  app.unlock('*', runMethodCatchErrors(new Method(adapter, opts)));
+  app.lock('*', runMethodCatchErrors(new LOCK(adapter, opts)));
+  app.unlock('*', runMethodCatchErrors(new UNLOCK(adapter, opts)));
   // TODO: Available once rfc5323 is implemented.
   // app.search('*', runMethodCatchErrors(new SEARCH(adapter, opts)));
 
@@ -216,9 +216,17 @@ export default function createServer(
         await proppatch(request, response);
         break;
       default:
-        const MethodClass = adapter.getMethod(request.method);
-        const run = runMethodCatchErrors(new MethodClass(adapter, opts));
-        await run(request, response);
+        const run = catchErrors(
+          async () => {
+            const MethodClass = adapter.getMethod(request.method);
+            const method = new MethodClass(adapter, opts);
+            await method.run(request, response);
+          },
+          async (code, message, error) => {
+            await opts.errorHandler(code, message, request, response, error);
+          }
+        );
+        await run();
         break;
     }
   });

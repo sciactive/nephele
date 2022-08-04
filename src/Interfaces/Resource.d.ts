@@ -135,8 +135,11 @@ export interface Resource {
    * MIME type.
    *
    * You can use mmmagic if you don't know it.
+   *
+   * If the resource doesn't have a media type (like a folder in a filesystem),
+   * return null.
    */
-  getMediaType(): Promise<string>;
+  getMediaType(): Promise<string | null>;
 
   /**
    * The canonical name of the resource. (The basename of its path.)

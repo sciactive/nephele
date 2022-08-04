@@ -1,8 +1,4 @@
-import xml2js from 'xml2js';
-
 import { HTTPStatusMessages } from './HTTPStatusMessages.js';
-
-const DEV = process.env.NODE_ENV !== 'production';
 
 export class PropStatStatus {
   statusCode: number;
@@ -88,10 +84,10 @@ export class Status {
   body: { [k: string]: any } | undefined = undefined;
   propStatStatuses: PropStatStatus[] = [];
   description: string | undefined = undefined;
-  href: string;
+  href: URL;
 
   constructor(
-    href: string,
+    href: URL,
     statusCode: number,
     statusMessage?: string,
     element: string = 'response'
@@ -138,8 +134,10 @@ export class Status {
     this.propStatStatuses.push(propStatStatus);
   }
 
-  render() {
-    let response: { [k: string]: any } = { href: [this.href] };
+  render(fullHref = false) {
+    let response: { [k: string]: any } = {
+      href: fullHref ? { _: this.href.toString() } : { _: this.href.pathname },
+    };
 
     if (this.description != null) {
       response.responsedescription = [this.description];
@@ -197,8 +195,17 @@ export class MultiStatus {
 
     xml.multistatus.response = responses;
 
+    let outOfHostStatusExists = false;
+    let host = this.statuses[0].href.host;
     for (let status of this.statuses) {
-      responses.push(status.render());
+      if (status.href.host !== host) {
+        outOfHostStatusExists = true;
+        break;
+      }
+    }
+
+    for (let status of this.statuses) {
+      responses.push(status.render(outOfHostStatusExists));
     }
 
     return xml;

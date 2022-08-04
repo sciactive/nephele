@@ -18,7 +18,7 @@ import { DELETE } from './DELETE.js';
 
 export class MOVE extends Method {
   async run(request: Request, response: AuthResponse) {
-    const { url } = this.getRequestData(request, response);
+    const { url, encoding } = this.getRequestData(request, response);
 
     await this.checkAuthorization(request, response, 'MOVE');
 
@@ -179,7 +179,7 @@ export class MOVE extends Method {
             // Check that the resource wouldn't be added to a locked collection.
             if (lockPermission === 1) {
               throw new LockedError(
-                'The user does not have permission to add a new resource to the locked collection.'
+                'The user does not have permission to move a resource to the locked collection.'
               );
             }
 
@@ -287,8 +287,7 @@ export class MOVE extends Method {
             response.locals.debug('Unknown Error: ', error);
           }
 
-          const url = destination.toString();
-          let status = new Status(url, code);
+          let status = new Status(destination, code);
 
           if (message) {
             status.description = message;
@@ -309,6 +308,7 @@ export class MOVE extends Method {
       response.status(existed ? 204 : 201); // No Content : Created
       if (!existed) {
         response.set({
+          'Content-Length': 0,
           Location: destination.toString(),
         });
       }
@@ -317,10 +317,9 @@ export class MOVE extends Method {
       const responseXml = await this.renderXml(multiStatus.render());
       response.status(207); // Multi-Status
       response.set({
-        'Content-Type': contentType,
-        'Content-Length': responseXml.length,
+        'Content-Type': `${contentType}; charset=utf-8`,
       });
-      response.send(responseXml);
+      this.sendBodyContent(response, responseXml, encoding);
     }
   }
 }

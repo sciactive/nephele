@@ -14,9 +14,11 @@ import { Method } from './Method.js';
 
 export class PROPFIND extends Method {
   async run(request: Request, response: AuthResponse) {
-    const { url } = this.getRequestData(request, response);
+    const { url, encoding } = this.getRequestData(request, response);
 
     await this.checkAuthorization(request, response, 'PROPFIND');
+
+    await this.sendDavHeader(request, response, url);
 
     const contentType = request.accepts('application/xml', 'text/xml');
     if (!contentType) {
@@ -85,6 +87,7 @@ export class PROPFIND extends Method {
     } else {
       response.locals.debug(`Requested props: ${requestedProps.join(', ')}`);
     }
+    response.locals.debug(`Requested depth: ${depth}`);
 
     let level = 0;
     const addResourceProps = async (resource: Resource) => {
@@ -103,23 +106,30 @@ export class PROPFIND extends Method {
           response.locals.user
         ))
       ) {
-        const error = new Status(url.toString(), 401);
+        const error = new Status(url, 401);
         error.description =
           'The user is not authorized to get properties for this resource.';
         multiStatus.addStatus(error);
         return;
       }
 
-      const status = new Status(url.toString(), 207);
+      const status = new Status(url, 207);
       const props = await resource.getProperties();
 
       try {
+        const supportsLocks = (
+          await this.adapter.getComplianceClasses(url, request, response)
+        ).includes('2');
+
         if (propname) {
           const propnames = await props.listByUser(response.locals.user);
           const propStatStatus = new PropStatStatus(200);
           const propObj: { [k: string]: {} } = {};
           for (let name of propnames) {
             propObj[name] = {};
+          }
+          if (supportsLocks) {
+            propObj.lockdiscovery = {};
           }
           propStatStatus.setProp(propObj);
           status.addPropStatStatus(propStatStatus);
@@ -138,6 +148,13 @@ export class PROPFIND extends Method {
               continue;
             }
 
+            if (name === 'lockdiscovery') {
+              if (!supportsLocks) {
+                notFoundProps.push(name);
+              }
+              continue;
+            }
+
             try {
               const value = await props.getByUser(name, response.locals.user);
               propObj[name] = value;
@@ -152,6 +169,17 @@ export class PROPFIND extends Method {
                 errorProps.push(name);
               }
             }
+          }
+
+          if (
+            supportsLocks &&
+            (allprop || requestedProps.includes('lockdiscovery'))
+          ) {
+            const currentLocks = await this.getLocks(request, resource);
+            propObj.lockdiscovery = await this.adapter.formatLocks(
+              currentLocks.all,
+              this.getRequestBaseUrl(request)
+            );
           }
 
           if (Object.keys(propObj).length) {
@@ -244,9 +272,8 @@ export class PROPFIND extends Method {
     const responseXml = await this.renderXml(multiStatus.render(), prefixes);
     response.status(207); // Multi-Status
     response.set({
-      'Content-Type': contentType,
-      'Content-Length': responseXml.length,
+      'Content-Type': `${contentType}; charset=utf-8`,
     });
-    response.send(responseXml);
+    this.sendBodyContent(response, responseXml, encoding);
   }
 }

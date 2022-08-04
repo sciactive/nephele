@@ -78,9 +78,9 @@ export class MKCOL extends Method {
 
     response.status(201); // Created
     response.set({
-      'Content-Location': (
+      Location: (
         await resource.getCanonicalUrl(this.getRequestBaseUrl(request))
-      ).pathname,
+      ).toString(),
     });
     response.end();
   }

@@ -136,11 +136,13 @@ export class PUT extends Method {
     await resource.setStream(stream, response.locals.user);
 
     response.status(newResource ? 201 : 204); // Created or No Content
-    response.set({
-      'Content-Location': (
-        await resource.getCanonicalUrl(this.getRequestBaseUrl(request))
-      ).pathname,
-    });
+    if (newResource) {
+      response.set({
+        Location: (
+          await resource.getCanonicalUrl(this.getRequestBaseUrl(request))
+        ).toString(),
+      });
+    }
     response.end();
 
     if (contentLanguage && contentLanguage !== '') {

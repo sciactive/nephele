@@ -5,6 +5,7 @@ import type { Method } from '../index.js';
 
 import type { Resource } from './Resource.js';
 import type { User } from './User.js';
+import type { Lock } from './Lock.js';
 
 export type AuthResponse<
   ResBody = any,
@@ -151,6 +152,11 @@ export interface Adapter {
   newCollection(url: URL, baseUrl: string): Promise<Resource>;
 
   /**
+   * Format a list of locks into an object acceptable by xml2js.
+   */
+  formatLocks(locks: Lock[], baseUrl: URL): Promise<any>;
+
+  /**
    * Get a handler class for an additional method.
    *
    * Any thrown errors will be caught and reported in the response, along with
@@ -158,9 +164,10 @@ export interface Adapter {
    * returning specific error codes in certain situations, you should handle
    * errors within this class' `run` function.
    *
-   * If the requested method is not supported (i.e. it isn't included in the
-   * output from `getAllowedMethods`), a MethodNotSupportedError should be
-   * thrown.
+   * If the requested method is not supported (i.e. it is purposefully excluded
+   * from the output from `getAllowedMethods`), a MethodNotSupportedError should
+   * be thrown. If the method is not recognized, a MethodNotImplementedError
+   * should be thrown.
    */
   getMethod(method: string): typeof Method;
 }

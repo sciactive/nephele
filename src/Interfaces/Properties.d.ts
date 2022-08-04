@@ -20,9 +20,12 @@ export interface Properties {
    * - getcontenttype
    * - getetag
    * - getlastmodified
-   * - lockdiscovery
    * - resourcetype
    * - supportedlock
+   *
+   * The following property is handled by Nephele.
+   *
+   * - lockdiscovery
    *
    * Any property not in the DAV: namespace will have its namespace and the
    * string '%%' prepended to its name, like "LCGDM:%%mode".
@@ -50,9 +53,12 @@ export interface Properties {
    * - getcontenttype
    * - getetag
    * - getlastmodified
-   * - lockdiscovery
    * - resourcetype
    * - supportedlock
+   *
+   * The following property is handled by Nephele.
+   *
+   * - lockdiscovery
    */
   set(
     name: string,
@@ -103,6 +109,12 @@ export interface Properties {
    *
    * This doesn't need to return all live properties. You can choose to leave
    * out properties that are expensive to calculate.
+   *
+   * The following property is handled by Nephele, and it is automatically
+   * included if your adapter supports locks, indicated by returning compliance
+   * class "2".
+   *
+   * - lockdiscovery
    */
   getAll(): Promise<{ [k: string]: string | Object | Object[] }>;
   getAllByUser(
@@ -111,6 +123,12 @@ export interface Properties {
 
   /**
    * Return the names of all properties.
+   *
+   * The following property is handled by Nephele, and it is automatically
+   * included if your adapter supports locks, indicated by returning compliance
+   * class "2".
+   *
+   * - lockdiscovery
    */
   list(): Promise<string[]>;
   listByUser(user: User): Promise<string[]>;

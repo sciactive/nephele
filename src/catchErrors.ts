@@ -7,6 +7,7 @@ import {
   InsufficientStorageError,
   LockedError,
   MediaTypeNotSupportedError,
+  MethodNotImplementedError,
   MethodNotSupportedError,
   NotAcceptableError,
   PreconditionFailedError,
@@ -16,6 +17,7 @@ import {
   ResourceExistsError,
   ResourceNotFoundError,
   ResourceTreeNotCompleteError,
+  ServiceUnavailableError,
   UnauthorizedError,
   UnprocessableEntityError,
 } from './Errors/index.js';
@@ -135,9 +137,21 @@ export function catchErrors<A extends any[], R = void>(
         return;
       }
 
+      if (e instanceof MethodNotImplementedError) {
+        // Not Implemented
+        await errorHandler(501, e.message, e, args);
+        return;
+      }
+
       if (e instanceof BadGatewayError) {
         // Bad Gateway
         await errorHandler(502, e.message, e, args);
+        return;
+      }
+
+      if (e instanceof ServiceUnavailableError) {
+        // Service Unavailable
+        await errorHandler(503, e.message, e, args);
         return;
       }
 
