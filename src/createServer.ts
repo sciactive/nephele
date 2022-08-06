@@ -101,8 +101,12 @@ export default function createServer(
     next: NextFunction
   ) {
     try {
-      response.locals.debug(`Authenticating user.`);
-      response.locals.user = await adapter.authenticate(request, response);
+      if (request.method === 'OPTIONS') {
+        response.locals.debug(`Skipping authentication for OPTIONS request.`);
+      } else {
+        response.locals.debug(`Authenticating user.`);
+        response.locals.user = await adapter.authenticate(request, response);
+      }
     } catch (e: any) {
       response.locals.debug(`Auth failed.`);
       response.locals.error = e;

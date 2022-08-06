@@ -18,8 +18,6 @@ export class PROPFIND extends Method {
 
     await this.checkAuthorization(request, response, 'PROPFIND');
 
-    await this.sendDavHeader(request, response, url);
-
     const contentType = request.accepts('application/xml', 'text/xml');
     if (!contentType) {
       throw new NotAcceptableError('Requested content type is not supported.');

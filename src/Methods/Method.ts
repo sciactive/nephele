@@ -468,18 +468,6 @@ export class Method {
     return stream;
   }
 
-  async sendDavHeader(request: Request, response: AuthResponse, url: URL) {
-    const complianceClasses = [
-      '1',
-      '3',
-      ...(await this.adapter.getComplianceClasses(url, request, response)),
-    ];
-
-    response.set({
-      DAV: complianceClasses.join(', '),
-    });
-  }
-
   async sendBodyContent(
     response: AuthResponse,
     content: string,
