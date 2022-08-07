@@ -16,6 +16,7 @@ export * from './RequestTimeoutError.js';
 export * from './RequestURITooLongError.js';
 export * from './ResourceExistsError.js';
 export * from './ResourceNotFoundError.js';
+export * from './ResourceNotModifiedError.js';
 export * from './ResourceTreeNotCompleteError.js';
 export * from './ServiceUnavailableError.js';
 export * from './UnauthorizedError.js';

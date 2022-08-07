@@ -16,6 +16,7 @@ import {
   RequestURITooLongError,
   ResourceExistsError,
   ResourceNotFoundError,
+  ResourceNotModifiedError,
   ResourceTreeNotCompleteError,
   ServiceUnavailableError,
   UnauthorizedError,
@@ -35,6 +36,12 @@ export function catchErrors<A extends any[], R = void>(
     try {
       return await fn(...args);
     } catch (e: any) {
+      if (e instanceof ResourceNotModifiedError) {
+        // Not Modified
+        await errorHandler(304, e.message, e, args);
+        return;
+      }
+
       if (e instanceof BadRequestError) {
         // Bad Request
         await errorHandler(400, e.message, e, args);

@@ -5,7 +5,6 @@ import {
   LockedError,
   MediaTypeNotSupportedError,
   NotAcceptableError,
-  PreconditionFailedError,
   UnauthorizedError,
 } from '../Errors/index.js';
 import { catchErrors } from '../catchErrors.js';
@@ -24,48 +23,7 @@ export class DELETE extends Method {
       throw new NotAcceptableError('Requested content type is not supported.');
     }
 
-    const ifMatch = request.get('If-Match');
-    const ifMatchEtags = (ifMatch || '')
-      .split(',')
-      .map((value) => value.trim().replace(/^["']/, '').replace(/["']$/, ''));
-    const ifUnmodifiedSince = request.get('If-Unmodified-Since');
     const resource = await this.adapter.getResource(url, request.baseUrl);
-
-    // According to the spec, any header included with DELETE *MUST* be applied
-    // in processing every resource to be deleted.
-    const checkConditionalHeaders = async (resource: Resource) => {
-      const properties = await resource.getProperties();
-      const etagPromise = resource.getEtag();
-      const lastModifiedPromise = properties.get('getlastmodified');
-      const [etag, lastModifiedString] = [
-        await etagPromise,
-        await lastModifiedPromise,
-      ];
-      if (typeof lastModifiedString !== 'string') {
-        throw new Error('Last modified date property is not a string.');
-      }
-      const lastModified = new Date(lastModifiedString);
-
-      // Check if header for etag.
-      if (ifMatch != null && !ifMatchEtags.includes(etag)) {
-        throw new PreconditionFailedError('If-Match header check failed.');
-      }
-
-      // Check if header for modified date.
-      if (
-        ifUnmodifiedSince != null &&
-        new Date(ifUnmodifiedSince) < lastModified
-      ) {
-        throw new PreconditionFailedError(
-          'If-Unmodified-Since header check failed.'
-        );
-      }
-    };
-
-    response.set({
-      'Cache-Control': 'private, no-cache',
-      Date: new Date().toUTCString(),
-    });
 
     let stream = await this.getBodyStream(request, response);
 
@@ -101,19 +59,19 @@ export class DELETE extends Method {
       );
     }
 
+    await this.checkConditionalHeaders(request, response);
+
+    response.set({
+      'Cache-Control': 'private, no-cache',
+      Date: new Date().toUTCString(),
+    });
+
     if (await resource.isCollection()) {
       const multiStatus = new MultiStatus();
 
-      await this.recursivelyDelete(
-        resource,
-        request,
-        response,
-        multiStatus,
-        checkConditionalHeaders
-      );
+      await this.recursivelyDelete(resource, request, response, multiStatus);
 
       if (multiStatus.statuses.length === 0) {
-        await checkConditionalHeaders(resource);
         await resource.delete(response.locals.user);
 
         response.status(204); // No Content
@@ -129,7 +87,6 @@ export class DELETE extends Method {
         this.sendBodyContent(response, responseXml, encoding);
       }
     } else {
-      await checkConditionalHeaders(resource);
       await resource.delete(response.locals.user);
 
       response.status(204); // No Content
@@ -141,8 +98,7 @@ export class DELETE extends Method {
     collection: Resource,
     request: Request,
     response: AuthResponse,
-    multiStatus: MultiStatus,
-    checkConditionalHeaders: (resource: Resource) => Promise<void>
+    multiStatus: MultiStatus
   ): Promise<boolean> {
     try {
       const children = await collection.getInternalMembers(
@@ -169,12 +125,10 @@ export class DELETE extends Method {
                   child,
                   request,
                   response,
-                  multiStatus,
-                  checkConditionalHeaders
+                  multiStatus
                 ));
             }
 
-            await checkConditionalHeaders(child);
             await child.delete(response.locals.user);
           },
           async (code, message, error) => {

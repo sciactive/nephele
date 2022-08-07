@@ -27,18 +27,28 @@ export class COPY extends Method {
       throw new NotAcceptableError('Requested content type is not supported.');
     }
 
-    const destination = this.getRequestDestination(request);
+    let destination = this.getRequestDestination(request);
     const depth = request.get('Depth') || 'infinity';
     const overwrite = request.get('Overwrite');
-    const ifMatch = request.get('If-Match');
-    const ifMatchEtags = (ifMatch || '')
-      .split(',')
-      .map((value) => value.trim().replace(/^["']/, '').replace(/["']$/, ''));
-    const ifUnmodifiedSince = request.get('If-Unmodified-Since');
     const resource = await this.adapter.getResource(url, request.baseUrl);
 
     if (!destination) {
       throw new BadRequestError('Destination header is required.');
+    }
+
+    if (
+      url
+        .toString()
+        .startsWith(destination.toString().replace(/\/?$/, () => '/'))
+    ) {
+      // Technically, there's nothing in the spec that says you can't do this,
+      // but logically, it's impossible, since the spec says to recursively
+      // delete everything at the destination first.
+      throw new BadRequestError("Can't copy a resource to its own ancestor.");
+    }
+
+    if (await resource.isCollection()) {
+      destination = new URL(destination.toString().replace(/\/?$/, () => '/'));
     }
 
     if (!['0', 'infinity'].includes(depth)) {
@@ -46,52 +56,6 @@ export class COPY extends Method {
         'Depth header must be one of "0", or "infinity".'
       );
     }
-
-    // According to the spec, any header included with COPY *MUST* be applied
-    // in processing every resource to be copied.
-    const checkConditionalHeaders = async (
-      resource: Resource,
-      destinationExists: boolean
-    ) => {
-      const properties = await resource.getProperties();
-      const etagPromise = resource.getEtag();
-      const lastModifiedPromise = properties.get('getlastmodified');
-      const [etag, lastModifiedString] = [
-        await etagPromise,
-        await lastModifiedPromise,
-      ];
-      if (typeof lastModifiedString !== 'string') {
-        throw new Error('Last modified date property is not a string.');
-      }
-      const lastModified = new Date(lastModifiedString);
-
-      // Check if header for etag.
-      if (ifMatch != null && !ifMatchEtags.includes(etag)) {
-        throw new PreconditionFailedError('If-Match header check failed.');
-      }
-
-      // Check if header for modified date.
-      if (
-        ifUnmodifiedSince != null &&
-        new Date(ifUnmodifiedSince) < lastModified
-      ) {
-        throw new PreconditionFailedError(
-          'If-Unmodified-Since header check failed.'
-        );
-      }
-
-      // Check overwrite header.
-      if (overwrite === 'F' && destinationExists) {
-        throw new PreconditionFailedError(
-          'A resource exists at the destination.'
-        );
-      }
-    };
-
-    response.set({
-      'Cache-Control': 'private, no-cache',
-      Date: new Date().toUTCString(),
-    });
 
     let stream = await this.getBodyStream(request, response);
 
@@ -106,6 +70,13 @@ export class COPY extends Method {
       stream.on('end', () => {
         resolve();
       });
+    });
+
+    await this.checkConditionalHeaders(request, response);
+
+    response.set({
+      'Cache-Control': 'private, no-cache',
+      Date: new Date().toUTCString(),
     });
 
     const multiStatus = new MultiStatus();
@@ -136,7 +107,12 @@ export class COPY extends Method {
             }
           }
 
-          await checkConditionalHeaders(resource, destinationExists);
+          // Check overwrite header.
+          if (overwrite === 'F' && destinationExists) {
+            throw new PreconditionFailedError(
+              'A resource exists at the destination.'
+            );
+          }
 
           // Check permissions to write to destination.
           const collection = await resource.isCollection();
@@ -185,8 +161,7 @@ export class COPY extends Method {
                 destinationResource,
                 request,
                 response,
-                multiStatus,
-                async () => {}
+                multiStatus
               );
 
               if (childrenDeleted) {
@@ -231,7 +206,9 @@ export class COPY extends Method {
                 const destinationUrl = new URL(
                   destination.toString().replace(/\/$/, '') +
                     '/' +
-                    encodeURIComponent(name)
+                    encodeURIComponent(name) +
+                    ((await child.isCollection()) ? '/' : ''),
+                  `${destination.protocol}://${destination.host}`
                 );
 
                 await recursivelyCopy(child, destinationUrl, false);

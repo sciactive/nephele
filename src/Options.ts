@@ -1,5 +1,6 @@
 import { Request } from 'express';
 
+import type { ResourceNotModifiedError } from './Errors/index.js';
 import type { AuthResponse } from './Interfaces/index.js';
 
 export interface Options {
@@ -67,8 +68,25 @@ export const defaults: Options = {
     message: string,
     _request: Request,
     response: AuthResponse,
-    error?: Error
+    error?: Error | ResourceNotModifiedError
   ) => {
+    if (code < 400) {
+      // Not really errors.
+      response.status(code);
+      if (error && 'etag' in error && error.etag) {
+        response.set({
+          ETag: error.etag,
+        });
+      }
+      if (error && 'lastModified' in error && error.lastModified) {
+        response.set({
+          'Last-Modified': error.lastModified.toUTCString(),
+        });
+      }
+      response.end();
+      return;
+    }
+
     if (error) {
       response.locals.error = error;
     }

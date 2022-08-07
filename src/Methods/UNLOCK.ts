@@ -54,6 +54,8 @@ export class UNLOCK extends Method {
         );
       }
 
+      await this.checkConditionalHeaders(request, response);
+
       const multiStatus = new MultiStatus();
 
       let status = new Status(url, 412); // Precondition Failed
@@ -68,6 +70,8 @@ export class UNLOCK extends Method {
       this.sendBodyContent(response, responseXml, encoding);
       return;
     }
+
+    await this.checkConditionalHeaders(request, response);
 
     await lock.delete();
 

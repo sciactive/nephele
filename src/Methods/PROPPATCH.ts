@@ -63,10 +63,7 @@ export class PROPPATCH extends Method {
         'The user does not have permission to modify the locked resource.'
       );
     }
-
-    const multiStatus = new MultiStatus();
     const order = await this.getPropPatchOrder(xmlBody);
-    const status = new Status(url, 207);
     const propErrors: { [k: string]: Error } = {};
 
     const setArray: any[] =
@@ -127,6 +124,11 @@ export class PROPPATCH extends Method {
         }
       }
     }
+
+    await this.checkConditionalHeaders(request, response);
+
+    const multiStatus = new MultiStatus();
+    const status = new Status(url, 207);
 
     const errors = await props.runInstructionsByUser(
       instructions,

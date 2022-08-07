@@ -40,7 +40,6 @@ export class PROPFIND extends Method {
     let requestedProps: string[] = [];
     let allprop = true;
     let propname = false;
-    const multiStatus = new MultiStatus();
 
     if (xml != null) {
       if (!('propfind' in xml)) {
@@ -73,6 +72,10 @@ export class PROPFIND extends Method {
         }
       }
     }
+
+    await this.checkConditionalHeaders(request, response);
+
+    const multiStatus = new MultiStatus();
 
     if (propname) {
       response.locals.debug(`Requested prop names.`);

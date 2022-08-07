@@ -17,6 +17,397 @@ const parser = new xml2js.Parser({
   xmlns: true,
 });
 
+const parseIfHeader = async () => {
+  // This regex matches a resource: </resource>
+  const matchResource = /^<.+?>\s*/;
+  // This regex matches a list of conditions: (<urn:uuid:some-uuid> ["etag"] ["etagwith(parens)"])
+  const matchList = /^\([^\)]+?(?:"[^"]+"[^\)]*?)*\)\s*/;
+  // This regex matches the Not keyword of a condition: Not "etag"
+  const matchNot = /^Not\s*/;
+  // This regex matches the no-lock condition: <DAV:no-lock>
+  const matchNolock = /^<DAV:no-lock>\s*/;
+  // This regex matches a token condition: <urn:uuid:some-uuid>
+  // Note that it will also match a no-lock condition, so check no-lock first.
+  const matchToken = /^<[^>]+>\s*/;
+  // This regex matches an etag condition: ["etag"]
+  const matchEtag = /^\[(?:W\/)?"[^"]+"\]\s*/;
+
+  type List = {
+    tokens: string[];
+    etags: string[];
+    nolock: boolean;
+    notTokens: string[];
+    notEtags: string[];
+    notNolock: boolean;
+  };
+
+  const parse = async (
+    requestURL: URL,
+    ifHeader: string,
+    resources: {
+      url: URL;
+      etag: string;
+      tokens: string[];
+    }[]
+  ) => {
+    ifHeader = ifHeader.trim().replace(/\n/g, ' ');
+
+    if (ifHeader.trim() === '') {
+      throw new Error('The If header, if provided, must not be empty.');
+    }
+
+    // Parse the If header into a usable object.
+
+    const parsedHeader: {
+      [resourceUri: string]: List[];
+    } = {};
+
+    let currentResource = requestURL.toString();
+    const startedWithResource = ifHeader.startsWith('<');
+    while (ifHeader.length) {
+      const resourceMatch = ifHeader.match(matchResource);
+      const listMatch = ifHeader.match(matchList);
+
+      if (resourceMatch) {
+        if (!startedWithResource) {
+          throw new Error(
+            'Tagged-lists and no-tag-lists must not be mixed in the If header.'
+          );
+        }
+
+        const resource = resourceMatch[0].trim();
+        currentResource = resource.slice(1, -1);
+        if (currentResource.match(/(?:^\/)\.\.?(?:$|\/)/)) {
+          throw new Error(
+            'Resource URIs in the If header must not contain dot segments.'
+          );
+        }
+        ifHeader = ifHeader.replace(matchResource, '');
+      } else if (listMatch) {
+        let list = listMatch[0].trim().slice(1, -1).trim();
+        const listObj: List = {
+          tokens: [],
+          etags: [],
+          nolock: false,
+          notTokens: [],
+          notEtags: [],
+          notNolock: false,
+        };
+
+        if (list === '') {
+          throw new Error(
+            'All lists in the If header must have at least one condition.'
+          );
+        }
+
+        while (list.length) {
+          const notMatch = list.match(matchNot);
+          if (notMatch) {
+            list = list.replace(matchNot, '');
+          }
+
+          const nolockMatch = list.match(matchNolock);
+          const tokenMatch = list.match(matchToken);
+          const etagMatch = list.match(matchEtag);
+
+          if (nolockMatch) {
+            if (notMatch) {
+              listObj.notNolock = true;
+            } else {
+              listObj.nolock = true;
+            }
+            list = list.replace(matchNolock, '');
+          } else if (tokenMatch) {
+            let token = tokenMatch[0].trim().slice(1, -1);
+            if (notMatch) {
+              listObj.notTokens.push(token);
+            } else {
+              listObj.tokens.push(token);
+            }
+            list = list.replace(matchToken, '');
+          } else if (etagMatch) {
+            let etag = etagMatch[0]
+              .trim()
+              .replace(/^\[(?:W\/)?"/, '')
+              .slice(0, -2);
+            if (notMatch) {
+              listObj.notEtags.push(etag);
+            } else {
+              listObj.etags.push(etag);
+            }
+            list = list.replace(matchEtag, '');
+          } else {
+            // Unparseable header.
+            throw new Error(
+              "The server doesn't recognize the submitted If header."
+            );
+          }
+        }
+
+        if (!parsedHeader[currentResource]) {
+          parsedHeader[currentResource] = [];
+        }
+
+        parsedHeader[currentResource].push(listObj);
+
+        ifHeader = ifHeader.replace(matchList, '');
+      } else {
+        // Unparseable header.
+        throw new Error(
+          "The server doesn't recognize the submitted If header."
+        );
+      }
+    }
+
+    if (Object.keys(parsedHeader).length === 0) {
+      throw new Error(
+        'The If header, if provided, must contain at least one list with a condition.'
+      );
+    }
+
+    // Now evaluate the parsed header and check for a single list that passes.
+    // The spec states that the entire header evaluates to true if a single list
+    // production evaluates to true.
+    for (let [resourceUri, lists] of Object.entries(parsedHeader)) {
+      const url = new URL(resourceUri, requestURL);
+      const { etag, tokens } = resources.find(
+        (resource) => resource.url.toString() === url.toString()
+      ) || { etag: '', tokens: [] as string[] };
+
+      listLoop: for (let list of lists) {
+        // For each list, all conditions in the list must evaluate to true for
+        // that list to evaluate to true.
+        if (list.nolock) {
+          // No resoure can be locked with <DAV:no-lock>, so this list evaluates
+          // to false.
+          continue;
+        }
+
+        for (let curEtag of list.etags) {
+          if (etag === '' || etag !== curEtag) {
+            continue listLoop;
+          }
+        }
+
+        for (let curEtag of list.notEtags) {
+          if (etag !== '' && etag === curEtag) {
+            continue listLoop;
+          }
+        }
+
+        for (let curToken of list.tokens) {
+          if (!tokens.includes(curToken)) {
+            continue listLoop;
+          }
+        }
+
+        for (let curToken of list.notTokens) {
+          if (tokens.includes(curToken)) {
+            continue listLoop;
+          }
+        }
+
+        // If we reached here, it either means all the checked conditions
+        // evaluated to true, or there was just a "Not <DAV:no-lock>" condition.
+        return true;
+      }
+    }
+
+    return false;
+  };
+
+  console.log(
+    'should be true: ',
+    await parse(
+      new URL('http://example.com/file'),
+      `(<urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed>)`,
+      [
+        {
+          url: new URL('http://example.com/file'),
+          etag: 'eeee',
+          tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be true: ',
+    await parse(
+      new URL('http://example.com/file'),
+      `(<urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed>\n ["I am an ETag"])\n (["I am another ETag"])`,
+      [
+        {
+          url: new URL('http://example.com/file'),
+          etag: 'I am an ETag',
+          tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be true: ',
+    await parse(
+      new URL('http://example.com/file'),
+      `(<urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed> ["I am an ETag"]) (["I am another ETag"])`,
+      [
+        {
+          url: new URL('http://example.com/file'),
+          etag: 'I am another ETag',
+          tokens: [],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be false: ',
+    await parse(
+      new URL('http://example.com/file'),
+      `(<urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed> ["I am an ETag"]) (["I am another ETag"])`,
+      [
+        {
+          url: new URL('http://example.com/file'),
+          etag: 'I am an ETag',
+          tokens: [],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be true: ',
+    await parse(
+      new URL('http://example.com/file'),
+      `(Not <urn:uuid:9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d> <urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed>)`,
+      [
+        {
+          url: new URL('http://example.com/file'),
+          etag: 'eeee',
+          tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be false: ',
+    await parse(
+      new URL('http://example.com/file'),
+      `(Not <urn:uuid:9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d> Not <urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed>)`,
+      [
+        {
+          url: new URL('http://example.com/file'),
+          etag: 'eeee',
+          tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be true: ',
+    await parse(
+      new URL('http://example.com/file'),
+      `(<urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed>)\n (Not <DAV:no-lock>)`,
+      [
+        {
+          url: new URL('http://example.com/file'),
+          etag: 'eeee',
+          tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be true: ',
+    await parse(
+      new URL('http://example.com/file'),
+      `(<urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed>)\n (Not <DAV:no-lock>)`,
+      [
+        {
+          url: new URL('http://example.com/file'),
+          etag: 'eeee',
+          tokens: [],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be true: ',
+    await parse(
+      new URL('http://example.com/file'),
+      `</file> (<urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed>)\n </file2> (<urn:uuid:9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d>)`,
+      [
+        {
+          url: new URL('http://example.com/file'),
+          etag: 'eeee',
+          tokens: [],
+        },
+        {
+          url: new URL('http://example.com/file2'),
+          etag: 'eeee',
+          tokens: ['urn:uuid:9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be false: ',
+    await parse(
+      new URL('http://example.com/collection/file'),
+      `</collection/file> (["etag"])`,
+      [
+        {
+          url: new URL('http://example.com/collection'),
+          etag: 'eeee',
+          tokens: [],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be true: ',
+    await parse(
+      new URL('http://example.com/collection/file'),
+      `</collection/file> (["etag"])`,
+      [
+        {
+          url: new URL('http://example.com/collection'),
+          etag: 'eeee',
+          tokens: [],
+        },
+        {
+          url: new URL('http://example.com/collection/file'),
+          etag: 'etag',
+          tokens: [],
+        },
+      ]
+    )
+  );
+
+  console.log(
+    'should be true: ',
+    await parse(
+      new URL('http://example.com/collection/file'),
+      `</collection/file> (Not ["etag"])`,
+      [
+        {
+          url: new URL('http://example.com/collection'),
+          etag: 'eeee',
+          tokens: [],
+        },
+      ]
+    )
+  );
+};
+await parseIfHeader();
+
 const parseproppatch = async () => {
   const xml = `<?xml version="1.0" encoding="utf-8" ?>
 <D:propertyupdate xmlns:D="DAV:" xmlns:Z="http://ns.example.com/standards/z39.50">
@@ -59,7 +450,7 @@ const parseproppatch = async () => {
 
   console.log(inspect(parsed, false, null));
 };
-await parseproppatch();
+// await parseproppatch();
 
 const parsexml = async () => {
   const xml = `<?xml version="1.0" encoding="utf-8" ?>
@@ -90,7 +481,10 @@ const parsexml = async () => {
 const multistatuspropstat = async () => {
   const multistatus = new MultiStatus();
 
-  const container = new Status('http://www.example.com/container', 207);
+  const container = new Status(
+    new URL('http://www.example.com/container'),
+    207
+  );
   multistatus.addStatus(container);
 
   const containerProps = new PropStatStatus(200);
@@ -103,7 +497,10 @@ const multistatuspropstat = async () => {
   containerErrorProps.setProp({ restricted: {} });
   container.addPropStatStatus(containerErrorProps);
 
-  const file = new Status('http://www.example.com/container/file', 207);
+  const file = new Status(
+    new URL('http://www.example.com/container/file'),
+    207
+  );
   multistatus.addStatus(file);
 
   const fileProps = new PropStatStatus(200);
@@ -117,9 +514,9 @@ const multistatuspropstat = async () => {
 const multistatuserror = async () => {
   const multistatus = new MultiStatus();
 
-  const success = new Status('http://www.example.com/file', 200);
+  const success = new Status(new URL('http://www.example.com/file'), 200);
   multistatus.addStatus(success);
-  const error = new Status('http://www.example.com/file2', 404);
+  const error = new Status(new URL('http://www.example.com/file2'), 404);
   error.setBody({
     error: {
       something: {},

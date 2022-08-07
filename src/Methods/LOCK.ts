@@ -114,6 +114,8 @@ export class LOCK extends Method {
         return;
       }
 
+      await this.checkConditionalHeaders(request, response);
+
       lock.date = new Date();
       lock.timeout = timeout;
 
@@ -194,13 +196,6 @@ export class LOCK extends Method {
     const scope: 'exclusive' | 'shared' =
       'exclusive' in lockscopeXml ? 'exclusive' : 'shared';
 
-    const multiStatus = new MultiStatus();
-
-    response.set({
-      'Cache-Control': 'private, no-cache',
-      Date: new Date().toUTCString(),
-    });
-
     const checkForLockAbove = async () => {
       const lockPermission = await this.getLockPermission(
         request,
@@ -208,39 +203,98 @@ export class LOCK extends Method {
         response.locals.user
       );
 
-      if (newResource) {
-        // Check that the resource wouldn't be added to a locked collection.
-        if (lockPermission === 1) {
-          throw new LockedError(
-            'The user does not have permission to create an empty resource in the locked collection.'
-          );
-        }
+      // Check that the resource wouldn't be added to a locked collection.
+      if (newResource && lockPermission === 1) {
+        throw new LockedError(
+          'The user does not have permission to create an empty resource in the locked collection.'
+        );
+      }
 
-        if (lockPermission === 0) {
-          throw new LockedError(
-            'The user does not have permission to create the locked resource.'
-          );
-        }
+      if (lockPermission === 0) {
+        throw new LockedError(
+          `The user does not have permission to ${
+            newResource ? 'create' : 'lock'
+          } the locked resource.`
+        );
+      }
 
-        if (lockPermission === 3 && scope === 'exclusive') {
-          throw new LockedError(
-            'The user does not have permission to create the locked resource with an exclusive lock.'
-          );
-        }
-      } else {
-        if (lockPermission === 0) {
-          throw new LockedError(
-            'The user does not have permission to lock the locked resource.'
-          );
-        }
-
-        if (lockPermission === 3 && scope === 'exclusive') {
-          throw new LockedError(
-            'The user does not have permission to lock the locked resource with an exclusive lock.'
-          );
-        }
+      if (lockPermission === 3 && scope === 'exclusive') {
+        throw new LockedError(
+          `The user does not have permission to ${
+            newResource ? 'create' : 'lock'
+          } the locked resource with an exclusive lock.`
+        );
       }
     };
+
+    await new Promise<void>(async (resolve, reject) => {
+      let attempt = 0;
+
+      const runLockAndProvisionalCheck = async () => {
+        await checkForLockAbove();
+
+        // Check for provisional locks that are blocking this one.
+        const provisionalLocks = await this.getProvisionalLocks(
+          request,
+          resource
+        );
+
+        if (provisionalLocks.all.length) {
+          if (attempt >= 120) {
+            // Give up after a while. (Max ~60 seconds.)
+            throw new ServiceUnavailableError(
+              'The server is waiting for another lock operation to complete.'
+            );
+          }
+
+          // A provisional lock exists, so wait for between 100 and 500 ms to
+          // try again.
+          await new Promise((resolve) =>
+            setTimeout(resolve, 100 + Math.random() * 400)
+          );
+
+          attempt++;
+          await runLockAndProvisionalCheck();
+        }
+      };
+
+      try {
+        await runLockAndProvisionalCheck();
+        resolve();
+      } catch (e: any) {
+        reject(e);
+      }
+    });
+
+    await this.checkConditionalHeaders(request, response);
+
+    const multiStatus = new MultiStatus();
+
+    response.set({
+      'Cache-Control': 'private, no-cache',
+      Date: new Date().toUTCString(),
+    });
+
+    // Create a provisional lock.
+    const lock = await resource.createLockForUser(response.locals.user);
+    lock.token = `urn:uuid:${uuid()}`;
+    lock.date = new Date();
+    // Timeout the provisional lock after five minutes.
+    lock.timeout = 1000 * 60 * 5;
+    lock.scope = scope;
+    lock.depth = depth;
+    lock.owner = owner;
+    lock.provisional = true;
+
+    await lock.save();
+
+    // Now that we have a provisional lock, check upward again.
+    try {
+      await checkForLockAbove();
+    } catch (e: any) {
+      await lock.delete();
+      throw e;
+    }
 
     const checkForPermissionAndLocksBelow = async (
       resource: Resource,
@@ -315,66 +369,6 @@ export class LOCK extends Method {
         }
       }
     };
-
-    await new Promise<void>(async (resolve, reject) => {
-      let attempt = 0;
-
-      const runLockAndProvisionalCheck = async () => {
-        await checkForLockAbove();
-
-        // Check for provisional locks that are blocking this one.
-        const provisionalLocks = await this.getProvisionalLocks(
-          request,
-          resource
-        );
-
-        if (provisionalLocks.all.length) {
-          if (attempt >= 120) {
-            // Give up after a while. (Max ~60 seconds.)
-            throw new ServiceUnavailableError(
-              'The server is waiting for another lock operation to complete.'
-            );
-          }
-
-          // A provisional lock exists, so wait for between 100 and 500 ms to
-          // try again.
-          await new Promise((resolve) =>
-            setTimeout(resolve, 100 + Math.random() * 400)
-          );
-
-          attempt++;
-          await runLockAndProvisionalCheck();
-        }
-      };
-
-      try {
-        await runLockAndProvisionalCheck();
-        resolve();
-      } catch (e: any) {
-        reject(e);
-      }
-    });
-
-    // Create a provisional lock.
-    const lock = await resource.createLockForUser(response.locals.user);
-    lock.token = `urn:uuid:${uuid()}`;
-    lock.date = new Date();
-    // Timeout the provisional lock after five minutes.
-    lock.timeout = 1000 * 60 * 5;
-    lock.scope = scope;
-    lock.depth = depth;
-    lock.owner = owner;
-    lock.provisional = true;
-
-    await lock.save();
-
-    // Now that we have a provisional lock, check upward again.
-    try {
-      await checkForLockAbove();
-    } catch (e: any) {
-      await lock.delete();
-      throw e;
-    }
 
     // And check below for any conflicting lock.
     try {

@@ -19,8 +19,36 @@ import {
   EncodingNotSupportedError,
   MediaTypeNotSupportedError,
   MethodNotSupportedError,
+  PreconditionFailedError,
+  ResourceNotFoundError,
+  ResourceNotModifiedError,
   UnauthorizedError,
 } from '../index.js';
+
+// The following regexes are used in parsing the If header.
+
+// This regex matches a resource: </resource>
+const matchResource = /^<.+?>\s*/;
+// This regex matches a list of conditions: (<urn:uuid:some-uuid> ["etag"] ["etagwith(parens)"])
+const matchList = /^\([^\)]+?(?:"[^"]+"[^\)]*?)*\)\s*/;
+// This regex matches the Not keyword of a condition: Not "etag"
+const matchNot = /^Not\s*/;
+// This regex matches the no-lock condition: <DAV:no-lock>
+const matchNolock = /^<DAV:no-lock>\s*/;
+// This regex matches a token condition: <urn:uuid:some-uuid>
+// Note that it will also match a no-lock condition, so check no-lock first.
+const matchToken = /^<[^>]+>\s*/;
+// This regex matches an etag condition: ["etag"]
+const matchEtag = /^\[(?:W\/)?"[^"]+"\]\s*/;
+
+type IfHeaderList = {
+  tokens: string[];
+  etags: string[];
+  nolock: boolean;
+  notTokens: string[];
+  notEtags: string[];
+  notNolock: boolean;
+};
 
 export class Method {
   adapter: Adapter;
@@ -97,13 +125,13 @@ export class Method {
   async getParentResource(request: Request, resource: Resource) {
     const url = await resource.getCanonicalUrl(this.getRequestBaseUrl(request));
 
-    const splitPath = url.pathname.replace(/(?:$|\/$)/, () => '').split('/');
+    const splitPath = url.pathname.replace(/\/?$/, '').split('/');
     const newPath = splitPath
       .slice(0, -1)
       .join('/')
-      .replace(/(?:$|\/$)/, () => '/');
+      .replace(/\/?$/, () => '/');
 
-    if (newPath === request.baseUrl.replace(/(?:$|\/$)/, () => '/')) {
+    if (newPath === request.baseUrl.replace(/\/?$/, () => '/')) {
       return undefined;
     }
 
@@ -322,11 +350,355 @@ export class Method {
     return lockTokens;
   }
 
-  chekIfHeader(request: Request, etag: string, lockTokens: string[]) {
-    // TODO: process the if header list. (page 73)
-    const ifHeader = request.get('If') || '';
+  /**
+   * Parse and check the If header against existing resources.
+   */
+  private async checkIfHeader(request: Request, response: AuthResponse) {
+    let ifHeader = request.get('If')?.trim().replace(/\n/g, ' ');
 
-    return true;
+    if (ifHeader == null) {
+      return;
+    }
+
+    if (ifHeader === '') {
+      throw new BadRequestError(
+        'The If header, if provided, must not be empty.'
+      );
+    }
+
+    const requestURL = this.getRequestUrl(request);
+
+    // Parse the If header into a usable object.
+
+    const parsedHeader: {
+      [resourceUri: string]: IfHeaderList[];
+    } = {};
+
+    let currentResource = requestURL.toString();
+    const startedWithResource = ifHeader.startsWith('<');
+    while (ifHeader.length) {
+      const resourceMatch = ifHeader.match(matchResource);
+      const listMatch = ifHeader.match(matchList);
+
+      if (resourceMatch) {
+        if (!startedWithResource) {
+          throw new BadRequestError(
+            'Tagged-lists and no-tag-lists must not be mixed in the If header.'
+          );
+        }
+
+        const resource = resourceMatch[0].trim();
+        currentResource = resource.slice(1, -1);
+        if (currentResource.match(/(?:^\/)\.\.?(?:$|\/)/)) {
+          throw new BadRequestError(
+            'Resource URIs in the If header must not contain dot segments.'
+          );
+        }
+        ifHeader = ifHeader.replace(matchResource, '');
+      } else if (listMatch) {
+        let list = listMatch[0].trim().slice(1, -1).trim();
+        const listObj: IfHeaderList = {
+          tokens: [],
+          etags: [],
+          nolock: false,
+          notTokens: [],
+          notEtags: [],
+          notNolock: false,
+        };
+
+        if (list === '') {
+          throw new BadRequestError(
+            'All lists in the If header must have at least one condition.'
+          );
+        }
+
+        while (list.length) {
+          const notMatch = list.match(matchNot);
+          if (notMatch) {
+            list = list.replace(matchNot, '');
+          }
+
+          const nolockMatch = list.match(matchNolock);
+          const tokenMatch = list.match(matchToken);
+          const etagMatch = list.match(matchEtag);
+
+          if (nolockMatch) {
+            if (notMatch) {
+              listObj.notNolock = true;
+            } else {
+              listObj.nolock = true;
+            }
+            list = list.replace(matchNolock, '');
+          } else if (tokenMatch) {
+            let token = tokenMatch[0].trim().slice(1, -1);
+            if (notMatch) {
+              listObj.notTokens.push(token);
+            } else {
+              listObj.tokens.push(token);
+            }
+            list = list.replace(matchToken, '');
+          } else if (etagMatch) {
+            let etag = etagMatch[0]
+              .trim()
+              .replace(/^\[(?:W\/)?"/, '')
+              .slice(0, -2);
+            if (notMatch) {
+              listObj.notEtags.push(etag);
+            } else {
+              listObj.etags.push(etag);
+            }
+            list = list.replace(matchEtag, '');
+          } else {
+            // Unparseable header.
+            throw new BadRequestError(
+              "The server doesn't recognize the submitted If header."
+            );
+          }
+        }
+
+        if (!parsedHeader[currentResource]) {
+          parsedHeader[currentResource] = [];
+        }
+
+        parsedHeader[currentResource].push(listObj);
+
+        ifHeader = ifHeader.replace(matchList, '');
+      } else {
+        // Unparseable header.
+        throw new BadRequestError(
+          "The server doesn't recognize the submitted If header."
+        );
+      }
+    }
+
+    if (Object.keys(parsedHeader).length === 0) {
+      throw new BadRequestError(
+        'The If header, if provided, must contain at least one list with a condition.'
+      );
+    }
+
+    // Now evaluate the parsed header and check for a single list that passes.
+    // The spec states that the entire header evaluates to true if a single list
+    // production evaluates to true.
+    for (let [resourceUri, lists] of Object.entries(parsedHeader)) {
+      const url = new URL(resourceUri, requestURL);
+      let etag = '';
+      let tokens: string[] = [];
+
+      const [needEtag, needTokens] = lists.reduce(
+        ([needEtag, needTokens], list) => [
+          !!(needEtag || list.etags.length || list.notEtags.length),
+          !!(needTokens || list.tokens.length || list.notTokens.length),
+        ],
+        [false, false]
+      );
+
+      if (needEtag || needTokens) {
+        try {
+          await this.checkAuthorization(request, response, 'GET', url);
+          const resource = await this.adapter.getResource(url, request.baseUrl);
+          if (needEtag) {
+            etag = await resource.getEtag();
+          }
+          if (needTokens) {
+            tokens = (await this.getLocks(request, resource)).all.map(
+              (lock) => lock.token
+            );
+          }
+        } catch (e: any) {
+          if (e instanceof UnauthorizedError) {
+            throw new PreconditionFailedError('If header check failed.');
+          }
+          if (!(e instanceof ResourceNotFoundError)) {
+            throw e;
+          }
+        }
+      }
+
+      listLoop: for (let list of lists) {
+        // For each list, all conditions in the list must evaluate to true for
+        // that list to evaluate to true.
+        if (list.nolock) {
+          // No resoure can be locked with <DAV:no-lock>, so this list evaluates
+          // to false.
+          continue;
+        }
+
+        for (let curEtag of list.etags) {
+          if (etag === '' || etag !== curEtag) {
+            continue listLoop;
+          }
+        }
+
+        for (let curEtag of list.notEtags) {
+          if (etag !== '' && etag === curEtag) {
+            continue listLoop;
+          }
+        }
+
+        for (let curToken of list.tokens) {
+          if (!tokens.includes(curToken)) {
+            continue listLoop;
+          }
+        }
+
+        for (let curToken of list.notTokens) {
+          if (tokens.includes(curToken)) {
+            continue listLoop;
+          }
+        }
+
+        // If we reached here, it either means all the checked conditions
+        // evaluated to true, or there was just a "Not <DAV:no-lock>" condition.
+        return;
+      }
+    }
+
+    throw new PreconditionFailedError('If header check failed.');
+  }
+
+  async checkConditionalHeaders(request: Request, response: AuthResponse) {
+    const requestURL = this.getRequestUrl(request);
+    let resource: Resource;
+    let newResource = false;
+    try {
+      resource = await this.adapter.getResource(requestURL, request.baseUrl);
+    } catch (e: any) {
+      if (e instanceof ResourceNotFoundError) {
+        resource = await this.adapter.newResource(requestURL, request.baseUrl);
+        newResource = true;
+      } else {
+        throw e;
+      }
+    }
+
+    const ifMatch = request.get('If-Match')?.trim();
+    const ifMatchEtags = (ifMatch || '').split(',').map((value) =>
+      value
+        .trim()
+        .replace(/^(?:W\/)?["']/, '')
+        .replace(/["']$/, '')
+    );
+    const ifNoneMatch = request.get('If-None-Match')?.trim();
+    const ifNoneMatchEtags = (ifNoneMatch || '').split(',').map((value) =>
+      value
+        .trim()
+        .replace(/^(?:W\/)?["']/, '')
+        .replace(/["']$/, '')
+    );
+    const ifUnmodifiedSince = request.get('If-Unmodified-Since')?.trim();
+    const ifModifiedSince = request.get('If-Modified-Since')?.trim();
+
+    let etag = '';
+    let lastModified = new Date(0);
+
+    if (!newResource) {
+      const properties = await resource.getProperties();
+      etag = await resource.getEtag();
+      const lastModifiedString = await properties.get('getlastmodified');
+      if (typeof lastModifiedString !== 'string') {
+        throw new Error('Last modified date property is not a string.');
+      }
+      lastModified = new Date(lastModifiedString);
+    }
+
+    // Check if header for etag. If it's a new resource, any etag should fail.
+    if (
+      ifMatch != null &&
+      ((ifMatch === '*' && newResource) ||
+        (ifMatch !== '*' && (etag === '' || !ifMatchEtags.includes(etag))))
+    ) {
+      throw new PreconditionFailedError('If-Match header check failed.');
+    }
+
+    // Check if header for modified date. If it's a new resource, any unmodified
+    // date in the past should fail.
+    if (
+      ifUnmodifiedSince != null &&
+      new Date(ifUnmodifiedSince) < lastModified
+    ) {
+      throw new PreconditionFailedError(
+        'If-Unmodified-Since header check failed.'
+      );
+    }
+
+    let mustIgnoreIfModifiedSince = false;
+    if (ifNoneMatch != null) {
+      if (
+        (request.method === 'MKCOL' || request.method === 'PUT') &&
+        ifNoneMatch !== '*'
+      ) {
+        throw new BadRequestError(
+          `If-None-Match, if provided, must be "*" on a ${request.method} request.`
+        );
+      }
+
+      // Check the request header for the etag.
+      if (
+        (ifNoneMatch === '*' && !newResource) ||
+        (ifNoneMatch !== '*' && etag !== '' && ifNoneMatchEtags.includes(etag))
+      ) {
+        if (request.method === 'GET' || request.method === 'HEAD') {
+          const cacheControl = this.getCacheControl(request);
+
+          if (!cacheControl['no-cache'] && cacheControl['max-age'] !== 0) {
+            throw new ResourceNotModifiedError(
+              newResource ? undefined : etag,
+              newResource ? undefined : lastModified
+            );
+          }
+        } else {
+          throw new PreconditionFailedError(
+            'If-None-Match header check failed.'
+          );
+        }
+      } else {
+        mustIgnoreIfModifiedSince = true;
+      }
+    }
+
+    // Check the request header for the modified date.
+    // According to the spec, the server must ignore If-Modified-Since if none
+    // of the etags in If-None-Match match.
+    // According to the spec, If-Modified-Since can only be used with GET and
+    // HEAD.
+    if (
+      !mustIgnoreIfModifiedSince &&
+      (request.method === 'GET' || request.method === 'HEAD') &&
+      ifModifiedSince != null &&
+      new Date(ifModifiedSince) >= lastModified
+    ) {
+      const cacheControl = this.getCacheControl(request);
+
+      if (!cacheControl['no-cache'] && cacheControl['max-age'] !== 0) {
+        throw new ResourceNotModifiedError(
+          newResource ? undefined : etag,
+          newResource ? undefined : lastModified
+        );
+      }
+    }
+
+    // TODO: This seems to cause issues with existing clients.
+    // if (
+    //   request.method === 'PUT' &&
+    //   ifMatch == null &&
+    //   ifUnmodifiedSince == null
+    // ) {
+    //   // Require that PUT for an existing resource is conditional.
+    //   // 428 Precondition Required
+    //   throw new PreconditionRequiredError(
+    //     'Overwriting existing resource requires the use of a conditional header, If-Match or If-Unmodified-Since.'
+    //   );
+    // }
+
+    await this.checkIfHeader(request, response);
+  }
+
+  getRequestUrl(request: Request) {
+    return new URL(
+      request.url,
+      `${request.protocol}://${request.headers.host}`
+    );
   }
 
   getRequestBaseUrl(request: Request) {
@@ -392,10 +764,7 @@ export class Method {
   }
 
   getRequestData(request: Request, response: AuthResponse) {
-    const url = new URL(
-      request.url,
-      `${request.protocol}://${request.headers.host}`
-    );
+    const url = this.getRequestUrl(request);
     const encoding = this.getRequestedEncoding(request, response);
     const cacheControl = this.getCacheControl(request);
     return { url, encoding, cacheControl };
@@ -406,8 +775,16 @@ export class Method {
 
     let destination: URL | undefined = undefined;
     if (destinationHeader != null) {
+      if (destinationHeader.match(/(?:^\/)\.\.?(?:$|\/)/)) {
+        throw new BadRequestError(
+          'Destination header must not contain dot segments.'
+        );
+      }
       try {
-        destination = new URL(destinationHeader);
+        destination = new URL(
+          destinationHeader,
+          new URL(request.url, `${request.protocol}://${request.headers.host}`)
+        );
       } catch (e: any) {
         throw new BadRequestError('Destination header must be a valid URI.');
       }

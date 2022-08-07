@@ -4,10 +4,7 @@ import type { Request } from 'express';
 import vary from 'vary';
 
 import type { AuthResponse } from '../Interfaces/index.js';
-import {
-  PreconditionFailedError,
-  PropertyNotFoundError,
-} from '../Errors/index.js';
+import { PropertyNotFoundError } from '../Errors/index.js';
 import { isMediaTypeCompressed } from '../compressedMediaTypes.js';
 
 import { Method } from './Method.js';
@@ -18,10 +15,7 @@ export class GetOrHead extends Method {
     request: Request,
     response: AuthResponse
   ) {
-    let { url, encoding, cacheControl } = this.getRequestData(
-      request,
-      response
-    );
+    let { url, encoding } = this.getRequestData(request, response);
 
     await this.checkAuthorization(request, response, method);
 
@@ -46,26 +40,7 @@ export class GetOrHead extends Method {
       throw new Error('Content language property is not a string.');
     }
 
-    // TODO: use If-Range here. If-Match and If-Unmodified-Since are for PUT.
-    // Check if header for etag.
-    const ifMatch = request.get('If-Match');
-    const ifMatchEtags = (ifMatch || '')
-      .split(',')
-      .map((value) => value.trim().replace(/^["']/, '').replace(/["']$/, ''));
-    if (ifMatch != null && !ifMatchEtags.includes(etag)) {
-      throw new PreconditionFailedError('If-Match header check failed.');
-    }
-
-    // Check if header for modified date.
-    const ifUnmodifiedSince = request.get('If-Unmodified-Since');
-    if (
-      ifUnmodifiedSince != null &&
-      new Date(ifUnmodifiedSince) < lastModified
-    ) {
-      throw new PreconditionFailedError(
-        'If-Unmodified-Since header check failed.'
-      );
-    }
+    await this.checkConditionalHeaders(request, response);
 
     const mediaType = await resource.getMediaType();
 
@@ -88,53 +63,22 @@ export class GetOrHead extends Method {
       });
     }
 
-    if (!cacheControl['no-cache'] && cacheControl['max-age'] !== 0) {
-      // Check the request header for the etag.
-      const ifNoneMatch = request.get('If-None-Match');
-      if (
-        ifNoneMatch != null &&
-        ifNoneMatch.trim().replace(/^["']/, '').replace(/["']$/, '') === etag
-      ) {
-        response.status(304); // Not Modified
-        response.end();
-        return;
-      }
+    // TODO: Put If-Range check here for partial content responses.
 
-      // Check the request header for the modified date.
-      const ifModifiedSince = request.get('If-Modified-Since');
-      if (
-        ifModifiedSince != null &&
-        new Date(ifModifiedSince) >= lastModified
-      ) {
-        response.status(304); // Not Modified
-        response.end();
-        return;
-      }
-    }
+    response.status(mediaType == null ? 204 : 200); // No Content or Ok
 
-    // TODO: put If-Range check here for partial content responses.
-
-    response.status(200); // Ok
+    response.set({
+      ETag: JSON.stringify(etag),
+      'Last-Modified': lastModified.toUTCString(),
+    });
 
     if (mediaType == null) {
-      response.set({
-        'Content-Type': 'text/plain',
-      });
-
-      if (method === 'GET') {
-        response.set({
-          'Content-Length': 0,
-        });
-      }
-
       response.end();
       return;
     }
 
     response.set({
       'Content-Type': mediaType,
-      Etag: JSON.stringify(etag),
-      'Last-Modified': lastModified.toUTCString(),
     });
     if (encoding !== 'identity') {
       // Inform the client, even on a HEAD request, that this entity will be transmitted in

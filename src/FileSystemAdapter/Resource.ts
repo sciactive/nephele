@@ -308,7 +308,7 @@ export default class Resource implements ResourceInterface {
       this.absolutePath === destinationPath ||
       ((await this.isCollection()) &&
         destinationPath.startsWith(
-          this.absolutePath.replace(/(?:$|\/$)/, () => '/')
+          this.absolutePath.replace(/\/?$/, () => '/')
         ))
     ) {
       throw new ForbiddenError(
@@ -470,7 +470,7 @@ export default class Resource implements ResourceInterface {
       this.absolutePath === destinationPath ||
       ((await this.isCollection()) &&
         destinationPath.startsWith(
-          this.absolutePath.replace(/(?:$|\/$)/, () => '/')
+          this.absolutePath.replace(/\/?$/, () => '/')
         ))
     ) {
       throw new ForbiddenError(
@@ -601,13 +601,13 @@ export default class Resource implements ResourceInterface {
 
   async getCanonicalPath() {
     if (await this.isCollection()) {
-      return this.path.replace(/(?:$|\/$)/, () => '/');
+      return this.path.replace(/\/?$/, () => '/');
     }
     return this.path;
   }
 
   async getCanonicalUrl(baseUrl: URL) {
-    let url = baseUrl.toString().replace(/(?:$|\/$)/, () => '/');
+    let url = baseUrl.toString().replace(/\/?$/, () => '/');
 
     url += encodeURI((await this.getCanonicalPath()).replace(/^\//, () => ''));
 

@@ -33,62 +33,22 @@ export class MOVE extends Method {
     // a reminder of that fact.
     const _depth = 'infinity';
     const overwrite = request.get('Overwrite');
-    const ifMatch = request.get('If-Match');
-    const ifMatchEtags = (ifMatch || '')
-      .split(',')
-      .map((value) => value.trim().replace(/^["']/, '').replace(/["']$/, ''));
-    const ifUnmodifiedSince = request.get('If-Unmodified-Since');
     const resource = await this.adapter.getResource(url, request.baseUrl);
 
     if (!destination) {
       throw new BadRequestError('Destination header is required.');
     }
 
-    // According to the spec, any header included with MOVE *MUST* be applied
-    // in processing every resource to be moved.
-    const checkConditionalHeaders = async (
-      resource: Resource,
-      destinationExists: boolean
-    ) => {
-      const properties = await resource.getProperties();
-      const etagPromise = resource.getEtag();
-      const lastModifiedPromise = properties.get('getlastmodified');
-      const [etag, lastModifiedString] = [
-        await etagPromise,
-        await lastModifiedPromise,
-      ];
-      if (typeof lastModifiedString !== 'string') {
-        throw new Error('Last modified date property is not a string.');
-      }
-      const lastModified = new Date(lastModifiedString);
-
-      // Check if header for etag.
-      if (ifMatch != null && !ifMatchEtags.includes(etag)) {
-        throw new PreconditionFailedError('If-Match header check failed.');
-      }
-
-      // Check if header for modified date.
-      if (
-        ifUnmodifiedSince != null &&
-        new Date(ifUnmodifiedSince) < lastModified
-      ) {
-        throw new PreconditionFailedError(
-          'If-Unmodified-Since header check failed.'
-        );
-      }
-
-      // Check overwrite header.
-      if (overwrite === 'F' && destinationExists) {
-        throw new PreconditionFailedError(
-          'A resource exists at the destination.'
-        );
-      }
-    };
-
-    response.set({
-      'Cache-Control': 'private, no-cache',
-      Date: new Date().toUTCString(),
-    });
+    if (
+      url
+        .toString()
+        .startsWith(destination.toString().replace(/\/?$/, () => '/'))
+    ) {
+      // Technically, there's nothing in the spec that says you can't do this,
+      // but logically, it's impossible, since the spec says to recursively
+      // delete everything at the destination first.
+      throw new BadRequestError("Can't move a resource to its own ancestor.");
+    }
 
     let stream = await this.getBodyStream(request, response);
 
@@ -105,7 +65,14 @@ export class MOVE extends Method {
       });
     });
 
+    await this.checkConditionalHeaders(request, response);
+
     const multiStatus = new MultiStatus();
+
+    response.set({
+      'Cache-Control': 'private, no-cache',
+      Date: new Date().toUTCString(),
+    });
 
     const recursivelyMove = async (
       resource: Resource,
@@ -133,7 +100,12 @@ export class MOVE extends Method {
             }
           }
 
-          await checkConditionalHeaders(resource, destinationExists);
+          // Check overwrite header.
+          if (overwrite === 'F' && destinationExists) {
+            throw new PreconditionFailedError(
+              'A resource exists at the destination.'
+            );
+          }
 
           // Check permissions to write to destination.
           const collection = await resource.isCollection();
@@ -201,8 +173,7 @@ export class MOVE extends Method {
                 destinationResource,
                 request,
                 response,
-                multiStatus,
-                async () => {}
+                multiStatus
               );
 
               if (childrenDeleted) {
