@@ -46,6 +46,24 @@ You should read and follow this RFC to make your server work well with CardDAV a
 
 Nephele provides all of the business logic of implementing WebDAV for you, but it's your job to put things in place when Nephele needs you to. This is done through an adapter.
 
+```js
+import express from 'express';
+import nepheleServer from 'nephele';
+import SomeExampleAdapter from '@nephele/some-example-nephele-adapter';
+
+const app = express();
+const port = 8080;
+
+app.use(
+  '/',
+  nepheleServer(new SomeExampleAdapter(), { realm: 'My WebDAV Server' })
+);
+
+app.listen(port, () => {
+  console.log(`Nephele WebDAV server listening on port ${port}`);
+});
+```
+
 ## Adapters
 
 Nephele works by using adapters. An adapter is responsible for actually performing changes in the storage backend, while Nephele is responsible for implementing the WebDAV spec on top of Express.
