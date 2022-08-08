@@ -72,7 +72,7 @@ export class GetOrHead extends Method {
       // Check the If-Range header for Etags or Modified Date.
       // According to the spec, If-Range can only be used with GET.
       const ifRange = request.get('If-Range')?.trim();
-      if (request.method === 'GET' && ifRange != null) {
+      if (ifRange != null) {
         if (ifRange.startsWith('W/')) {
           throw new BadRequestError('If-Range must not contain a weak etag.');
         } else if (ifRange.startsWith('"') || ifRange.startsWith("'")) {
@@ -151,6 +151,7 @@ export class GetOrHead extends Method {
 
         request.on('close', () => {
           if (!stream.readableEnded) {
+            // This happens when the request is aborted.
             stream.destroy();
           }
         });
@@ -178,6 +179,7 @@ export class GetOrHead extends Method {
 
           request.on('close', () => {
             if (!stream.readableEnded) {
+              // This happens when the request is aborted.
               stream.destroy();
             }
           });
@@ -200,11 +202,12 @@ export class GetOrHead extends Method {
             stream.on('error', reject);
 
             stream.on('end', () => {
-              writeText(`\n--${boundary}`).then(resolve);
+              writeText(`\n--${boundary}`);
+              response.locals.debug('Response stream finished.');
             });
-          });
 
-          response.locals.debug('Response stream finished.');
+            stream.on('close', resolve);
+          });
         }
       }
 
@@ -242,6 +245,7 @@ export class GetOrHead extends Method {
 
       request.on('close', () => {
         if (!stream.readableEnded) {
+          // This happens when the request is aborted.
           stream.destroy();
         }
       });
@@ -303,11 +307,12 @@ export class GetOrHead extends Method {
           stream.on('error', reject);
 
           stream.on('end', () => {
-            writeText('0\r\n\r\n').then(resolve);
+            writeText('0\r\n\r\n');
+            response.locals.debug('Response stream finished.');
           });
-        });
 
-        response.locals.debug('Response stream finished.');
+          stream.on('close', resolve);
+        });
       }
     }
   }
