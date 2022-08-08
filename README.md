@@ -4,7 +4,15 @@ A pluggable WebDAV, CardDAV, and CalDAV server for Node.js and Express.
 
 # Work in Progress
 
-Nephele is currently a work in progress. It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
+Nephele is currently a work in progress. It fully implements the WebDAV spec (RFC4918), but there are still more RFCs planned for version 1.0.
+
+It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
+
+# Implemented RFCs
+
+## WebDAV
+
+- [HTTP Extensions for Web Distributed Authoring and Versioning (WebDAV)](https://datatracker.ietf.org/doc/html/rfc4918)
 
 # Planned RFCs
 
@@ -12,11 +20,10 @@ Nephele will hopefully eventually support the following RFCs. I've included how 
 
 ## WebDAV
 
-- [HTTP Extensions for Web Distributed Authoring and Versioning (WebDAV)](https://datatracker.ietf.org/doc/html/rfc4918) (in progress)
-- [Extended MKCOL for Web Distributed Authoring and Versioning (WebDAV)](https://datatracker.ietf.org/doc/html/rfc5689) (definitely)
+- [Web Distributed Authoring and Versioning (WebDAV) Access Control Protocol](https://datatracker.ietf.org/doc/html/rfc3744) (in progress)
 - [WebDAV Current Principal Extension](https://datatracker.ietf.org/doc/html/rfc5397) (definitely)
-- [Web Distributed Authoring and Versioning (WebDAV) Access Control Protocol](https://datatracker.ietf.org/doc/html/rfc3744) (definitely)
-- [Web Distributed Authoring and Versioning (WebDAV) SEARCH](https://datatracker.ietf.org/doc/html/rfc5323) (maybe)
+- [Extended MKCOL for Web Distributed Authoring and Versioning (WebDAV)](https://datatracker.ietf.org/doc/html/rfc5689) (definitely)
+- [Web Distributed Authoring and Versioning (WebDAV) SEARCH](https://datatracker.ietf.org/doc/html/rfc5323) (probably not)
 
 ## CardDAV
 
@@ -24,10 +31,12 @@ Nephele will hopefully eventually support the following RFCs. I've included how 
 
 ## CalDAV
 
-- [Calendaring Extensions to WebDAV (CalDAV)](https://datatracker.ietf.org/doc/html/rfc4791) (probably)
-- [Scheduling Extensions to CalDAV](https://datatracker.ietf.org/doc/html/rfc6638) (maybe)
-- [Calendaring Extensions to WebDAV (CalDAV): Time Zones by Reference](https://datatracker.ietf.org/doc/html/rfc7809) (maybe)
-- [Calendar Availability](https://datatracker.ietf.org/doc/html/rfc7953) (maybe)
+- [Calendaring Extensions to WebDAV (CalDAV)](https://datatracker.ietf.org/doc/html/rfc4791) (maybe)
+- [Scheduling Extensions to CalDAV](https://datatracker.ietf.org/doc/html/rfc6638) (probably not)
+- [Calendaring Extensions to WebDAV (CalDAV): Time Zones by Reference](https://datatracker.ietf.org/doc/html/rfc7809) (probably not)
+- [Calendar Availability](https://datatracker.ietf.org/doc/html/rfc7953) (probably not)
+
+# Service Location for CardDAV and CalDAV Clients
 
 You should read and follow this RFC to make your server work well with CardDAV and CalDAV clients:
 
