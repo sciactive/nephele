@@ -140,7 +140,6 @@ export class GetOrHead extends Method {
       response.set({
         ETag: JSON.stringify(etag),
         'Last-Modified': lastModified.toUTCString(),
-        'Content-Length': contentLength,
       });
 
       response.locals.debug('Beginning response stream.');
