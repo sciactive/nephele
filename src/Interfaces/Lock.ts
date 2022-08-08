@@ -1,5 +1,4 @@
 import { Resource } from '../index.js';
-import type { User } from './User.js';
 
 export interface Lock {
   /**

@@ -1,17 +1,17 @@
 import type { Adapter, AuthResponse } from './Adapter.js';
-export { Adapter, AuthResponse };
+export type { Adapter, AuthResponse };
 
 import type { Cache } from './Cache.js';
-export { Cache };
+export type { Cache };
 
 import type { Lock } from './Lock.js';
-export { Lock };
+export type { Lock };
 
 import type { Properties } from './Properties.js';
-export { Properties };
+export type { Properties };
 
 import type { Resource } from './Resource.js';
-export { Resource };
+export type { Resource };
 
 import type { User } from './User.js';
-export { User };
+export type { User };

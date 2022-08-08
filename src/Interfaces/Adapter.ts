@@ -5,7 +5,6 @@ import type { Method } from '../index.js';
 
 import type { Resource } from './Resource.js';
 import type { User } from './User.js';
-import type { Lock } from './Lock.js';
 
 export type AuthResponse<
   ResBody = any,
