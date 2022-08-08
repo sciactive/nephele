@@ -14,8 +14,7 @@ import { ForbiddenError, UnauthorizedError } from './Errors/index.js';
 import {
   COPY,
   DELETE,
-  GET,
-  HEAD,
+  GET_HEAD,
   LOCK,
   MKCOL,
   MOVE,
@@ -196,8 +195,8 @@ export default function createServer(
   };
 
   app.options('*', runMethodCatchErrors(new OPTIONS(adapter, opts)));
-  app.get('*', runMethodCatchErrors(new GET(adapter, opts)));
-  app.head('*', runMethodCatchErrors(new HEAD(adapter, opts)));
+  app.get('*', runMethodCatchErrors(new GET_HEAD(adapter, opts)));
+  app.head('*', runMethodCatchErrors(new GET_HEAD(adapter, opts)));
   app.put('*', runMethodCatchErrors(new PUT(adapter, opts)));
   app.delete('*', runMethodCatchErrors(new DELETE(adapter, opts)));
   app.copy('*', runMethodCatchErrors(new COPY(adapter, opts)));

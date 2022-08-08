@@ -15,15 +15,11 @@ import { isMediaTypeCompressed } from '../compressedMediaTypes.js';
 
 import { Method } from './Method.js';
 
-export class GetOrHead extends Method {
-  async runGetOrHead(
-    method: 'GET' | 'HEAD',
-    request: Request,
-    response: AuthResponse
-  ) {
+export class GET_HEAD extends Method {
+  async run(request: Request, response: AuthResponse) {
     let { url, encoding } = this.getRequestData(request, response);
 
-    await this.checkAuthorization(request, response, method);
+    await this.checkAuthorization(request, response, request.method);
 
     const resource = await this.adapter.getResource(url, request.baseUrl);
     const properties = await resource.getProperties();
@@ -66,7 +62,7 @@ export class GetOrHead extends Method {
     const rangeHeader = request.get('Range');
     let sendPartialContent = false;
     let ranges: { start: number; end: number }[] = [];
-    if (method === 'GET' && mediaType != null && rangeHeader != null) {
+    if (request.method === 'GET' && mediaType != null && rangeHeader != null) {
       sendPartialContent = true;
 
       // Check the If-Range header for Etags or Modified Date.
@@ -237,7 +233,7 @@ export class GetOrHead extends Method {
       });
     }
     response.locals.debug(`Response encoding: ${encoding}`);
-    if (method === 'HEAD') {
+    if (request.method === 'HEAD') {
       response.end();
     } else {
       let stream: Readable = await resource.getStream();
