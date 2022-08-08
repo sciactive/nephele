@@ -35,7 +35,17 @@ export interface Resource {
 
   getProperties(): Promise<Properties>;
 
-  getStream(): Promise<Readable>;
+  /**
+   * Get a readable stream of the content of the resource.
+   *
+   * If a range is included, the stream should return the requested byte range
+   * of the content.
+   *
+   * If the request is aborted prematurely, `detroy()` will be called on the
+   * stream. You should listen for this event and clean up any open file handles
+   * or streams.
+   */
+  getStream(range?: { start: number; end: number }): Promise<Readable>;
 
   /**
    * Put the input stream into the resource.

@@ -135,7 +135,7 @@ export default class Resource implements ResourceInterface {
     return new Properties({ resource: this });
   }
 
-  async getStream() {
+  async getStream(range?: { start: number; end: number }) {
     if (await this.isCollection()) {
       const stream = Readable.from([]);
       return stream;
@@ -143,8 +143,8 @@ export default class Resource implements ResourceInterface {
 
     const handle = await fsp.open(this.absolutePath, 'r');
 
-    const stream = handle.createReadStream();
-    stream.on('end', () => {
+    const stream = handle.createReadStream(range ? range : undefined);
+    stream.on('close', () => {
       handle.close();
     });
 

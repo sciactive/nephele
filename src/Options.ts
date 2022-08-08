@@ -71,6 +71,11 @@ export const defaults: Options = {
     error?: Error | ResourceNotModifiedError
   ) => {
     if (code < 400) {
+      if (response.headersSent || response.destroyed) {
+        response.end();
+        return;
+      }
+
       // Not really errors.
       response.status(code);
       if (error && 'etag' in error && error.etag) {
@@ -95,7 +100,8 @@ export const defaults: Options = {
       response.locals.debug('Unknown Error: %o', error);
     }
 
-    if (response.destroyed) {
+    if (response.headersSent || response.destroyed) {
+      response.end();
       return;
     }
 

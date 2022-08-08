@@ -12,6 +12,7 @@ import {
   NotAcceptableError,
   PreconditionFailedError,
   PropertyIsProtectedError,
+  RangeNotSatisfiableError,
   RequestTimeoutError,
   RequestURITooLongError,
   ResourceExistsError,
@@ -78,6 +79,12 @@ export function catchErrors<A extends any[], R = void>(
         return;
       }
 
+      if (e instanceof ResourceExistsError) {
+        // Method Not Allowed
+        await errorHandler(405, e.message, e, args);
+        return;
+      }
+
       if (e instanceof EncodingNotSupportedError) {
         // Not Acceptable
         await errorHandler(406, e.message, e, args);
@@ -93,6 +100,12 @@ export function catchErrors<A extends any[], R = void>(
       if (e instanceof RequestTimeoutError) {
         // Request Timeout
         await errorHandler(408, e.message, e, args);
+        return;
+      }
+
+      if (e instanceof ResourceTreeNotCompleteError) {
+        // Conflict
+        await errorHandler(409, e.message, e, args);
         return;
       }
 
@@ -114,15 +127,9 @@ export function catchErrors<A extends any[], R = void>(
         return;
       }
 
-      if (e instanceof ResourceExistsError) {
-        // Method Not Allowed
-        await errorHandler(405, e.message, e, args);
-        return;
-      }
-
-      if (e instanceof ResourceTreeNotCompleteError) {
-        // Conflict
-        await errorHandler(409, e.message, e, args);
+      if (e instanceof RangeNotSatisfiableError) {
+        // Range Not Satisfiable
+        await errorHandler(416, e.message, e, args);
         return;
       }
 
