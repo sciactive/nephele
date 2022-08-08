@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file. See [standard-version](https://github.com/conventional-changelog/standard-version) for commit guidelines.
 
+## [1.0.0-alpha.1](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.0...v1.0.0-alpha.1) (2022-08-08)
+
+
+### Features
+
+* use crc32c for etags for files 100mb or less in filesystem adapter ([437d010](https://github.com/sciactive/nephele/commit/437d01010a3818c9c7b55a7759fed7fca2a0f80d))
+
+
+### Bug Fixes
+
+* correct error on mkcol request on an existing non-collection resource ([1654602](https://github.com/sciactive/nephele/commit/165460251b27fa92d55ab149a8e98e6734b06865))
+* don't allow put or mkcol to run unless the parent resource is a collection ([6a46088](https://github.com/sciactive/nephele/commit/6a46088940c4ff0e58c86224ea9b94cd61b8c325))
+* don't send content length header on partial content response ([46359d0](https://github.com/sciactive/nephele/commit/46359d00d1ba6032a0ae8184097d4f45fe783ce5))
+* properly terminate a get response when the request is aborted ([78c0d83](https://github.com/sciactive/nephele/commit/78c0d8331108b38a5d5b547a3638baa68bbdfee2))
+* update old id spawn username and groupname method to userid package ([f7040d0](https://github.com/sciactive/nephele/commit/f7040d0fa51a87c32e766c6d3f2f6b53ff32fe64))
+
 ## 1.0.0-alpha.0 (2022-08-08)
 
 
