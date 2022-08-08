@@ -125,13 +125,20 @@ export class Method {
   async getParentResource(request: Request, resource: Resource) {
     const url = await resource.getCanonicalUrl(this.getRequestBaseUrl(request));
 
+    if (
+      url.pathname.replace(/\/?$/, () => '/') ===
+      request.baseUrl.replace(/\/?$/, () => '/')
+    ) {
+      return undefined;
+    }
+
     const splitPath = url.pathname.replace(/\/?$/, '').split('/');
     const newPath = splitPath
       .slice(0, -1)
       .join('/')
       .replace(/\/?$/, () => '/');
 
-    if (newPath === request.baseUrl.replace(/\/?$/, () => '/')) {
+    if (!newPath.startsWith(request.baseUrl.replace(/\/?$/, () => '/'))) {
       return undefined;
     }
 

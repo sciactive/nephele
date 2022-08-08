@@ -1,7 +1,12 @@
 import type { Request } from 'express';
 
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
-import { LockedError, ResourceNotFoundError } from '../Errors/index.js';
+import {
+  ForbiddenError,
+  LockedError,
+  ResourceNotFoundError,
+  ResourceTreeNotCompleteError,
+} from '../Errors/index.js';
 
 import { Method } from './Method.js';
 
@@ -19,6 +24,23 @@ export class PUT extends Method {
       if (e instanceof ResourceNotFoundError) {
         resource = await this.adapter.newResource(url, request.baseUrl);
         newResource = true;
+      } else {
+        throw e;
+      }
+    }
+
+    try {
+      const parent = await this.getParentResource(request, resource);
+      if (!(await parent?.isCollection())) {
+        console.log(parent);
+        throw new ForbiddenError('Parent resource is not a collection.');
+      }
+    } catch (e: any) {
+      // Parent not found is handled separately.
+      if (e instanceof ResourceNotFoundError) {
+        throw new ResourceTreeNotCompleteError(
+          'One or more intermediate collections must be created before this resource.'
+        );
       } else {
         throw e;
       }

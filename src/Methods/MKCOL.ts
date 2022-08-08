@@ -1,7 +1,13 @@
 import type { Request } from 'express';
 
 import type { AuthResponse } from '../Interfaces/index.js';
-import { LockedError, MediaTypeNotSupportedError } from '../Errors/index.js';
+import {
+  ForbiddenError,
+  LockedError,
+  MediaTypeNotSupportedError,
+  ResourceNotFoundError,
+  ResourceTreeNotCompleteError,
+} from '../Errors/index.js';
 
 import { Method } from './Method.js';
 
@@ -12,6 +18,22 @@ export class MKCOL extends Method {
     await this.checkAuthorization(request, response, 'MKCOL');
 
     const resource = await this.adapter.newCollection(url, request.baseUrl);
+
+    try {
+      const parent = await this.getParentResource(request, resource);
+      if (!(await parent?.isCollection())) {
+        throw new ForbiddenError('Parent resource is not a collection.');
+      }
+    } catch (e: any) {
+      // Parent not found is handled separately.
+      if (e instanceof ResourceNotFoundError) {
+        throw new ResourceTreeNotCompleteError(
+          'One or more intermediate collections must be created before this resource.'
+        );
+      } else {
+        throw e;
+      }
+    }
 
     let stream = await this.getBodyStream(request, response);
 
