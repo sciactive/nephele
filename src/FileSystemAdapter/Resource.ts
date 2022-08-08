@@ -722,7 +722,7 @@ export default class Resource implements ResourceInterface {
     try {
       meta = JSON.parse((await fsp.readFile(filepath)).toString());
     } catch (e: any) {
-      if (e.code !== 'ENOENT') {
+      if (e.code !== 'ENOENT' && e.code !== 'ENOTDIR') {
         throw e;
       }
     }
