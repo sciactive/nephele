@@ -58,6 +58,7 @@
     "lint-staged": "^12.4.1",
     "mmmagic": "^0.5.3",
     "prettier": "^2.6.2",
+    "sse4_crc32": "^7.0.0",
     "standard-version": "^9.5.0",
     "ts-jest": "^28.0.2",
     "typedoc": "^0.22.15",

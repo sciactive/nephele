@@ -18,6 +18,10 @@ export interface Options {
    *
    * Compression from client to server is always supported and can't be turned
    * off.
+   *
+   * Note that this is known to cause issues in some applications, such as
+   * gedit, which will request gzipped data, then incorrectly show the
+   * compressed data to the user.
    */
   compression: boolean;
   /**
@@ -58,7 +62,7 @@ export interface Options {
 }
 
 export const defaults: Options = {
-  compression: true,
+  compression: false,
   realm: 'Nephele WebDAV Service',
   timeout: 30000,
   minLockTimeout: 1000 * 10, // 10 seconds

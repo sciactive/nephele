@@ -2,14 +2,13 @@ import { Readable } from 'node:stream';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
-import crypto from 'node:crypto';
 import mmm, { Magic } from 'mmmagic';
 import checkDiskSpace from 'check-disk-space';
+import Sse4Crc32 from 'sse4_crc32';
 
 import type { Resource as ResourceInterface } from '../index.js';
 import {
   BadGatewayError,
-  BadRequestError,
   ForbiddenError,
   MethodNotSupportedError,
   ResourceExistsError,
@@ -55,6 +54,7 @@ export default class Resource implements ResourceInterface {
   path: string;
   adapter: Adapter;
   private createCollection: boolean | undefined = undefined;
+  private etag: string | undefined = undefined;
 
   constructor({
     path,
@@ -174,8 +174,9 @@ export default class Resource implements ResourceInterface {
       exists = false;
     }
 
-    const handle = await fsp.open(this.absolutePath, 'w');
+    this.etag = undefined;
 
+    const handle = await fsp.open(this.absolutePath, 'w');
     const stream = handle.createWriteStream();
 
     input.pipe(stream);
@@ -452,7 +453,7 @@ export default class Resource implements ResourceInterface {
 
   async move(destination: URL, baseUrl: string, user: User) {
     if (await this.isCollection()) {
-      throw new BadRequestError('Move called move on a collection resource.');
+      throw new Error('Move called on a collection resource.');
     }
 
     const destinationPath = this.adapter.urlToAbsolutePath(
@@ -563,17 +564,31 @@ export default class Resource implements ResourceInterface {
   }
 
   async getEtag() {
-    const stat = await fsp.stat(this.absolutePath);
-    // This is also absolutely wrong for production, because an etag should be
-    // unique based on file contents, not metadata.
-    const etag = crypto
-      .createHash('md5')
-      .update(
-        `size: ${stat.size}; ctime: ${stat.ctimeMs}; mtime: ${stat.mtimeMs}`
-      )
-      .digest('hex');
+    if (this.etag != null) {
+      return this.etag;
+    }
 
-    return etag;
+    const stat = await fsp.stat(this.absolutePath);
+
+    let etag: number;
+    if (
+      (await this.isCollection()) ||
+      stat.size / (1024 * 1024) > this.adapter.contentEtagMaxMB
+    ) {
+      etag = Sse4Crc32.calculate(
+        `size: ${stat.size}; ctime: ${stat.ctimeMs}; mtime: ${stat.mtimeMs}`
+      );
+    } else {
+      etag = await new Promise(async (resolve, reject) => {
+        const stream = Sse4Crc32.fromStream(await this.getStream());
+        stream.on('error', reject);
+        stream.on('finish', () => resolve(stream.crc));
+      });
+    }
+
+    this.etag = `${etag.toString(16)}`;
+
+    return this.etag;
   }
 
   async getMediaType() {

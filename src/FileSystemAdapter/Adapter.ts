@@ -53,6 +53,7 @@ export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
 export default class Adapter implements AdapterInterface {
   root: string;
   pam: boolean;
+  contentEtagMaxMB: number;
 
   /**
    * Root should be the absolute path of the directory that acts as the root
@@ -61,17 +62,30 @@ export default class Adapter implements AdapterInterface {
    * If pam is true, PAM authentication will be used. Otherwise, the server will
    * be completely open and any username/password will work.
    *
+   * The contentEtagMaxMB value determines the maximum filesize in megabytes to
+   * calculate etags by a CRC-32C checksum of the file contents. Anything above
+   * this file size will use a CRC-32C checksum of the size, created time, and
+   * modified time instead. This will significantly speed up responses to
+   * requests for these files, but at the cost of reduced accuracy of etags. A
+   * file that has the exact same content, but a different modified time will
+   * not be pulled from cache by the client. Set this value to `Infinity` if you
+   * wish to fully follow the HTTP spec to the letter. Set this value to `-1` if
+   * you want to absolutely minimize disk IO.
+   *
    * @param config Adapter config.
    */
   constructor({
     root = process.cwd(),
     pam = true,
+    contentEtagMaxMB = 100,
   }: {
     root?: string;
     pam?: boolean;
+    contentEtagMaxMB?: number;
   } = {}) {
     this.root = root;
     this.pam = pam;
+    this.contentEtagMaxMB = contentEtagMaxMB;
   }
 
   urlToRelativePath(url: URL, baseUrl: string) {
