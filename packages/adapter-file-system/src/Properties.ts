@@ -74,6 +74,38 @@ export default class Properties implements PropertiesInterface {
             throw e;
           }
         }
+      case 'owner':
+        if (this.resource.adapter.usernamesMapToSystemUsers) {
+          try {
+            const stats = await this.resource.getStats();
+            return await this.resource.adapter.getUsername(stats.uid);
+          } catch (e: any) {
+            if (e.code === 'ENOENT') {
+              throw new PropertyNotFoundError(
+                `${name} property doesn't exist on resource.`
+              );
+            } else {
+              throw e;
+            }
+          }
+        }
+        break;
+      case 'group':
+        if (this.resource.adapter.usernamesMapToSystemUsers) {
+          try {
+            const stats = await this.resource.getStats();
+            return await this.resource.adapter.getGroupname(stats.gid);
+          } catch (e: any) {
+            if (e.code === 'ENOENT') {
+              throw new PropertyNotFoundError(
+                `${name} property doesn't exist on resource.`
+              );
+            } else {
+              throw e;
+            }
+          }
+        }
+        break;
     }
 
     // Fall back to a metadata file based prop store.
@@ -88,40 +120,7 @@ export default class Properties implements PropertiesInterface {
     return meta.props[name];
   }
 
-  async getByUser(name: string, user: User) {
-    switch (name) {
-      case 'owner':
-        if (await user.usernameMapsToSystemUser()) {
-          try {
-            const stats = await this.resource.getStats();
-            return await this.resource.adapter.getUsername(stats.uid);
-          } catch (e: any) {
-            if (e.code === 'ENOENT') {
-              throw new PropertyNotFoundError(
-                `${name} property doesn't exist on resource.`
-              );
-            } else {
-              throw e;
-            }
-          }
-        }
-      case 'group':
-        if (await user.usernameMapsToSystemUser()) {
-          try {
-            const stats = await this.resource.getStats();
-            return await this.resource.adapter.getGroupname(stats.gid);
-          } catch (e: any) {
-            if (e.code === 'ENOENT') {
-              throw new PropertyNotFoundError(
-                `${name} property doesn't exist on resource.`
-              );
-            } else {
-              throw e;
-            }
-          }
-        }
-    }
-
+  async getByUser(name: string, _user: User) {
     return await this.get(name);
   }
 
@@ -163,10 +162,7 @@ export default class Properties implements PropertiesInterface {
     }
   }
 
-  async runInstructions(
-    instructions: ['set' | 'remove', string, any][],
-    additionalProtectedProperties: string[] = []
-  ) {
+  async runInstructions(instructions: ['set' | 'remove', string, any][]) {
     let meta: MetaStorage = {};
     let changed = false;
     let errors: [string, Error][] = [];
@@ -200,7 +196,9 @@ export default class Properties implements PropertiesInterface {
           'supportedlock',
           'quota-available-bytes',
           'quota-used-bytes',
-          ...additionalProtectedProperties,
+          ...(this.resource.adapter.usernamesMapToSystemUsers
+            ? ['owner', 'group']
+            : []),
         ].includes(name)
       ) {
         errors.push([
@@ -277,12 +275,9 @@ export default class Properties implements PropertiesInterface {
 
   async runInstructionsByUser(
     instructions: ['set' | 'remove', string, any][],
-    user: User
+    _user: User
   ) {
-    return await this.runInstructions(
-      instructions,
-      (await user.usernameMapsToSystemUser()) ? ['owner', 'group'] : []
-    );
+    return await this.runInstructions(instructions);
   }
 
   async getAll() {
@@ -300,19 +295,17 @@ export default class Properties implements PropertiesInterface {
       'quota-available-bytes': await this.get('quota-available-bytes'),
       'quota-used-bytes': await this.get('quota-used-bytes'),
       'LCGDM:%%mode': await this.get('LCGDM:%%mode'),
-    };
-  }
-
-  async getAllByUser(user: User) {
-    return {
-      ...(await this.getAll()),
-      ...((await user.usernameMapsToSystemUser())
+      ...(this.resource.adapter.usernamesMapToSystemUsers
         ? {
-            owner: await this.getByUser('owner', user),
-            group: await this.getByUser('group', user),
+            owner: await this.get('owner'),
+            group: await this.get('group'),
           }
         : {}),
     };
+  }
+
+  async getAllByUser(_user: User) {
+    return await this.getAll();
   }
 
   async list() {
@@ -338,14 +331,14 @@ export default class Properties implements PropertiesInterface {
       'quota-available-bytes',
       'quota-used-bytes',
       'LCGDM:%%mode',
+      ...(this.resource.adapter.usernamesMapToSystemUsers
+        ? ['owner', 'group']
+        : []),
     ];
   }
 
-  async listLiveByUser(user: User) {
-    return [
-      ...(await this.listLive()),
-      ...((await user.usernameMapsToSystemUser()) ? ['owner', 'group'] : []),
-    ];
+  async listLiveByUser(_user: User) {
+    return await this.listLive();
   }
 
   async listDead() {

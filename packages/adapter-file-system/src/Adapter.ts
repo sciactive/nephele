@@ -37,7 +37,16 @@ export type AdapterConfig = {
    * The absolute path of the directory that acts as the root directory for the
    * service.
    */
-  root?: string;
+  root: string;
+  /**
+   * Whether the usernames provided by the authenticator map directly to system
+   * usernames.
+   *
+   * If this is set to true, and they don't, you **will** see errors. The
+   * adapter will attempt to `chown` files to the user who is currently
+   * authenticated.
+   */
+  usernamesMapToSystemUsers: boolean;
   /**
    * The maximum filesize in megabytes to calculate etags by a CRC-32C checksum
    * of the file contents. Anything above this file size will use a CRC-32C
@@ -62,12 +71,15 @@ export type AdapterConfig = {
 export default class Adapter implements AdapterInterface {
   root: string;
   contentEtagMaxMB: number;
+  usernamesMapToSystemUsers: boolean;
 
   constructor({
-    root = process.cwd(),
+    root,
+    usernamesMapToSystemUsers,
     contentEtagMaxMB = 100,
-  }: AdapterConfig = {}) {
+  }: AdapterConfig) {
     this.root = root.replace(/\/?$/, () => '/');
+    this.usernamesMapToSystemUsers = usernamesMapToSystemUsers;
     this.contentEtagMaxMB = contentEtagMaxMB;
 
     try {
@@ -108,7 +120,7 @@ export default class Adapter implements AdapterInterface {
   }
 
   async getUid(user: User): Promise<number> {
-    if (!(await user.usernameMapsToSystemUser())) {
+    if (!this.usernamesMapToSystemUsers) {
       return -1;
     }
 
@@ -116,7 +128,7 @@ export default class Adapter implements AdapterInterface {
   }
 
   async getGid(user: User): Promise<number> {
-    if (!(await user.usernameMapsToSystemUser())) {
+    if (!this.usernamesMapToSystemUsers) {
       return -1;
     }
 
@@ -124,7 +136,7 @@ export default class Adapter implements AdapterInterface {
   }
 
   async getGids(user: User): Promise<number[]> {
-    if (!(await user.usernameMapsToSystemUser())) {
+    if (!this.usernamesMapToSystemUsers) {
       return [];
     }
 
@@ -216,7 +228,7 @@ export default class Adapter implements AdapterInterface {
       exists = false;
     }
 
-    if (await user.usernameMapsToSystemUser()) {
+    if (this.usernamesMapToSystemUsers) {
       for (let i = 1; i <= parts.length; i++) {
         const ipathname = path.join('/', ...parts.slice(0, i));
 

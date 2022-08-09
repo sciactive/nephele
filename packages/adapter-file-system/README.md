@@ -10,7 +10,7 @@ npm i -s @nephele/adapter-file-system
 
 # Usage
 
-The default export is the adapter, and it's also a named export "Adapter". Instantiate this class, providing an options object if needed, and give that to Nephele as the adapter. If you don't pass a root directory, the adapter will serve files from the process' current working directory.
+The default export is the adapter, and it's also a named export "Adapter". Instantiate this class, providing an options object, and give that to Nephele as the adapter.
 
 ```js
 import express from 'express';
@@ -27,6 +27,8 @@ app.use(
     {
       adapter: new FileSystemAdapter({
         root: '/path/to/webdav/root',
+        // This option is important to get right.
+        usernamesMapToSystemUsers: false,
       }),
       authenticator: new ExampleAuthenticator(),
     },
@@ -41,9 +43,13 @@ app.listen(port, () => {
 
 # Options / Defaults
 
-- `root` = `process.cwd()`: The absolute path of the directory that acts as the root directory for the service.
-- `pam` = `true`: Whether PAM authentication should be used. Otherwise, the server will be completely open and any username/password will work.
+- `root`: The absolute path of the directory that acts as the root directory for the service.
+- `usernamesMapToSystemUsers`: Whether the usernames provided by the authenticator map directly to system usernames.
 - `contentEtagMaxMB` = `100`: The maximum filesize in megabytes to calculate etags by a CRC-32C checksum of the file contents.
+
+## usernamesMapToSystemUsers
+
+If this is set to true, and they don't, you **will** see errors. The adapter will attempt to `chown` files to the user who is currently authenticated.
 
 ## contentEtagMaxMB
 

@@ -177,7 +177,7 @@ export default class Resource implements ResourceInterface {
 
     return new Promise<void>((resolve, reject) => {
       stream.on('close', async () => {
-        if (!exists && (await user.usernameMapsToSystemUser())) {
+        if (!exists && this.adapter.usernamesMapToSystemUsers) {
           await fsp.chown(
             this.absolutePath,
             await this.adapter.getUid(user),
@@ -217,7 +217,7 @@ export default class Resource implements ResourceInterface {
       await fsp.writeFile(this.absolutePath, Uint8Array.from([]));
     }
 
-    if (await user.usernameMapsToSystemUser()) {
+    if (this.adapter.usernamesMapToSystemUsers) {
       await fsp.chown(
         this.absolutePath,
         await this.adapter.getUid(user),
@@ -258,7 +258,7 @@ export default class Resource implements ResourceInterface {
     const uid = await this.adapter.getUid(user);
     const gids = await this.adapter.getGids(user);
 
-    if (await user.usernameMapsToSystemUser()) {
+    if (this.adapter.usernamesMapToSystemUsers) {
       // Check if the user can delete it.
       const stats = await fsp.stat(this.absolutePath);
 
@@ -323,7 +323,7 @@ export default class Resource implements ResourceInterface {
     const uid = await this.adapter.getUid(user);
     const gids = await this.adapter.getGids(user);
 
-    if (await user.usernameMapsToSystemUser()) {
+    if (this.adapter.usernamesMapToSystemUsers) {
       // Check if the user can put it in the destination.
       const dstats = await fsp.stat(path.dirname(destinationPath));
 
@@ -410,7 +410,7 @@ export default class Resource implements ResourceInterface {
       }
     }
 
-    if (await user.usernameMapsToSystemUser()) {
+    if (this.adapter.usernamesMapToSystemUsers) {
       const uid = await this.adapter.getUid(user);
       const gid = await this.adapter.getGid(user);
 
@@ -485,7 +485,7 @@ export default class Resource implements ResourceInterface {
     const uid = await this.adapter.getUid(user);
     const gids = await this.adapter.getGids(user);
 
-    if (await user.usernameMapsToSystemUser()) {
+    if (this.adapter.usernamesMapToSystemUsers) {
       // Check if the user can move it.
       const stats = await fsp.stat(this.absolutePath);
 
@@ -645,7 +645,7 @@ export default class Resource implements ResourceInterface {
     const uid = await this.adapter.getUid(user);
     const gids = await this.adapter.getGids(user);
 
-    if (await user.usernameMapsToSystemUser()) {
+    if (this.adapter.usernamesMapToSystemUsers) {
       // Check if the user can list its contents.
       const stats = await fsp.stat(this.absolutePath);
 

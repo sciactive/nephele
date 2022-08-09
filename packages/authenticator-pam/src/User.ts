@@ -11,11 +11,6 @@ export default class User implements UserInterface {
     this.username = username;
   }
 
-  async usernameMapsToSystemUser() {
-    // All users map to system users.
-    return true;
-  }
-
   async authenticate(password: string) {
     if (this.authenticated) {
       return;

@@ -28,6 +28,7 @@ app.use(
   server({
     adapter: new FileSystemAdapter({
       root,
+      usernamesMapToSystemUsers: pam,
     }),
     authenticator: new PamAuthenticator(),
   })
