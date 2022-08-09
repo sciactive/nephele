@@ -1,3 +1,6 @@
+/**
+ * Run this file with `npx ts-node --esm xmltest.ts`
+ */
 import { inspect } from 'node:util';
 import xml2js from 'xml2js';
 
@@ -8,7 +11,7 @@ import {
   Status,
   defaults,
   Adapter,
-} from './index.js';
+} from './packages/nephele/dist/index.js';
 
 const builder = new xml2js.Builder({
   xmldec: { version: '1.0', encoding: 'UTF-8' },

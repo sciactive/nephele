@@ -1,17 +1,16 @@
 /**
  * This file requires the --experimental-specifier-resolution=node option.
  *
- * node --experimental-specifier-resolution=node testserver.mjs
+ * env NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts
  */
-
 import { hostname } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import express from 'express';
 import createDebug from 'debug';
 
-import server from './packages/nephele';
-import FileSystemAdapter from './packages/adapter-file-system';
+import server from './packages/nephele/dist/index.js';
+import FileSystemAdapter from './packages/adapter-file-system/dist/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 

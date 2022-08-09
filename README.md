@@ -38,17 +38,17 @@ Nephele will hopefully eventually support the following RFCs. I've included how 
 
 # Testing
 
-To bring up the testing server, run the `testserver.mjs` file, like this.
+To bring up the testing server, run the `testserver.ts` file, like this.
 
 ```
 mkdir testroot
-env DEBUG="nephele:*" node --experimental-specifier-resolution=node testserver.mjs testroot
+env DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts testroot
 ```
 
 If you want to run it without PAM authentication, set the `NOPAM` env var, like this.
 
 ```
-env NOPAM=true DEBUG="nephele:*" node --experimental-specifier-resolution=node testserver.mjs testroot
+env NOPAM=true DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts testroot
 ```
 
 # License
