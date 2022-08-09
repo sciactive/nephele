@@ -12,6 +12,7 @@ import createDebug from 'debug';
 import server from './packages/nephele/dist/index.js';
 import FileSystemAdapter from './packages/adapter-file-system/dist/index.js';
 import PamAuthenticator from './packages/authenticator-pam/dist/index.js';
+import InsecureAuthenticator from './packages/authenticator-none/dist/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -30,7 +31,7 @@ app.use(
       root,
       usernamesMapToSystemUsers: pam,
     }),
-    authenticator: new PamAuthenticator(),
+    authenticator: pam ? new PamAuthenticator() : new InsecureAuthenticator(),
   })
 );
 

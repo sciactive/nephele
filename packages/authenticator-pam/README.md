@@ -10,7 +10,7 @@ npm i -s @nephele/authenticator-pam
 
 # Usage
 
-The default export is the authenticator, and it's also a named export "Authenticator". Instantiate this class, and give that to Nephele as the authenticator.
+The default export is the authenticator, and it's also a named export "Authenticator". Instantiate this class, providing an options object if needed, and give that to Nephele as the authenticator.
 
 ```js
 import express from 'express';
@@ -23,13 +23,10 @@ const port = 8080;
 
 app.use(
   '/',
-  nepheleServer(
-    {
-      adapter: new ExampleAdapter(),
-      authenticator: new PamAuthenticator(),
-    },
-    { realm: 'My WebDAV Server' }
-  )
+  nepheleServer({
+    adapter: new ExampleAdapter(),
+    authenticator: new PamAuthenticator({ realm: 'My WebDAV Server' }),
+  })
 );
 
 app.listen(port, () => {
@@ -42,6 +39,14 @@ app.listen(port, () => {
 Read the details on https://www.npmjs.com/package/authenticate-pam, which is used for the actual PAM authentication.
 
 Specifically, you may need to use `NODE_OPTIONS='--experimental-specifier-resolution=node'` when you launch your server.
+
+# Options / Defaults
+
+- `realm` = `'Nephele WebDAV Service'`: The realm is the name reported by the server when the user is prompted to authenticate.
+
+## realm
+
+It should be HTTP header safe (shouldn't include double quotes or semicolon).
 
 # License
 

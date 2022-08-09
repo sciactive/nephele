@@ -121,10 +121,6 @@ export default function createServer(
       response.locals.error = e;
       if (e instanceof UnauthorizedError) {
         response.status(401);
-        response.set(
-          'WWW-Authenticate',
-          `Basic realm="${opts.realm}", charset="UTF-8"`
-        );
         opts.errorHandler(401, 'Unauthorized.', request, response, e);
         return;
       }

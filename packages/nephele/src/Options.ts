@@ -25,14 +25,6 @@ export interface Options {
    */
   compression: boolean;
   /**
-   * The realm is the name reported by the server when the user is prompted to
-   * authenticate.
-   *
-   * It should be HTTP header safe (shouldn't include double quotes or
-   * semicolon).
-   */
-  realm: string;
-  /**
    * Timeout for reading data from the request.
    *
    * If the client doesn't provide data for this many milliseconds, the server
@@ -63,7 +55,6 @@ export interface Options {
 
 export const defaults: Options = {
   compression: false,
-  realm: 'Nephele WebDAV Service',
   timeout: 30000,
   minLockTimeout: 1000 * 10, // 10 seconds
   maxLockTimeout: 1000 * 60 * 60 * 18, // 18 hours.

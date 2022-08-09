@@ -23,17 +23,14 @@ const port = 8080;
 
 app.use(
   '/',
-  nepheleServer(
-    {
-      adapter: new FileSystemAdapter({
-        root: '/path/to/webdav/root',
-        // This option is important to get right.
-        usernamesMapToSystemUsers: false,
-      }),
-      authenticator: new ExampleAuthenticator(),
-    },
-    { realm: 'My WebDAV Server' }
-  )
+  nepheleServer({
+    adapter: new FileSystemAdapter({
+      root: '/path/to/webdav/root',
+      // This option is important to get right.
+      usernamesMapToSystemUsers: false,
+    }),
+    authenticator: new ExampleAuthenticator(),
+  })
 );
 
 app.listen(port, () => {

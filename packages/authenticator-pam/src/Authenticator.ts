@@ -4,8 +4,20 @@ import type {
   Authenticator as AuthenticatorInterface,
   AuthResponse as NepheleAuthResponse,
 } from 'nephele';
+import { UnauthorizedError } from 'nephele';
 
 import User from './User.js';
+
+export type AuthenticatorConfig = {
+  /**
+   * The realm is the name reported by the server when the user is prompted to
+   * authenticate.
+   *
+   * It should be HTTP header safe (shouldn't include double quotes or
+   * semicolon).
+   */
+  realm?: string;
+};
 
 export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
 
@@ -16,7 +28,13 @@ export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
  * required for PAM authentication.
  */
 export default class Authenticator implements AuthenticatorInterface {
-  async authenticate(request: Request, _response: AuthResponse) {
+  realm: string;
+
+  constructor({ realm = 'Nephele WebDAV Service' }: AuthenticatorConfig = {}) {
+    this.realm = realm;
+  }
+
+  async authenticate(request: Request, response: AuthResponse) {
     const authorization = request.get('Authorization');
     let username = 'nobody';
     let password = '';
@@ -29,7 +47,17 @@ export default class Authenticator implements AuthenticatorInterface {
       }
     }
     const user = new User({ username });
-    await user.authenticate(password);
+    try {
+      await user.authenticate(password);
+    } catch (e: any) {
+      if (e instanceof UnauthorizedError) {
+        response.set(
+          'WWW-Authenticate',
+          `Basic realm="${this.realm}", charset="UTF-8"`
+        );
+      }
+      throw e;
+    }
 
     return user;
   }

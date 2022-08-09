@@ -29,19 +29,18 @@ const port = 8080;
 
 app.use(
   '/',
-  nepheleServer(
-    {
-      adapter: new ExampleAdapter(),
-      authenticator: new ExampleAuthenticator(),
-    },
-    { realm: 'My WebDAV Server' }
-  )
+  nepheleServer({
+    adapter: new ExampleAdapter(),
+    authenticator: new ExampleAuthenticator(),
+  })
 );
 
 app.listen(port, () => {
   console.log(`Nephele WebDAV server listening on port ${port}`);
 });
 ```
+
+You can also provide options as a second argument to the create server function.
 
 # Adapters
 

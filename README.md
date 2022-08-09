@@ -45,7 +45,7 @@ mkdir testroot
 env DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts testroot
 ```
 
-If you want to run it without PAM authentication, set the `NOPAM` env var, like this.
+If you want to run it without PAM authentication, set the `NOPAM` env var, like this. (This will allow unrestricted access to any user who can reach your host on the network.)
 
 ```
 env NOPAM=true DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts testroot
