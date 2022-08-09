@@ -1,4 +1,4 @@
-// Unix filesystem permission bits.
+// Unix file system permission bits.
 export const userReadBit = 0o400;
 export const userWriteBit = 0o200;
 export const userExecuteBit = 0o100;

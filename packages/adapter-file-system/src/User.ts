@@ -1,8 +1,7 @@
 import pam from 'authenticate-pam';
 import userid from 'userid';
-
-import type { User as UserInterface } from '../index.js';
-import { UnauthorizedError } from '../index.js';
+import type { User as UserInterface } from 'nephele';
+import { UnauthorizedError } from 'nephele';
 
 import type Adapter from './Adapter.js';
 

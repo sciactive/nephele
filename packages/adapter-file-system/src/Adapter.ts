@@ -1,24 +1,22 @@
 import path from 'node:path';
+import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
 import userid from 'userid';
-
 import type { Request } from 'express';
 import basicAuth from 'basic-auth';
-
 import type {
   Adapter as AdapterInterface,
   AuthResponse as NepheleAuthResponse,
   Method,
-} from '../index.js';
+} from 'nephele';
 import {
   BadGatewayError,
   MethodNotImplementedError,
   MethodNotSupportedError,
   ResourceNotFoundError,
-} from '../index.js';
+} from 'nephele';
 
-import type Lock from './Lock.js';
 import {
   userReadBit,
   userWriteBit,
@@ -37,15 +35,37 @@ const { username, groupname } = userid;
 
 export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
 
+export type AdapterConfig = {
+  /**
+   * The absolute path of the directory that acts as the root directory for the
+   * service.
+   */
+  root?: string;
+  /**
+   * Whether PAM authentication should be used. Otherwise, the server will be
+   * completely open and any username/password will work.
+   */
+  pam?: boolean;
+  /**
+   * The maximum filesize in megabytes to calculate etags by a CRC-32C checksum
+   * of the file contents. Anything above this file size will use a CRC-32C
+   * checksum of the size, created time, and modified time instead. This will
+   * significantly speed up responses to requests for these files, but at the
+   * cost of reduced accuracy of etags. A file that has the exact same content,
+   * but a different modified time will not be pulled from cache by the client.
+   *
+   * - Set this value to `Infinity` if you wish to fully follow the HTTP spec to
+   *   the letter.
+   * - Set this value to `-1` if you want to absolutely minimize disk IO.
+   * - `100` is a good value for fast disks, like SSDs. If you are serving files
+   *   from spinning hard disks or optical media, you should consider lowering
+   *   this threshold.
+   */
+  contentEtagMaxMB?: number;
+};
+
 /**
- * This is an example filesystem adapter.
- *
- * IT IS FOR TESTING ONLY!!!
- *
- * I did not make any attempt to make this adapter secure enough to use in
- * production environments.
- *
- * DO NOT USE IT WITH ANY SENSITIVE OR IMPORTANT DATA!!
+ * Nephele file system adapter.
  *
  * Read the details on https://www.npmjs.com/package/authenticate-pam, which is
  * required for PAM authentication.
@@ -55,37 +75,22 @@ export default class Adapter implements AdapterInterface {
   pam: boolean;
   contentEtagMaxMB: number;
 
-  /**
-   * Root should be the absolute path of the directory that acts as the root
-   * directory for the service.
-   *
-   * If pam is true, PAM authentication will be used. Otherwise, the server will
-   * be completely open and any username/password will work.
-   *
-   * The contentEtagMaxMB value determines the maximum filesize in megabytes to
-   * calculate etags by a CRC-32C checksum of the file contents. Anything above
-   * this file size will use a CRC-32C checksum of the size, created time, and
-   * modified time instead. This will significantly speed up responses to
-   * requests for these files, but at the cost of reduced accuracy of etags. A
-   * file that has the exact same content, but a different modified time will
-   * not be pulled from cache by the client. Set this value to `Infinity` if you
-   * wish to fully follow the HTTP spec to the letter. Set this value to `-1` if
-   * you want to absolutely minimize disk IO.
-   *
-   * @param config Adapter config.
-   */
   constructor({
     root = process.cwd(),
     pam = true,
     contentEtagMaxMB = 100,
-  }: {
-    root?: string;
-    pam?: boolean;
-    contentEtagMaxMB?: number;
-  } = {}) {
-    this.root = root;
+  }: AdapterConfig = {}) {
+    this.root = root.replace(/\/?$/, () => '/');
     this.pam = pam;
     this.contentEtagMaxMB = contentEtagMaxMB;
+
+    try {
+      fs.accessSync(this.root, constants.R_OK);
+    } catch (e: any) {
+      throw new Error(
+        "Can't read from given file system root. Does the directory exist?"
+      );
+    }
   }
 
   urlToRelativePath(url: URL, baseUrl: string) {

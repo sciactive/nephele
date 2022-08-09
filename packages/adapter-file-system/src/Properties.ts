@@ -1,9 +1,9 @@
-import type { Properties as PropertiesInterface } from '../index.js';
+import type { Properties as PropertiesInterface } from 'nephele';
 import {
   ForbiddenError,
   PropertyIsProtectedError,
   PropertyNotFoundError,
-} from '../index.js';
+} from 'nephele';
 
 import type { MetaStorage } from './Resource.js';
 import Resource from './Resource.js';

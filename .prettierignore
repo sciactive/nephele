@@ -1,5 +1,6 @@
 node_modules
 /.vscode
 /docs
-/dist
 /CHANGELOG.md
+/packages/*/CHANGELOG.md
+/packages/*/dist

@@ -5,8 +5,7 @@ import path from 'node:path';
 import mmm, { Magic } from 'mmmagic';
 import checkDiskSpace from 'check-disk-space';
 import Sse4Crc32 from 'sse4_crc32';
-
-import type { Resource as ResourceInterface } from '../index.js';
+import type { Resource as ResourceInterface } from 'nephele';
 import {
   BadGatewayError,
   ForbiddenError,
@@ -15,7 +14,7 @@ import {
   ResourceNotFoundError,
   ResourceTreeNotCompleteError,
   UnauthorizedError,
-} from '../index.js';
+} from 'nephele';
 
 import type Adapter from './Adapter.js';
 import {
