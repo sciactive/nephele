@@ -1,0 +1,27 @@
+{
+  "name": "@nephele/adapter-file-system",
+  "version": "1.0.0-alpha.2",
+  "description": "A file system adapter for the Nephele WebDAV server.",
+  "main": "dist/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sciactive/nephele.git"
+  },
+  "keywords": [
+    "webdav",
+    "server",
+    "express",
+    "middleware",
+    "file",
+    "system"
+  ],
+  "author": "Hunter Perrin <hperrin@gmail.com>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/sciactive/nephele/issues"
+  },
+  "homepage": "https://github.com/sciactive/nephele#readme"
+}
