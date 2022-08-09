@@ -6,7 +6,11 @@ import cookieParser from 'cookie-parser';
 import createDebug from 'debug';
 import { nanoid } from 'nanoid';
 
-import type { Adapter, AuthResponse } from './Interfaces/index.js';
+import type {
+  Adapter,
+  Authenticator,
+  AuthResponse,
+} from './Interfaces/index.js';
 import type { Options } from './Options.js';
 import { defaults } from './Options.js';
 import { catchErrors } from './catchErrors.js';
@@ -47,7 +51,10 @@ const pkg = JSON.parse(
  * @see http://sciactive.com/
  */
 export default function createServer(
-  adapter: Adapter,
+  {
+    adapter,
+    authenticator,
+  }: { adapter: Adapter; authenticator: Authenticator },
   options: Partial<Options> = {}
 ) {
   const opts = Object.assign({}, defaults, options) as Options;
@@ -104,7 +111,10 @@ export default function createServer(
         response.locals.debug(`Skipping authentication for OPTIONS request.`);
       } else {
         response.locals.debug(`Authenticating user.`);
-        response.locals.user = await adapter.authenticate(request, response);
+        response.locals.user = await authenticator.authenticate(
+          request,
+          response
+        );
       }
     } catch (e: any) {
       response.locals.debug(`Auth failed.`);
@@ -143,7 +153,7 @@ export default function createServer(
   ) {
     response.on('close', async () => {
       try {
-        await adapter.cleanAuthentication(request, response);
+        await authenticator.cleanAuthentication(request, response);
       } catch (e: any) {
         response.locals.debug('Error during authentication cleanup: %o', e);
       }
@@ -194,21 +204,23 @@ export default function createServer(
     );
   };
 
-  app.options('*', runMethodCatchErrors(new OPTIONS(adapter, opts)));
-  app.get('*', runMethodCatchErrors(new GET_HEAD(adapter, opts)));
-  app.head('*', runMethodCatchErrors(new GET_HEAD(adapter, opts)));
-  app.put('*', runMethodCatchErrors(new PUT(adapter, opts)));
-  app.delete('*', runMethodCatchErrors(new DELETE(adapter, opts)));
-  app.copy('*', runMethodCatchErrors(new COPY(adapter, opts)));
-  app.move('*', runMethodCatchErrors(new MOVE(adapter, opts)));
-  app.mkcol('*', runMethodCatchErrors(new MKCOL(adapter, opts)));
-  app.lock('*', runMethodCatchErrors(new LOCK(adapter, opts)));
-  app.unlock('*', runMethodCatchErrors(new UNLOCK(adapter, opts)));
-  // TODO: Available once rfc5323 is implemented.
-  // app.search('*', runMethodCatchErrors(new SEARCH(adapter, opts)));
+  const methodProps = { adapter, authenticator };
 
-  const propfind = runMethodCatchErrors(new PROPFIND(adapter, opts));
-  const proppatch = runMethodCatchErrors(new PROPPATCH(adapter, opts));
+  app.options('*', runMethodCatchErrors(new OPTIONS(methodProps, opts)));
+  app.get('*', runMethodCatchErrors(new GET_HEAD(methodProps, opts)));
+  app.head('*', runMethodCatchErrors(new GET_HEAD(methodProps, opts)));
+  app.put('*', runMethodCatchErrors(new PUT(methodProps, opts)));
+  app.delete('*', runMethodCatchErrors(new DELETE(methodProps, opts)));
+  app.copy('*', runMethodCatchErrors(new COPY(methodProps, opts)));
+  app.move('*', runMethodCatchErrors(new MOVE(methodProps, opts)));
+  app.mkcol('*', runMethodCatchErrors(new MKCOL(methodProps, opts)));
+  app.lock('*', runMethodCatchErrors(new LOCK(methodProps, opts)));
+  app.unlock('*', runMethodCatchErrors(new UNLOCK(methodProps, opts)));
+  // TODO: Available once rfc5323 is implemented.
+  // app.search('*', runMethodCatchErrors(new SEARCH(methodProps, opts)));
+
+  const propfind = runMethodCatchErrors(new PROPFIND(methodProps, opts));
+  const proppatch = runMethodCatchErrors(new PROPPATCH(methodProps, opts));
 
   app.all('*', async (request, response: AuthResponse) => {
     switch (request.method) {
@@ -222,7 +234,7 @@ export default function createServer(
         const run = catchErrors(
           async () => {
             const MethodClass = adapter.getMethod(request.method);
-            const method = new MethodClass(adapter, opts);
+            const method = new MethodClass(methodProps, opts);
             await method.run(request, response);
           },
           async (code, message, error) => {

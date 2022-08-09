@@ -16,19 +16,26 @@ npm i -s nephele
 
 # Usage
 
-Nephele provides all of the business logic of implementing WebDAV, but it requires [an adapter](https://www.npmjs.com/search?q=keywords%3Anephele%20adapter) to store and serve files from a storage backend.
+Nephele provides all of the business logic of implementing WebDAV, but it requires [an adapter](https://www.npmjs.com/search?q=keywords%3Anephele%20adapter) to store and serve resources from a storage backend, and [an authenticator](https://www.npmjs.com/search?q=keywords%3Anephele%20authenticator) to authenticate users.
 
 ```js
 import express from 'express';
 import nepheleServer from 'nephele';
 import ExampleAdapter from '@nephele/adapter-example';
+import ExampleAuthenticator from '@nephele/authenticator-example';
 
 const app = express();
 const port = 8080;
 
 app.use(
   '/',
-  nepheleServer(new ExampleAdapter(), { realm: 'My WebDAV Server' })
+  nepheleServer(
+    {
+      adapter: new ExampleAdapter(),
+      authenticator: new ExampleAuthenticator(),
+    },
+    { realm: 'My WebDAV Server' }
+  )
 );
 
 app.listen(port, () => {
@@ -38,9 +45,7 @@ app.listen(port, () => {
 
 # Adapters
 
-Nephele works by using adapters. An adapter is responsible for actually performing changes in the storage backend, while Nephele is responsible for implementing the WebDAV spec on top of Express.
-
-There is a [file system adapter](packages/adapter-file-system/src/) (@nephele/adapter-file-system) provided by Nephele.
+Nephele handles data storage, retrieval, and manipulation by using [adapters](https://www.npmjs.com/search?q=keywords%3Anephele%20adapter). An adapter is responsible for actually performing changes in the storage backend, while Nephele is responsible for implementing the WebDAV spec on top of Express.
 
 ## Resources
 
@@ -54,9 +59,13 @@ Collection resources represent a container of other resources. This could be a d
 
 Properties are the metadata associated with resources. Live properties are data that is generally derived from the content of the resource or actions of the user. These include creation date, modified date, size, etc. They are generally managed by the server. Dead properties (don't blame me, I didn't come up with the name) are managed by the client. The server only stores them.
 
+# Authenticators
+
+Nephele handles access control by using [authenticators](https://www.npmjs.com/search?q=keywords%3Anephele%20authenticator). An authenticator is responsible for authenticating the HTTP request and providing a user to Nephele and the adapter.
+
 ## Users
 
-Users are extremely flexible in Nephele. Basically Nephele hands you a request, and you provide whatever you like back as the user for that request. Later, when Nephele asks you to do certain things, it will provide this same user back to you.
+Users are extremely flexible in Nephele. Basically Nephele hands your authenticator a request, and you provide whatever you like back as the user for that request. Later, when Nephele asks you to do certain things, it will provide this same user back to you.
 
 # Service Location for CardDAV and CalDAV Clients
 

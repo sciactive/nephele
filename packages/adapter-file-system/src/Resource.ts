@@ -5,7 +5,7 @@ import path from 'node:path';
 import mmm, { Magic } from 'mmmagic';
 import checkDiskSpace from 'check-disk-space';
 import Sse4Crc32 from 'sse4_crc32';
-import type { Resource as ResourceInterface } from 'nephele';
+import type { Resource as ResourceInterface, User } from 'nephele';
 import {
   BadGatewayError,
   ForbiddenError,
@@ -29,7 +29,6 @@ import {
   otherExecuteBit,
 } from './FileSystemBits.js';
 import Properties from './Properties.js';
-import User from './User.js';
 import Lock from './Lock.js';
 
 export type MetaStorage = {
@@ -84,11 +83,7 @@ export default class Resource implements ResourceInterface {
     }
 
     return Object.entries(meta.locks).map(([token, entry]) => {
-      const user = new User({
-        username: entry.username,
-        adapter: this.adapter,
-      });
-      const lock = new Lock({ resource: this, user });
+      const lock = new Lock({ resource: this, username: entry.username });
 
       lock.token = token;
       lock.date = new Date(entry.date);
@@ -112,7 +107,7 @@ export default class Resource implements ResourceInterface {
     return Object.entries(meta.locks)
       .filter(([_token, entry]) => user.username === entry.username)
       .map(([token, entry]) => {
-        const lock = new Lock({ resource: this, user });
+        const lock = new Lock({ resource: this, username: user.username });
 
         lock.token = token;
         lock.date = new Date(entry.date);
@@ -127,7 +122,7 @@ export default class Resource implements ResourceInterface {
   }
 
   async createLockForUser(user: User) {
-    return new Lock({ resource: this, user });
+    return new Lock({ resource: this, username: user.username });
   }
 
   async getProperties() {
@@ -182,11 +177,11 @@ export default class Resource implements ResourceInterface {
 
     return new Promise<void>((resolve, reject) => {
       stream.on('close', async () => {
-        if (!exists && this.adapter.pam) {
+        if (!exists && (await user.usernameMapsToSystemUser())) {
           await fsp.chown(
             this.absolutePath,
-            await user.getUid(),
-            await user.getGid()
+            await this.adapter.getUid(user),
+            await this.adapter.getGid(user)
           );
         }
 
@@ -222,11 +217,11 @@ export default class Resource implements ResourceInterface {
       await fsp.writeFile(this.absolutePath, Uint8Array.from([]));
     }
 
-    if (this.adapter.pam) {
+    if (await user.usernameMapsToSystemUser()) {
       await fsp.chown(
         this.absolutePath,
-        await user.getUid(),
-        await user.getGid()
+        await this.adapter.getUid(user),
+        await this.adapter.getGid(user)
       );
     }
   }
@@ -260,10 +255,10 @@ export default class Resource implements ResourceInterface {
     }
 
     // We need the user and group IDs.
-    const uid = await user.getUid();
-    const gids = await user.getGids();
+    const uid = await this.adapter.getUid(user);
+    const gids = await this.adapter.getGids(user);
 
-    if (this.adapter.pam) {
+    if (await user.usernameMapsToSystemUser()) {
       // Check if the user can delete it.
       const stats = await fsp.stat(this.absolutePath);
 
@@ -325,10 +320,10 @@ export default class Resource implements ResourceInterface {
     }
 
     // We need the user and group IDs.
-    const uid = await user.getUid();
-    const gids = await user.getGids();
+    const uid = await this.adapter.getUid(user);
+    const gids = await this.adapter.getGids(user);
 
-    if (this.adapter.pam) {
+    if (await user.usernameMapsToSystemUser()) {
       // Check if the user can put it in the destination.
       const dstats = await fsp.stat(path.dirname(destinationPath));
 
@@ -415,9 +410,9 @@ export default class Resource implements ResourceInterface {
       }
     }
 
-    if (this.adapter.pam) {
-      const uid = await user.getUid();
-      const gid = await user.getGid();
+    if (await user.usernameMapsToSystemUser()) {
+      const uid = await this.adapter.getUid(user);
+      const gid = await this.adapter.getGid(user);
 
       // Set owner info.
       await fsp.chown(destinationPath, uid, gid);
@@ -487,10 +482,10 @@ export default class Resource implements ResourceInterface {
     }
 
     // We need the user and group IDs.
-    const uid = await user.getUid();
-    const gids = await user.getGids();
+    const uid = await this.adapter.getUid(user);
+    const gids = await this.adapter.getGids(user);
 
-    if (this.adapter.pam) {
+    if (await user.usernameMapsToSystemUser()) {
       // Check if the user can move it.
       const stats = await fsp.stat(this.absolutePath);
 
@@ -647,10 +642,10 @@ export default class Resource implements ResourceInterface {
     }
 
     // We need the user and group IDs.
-    const uid = await user.getUid();
-    const gids = await user.getGids();
+    const uid = await this.adapter.getUid(user);
+    const gids = await this.adapter.getGids(user);
 
-    if (this.adapter.pam) {
+    if (await user.usernameMapsToSystemUser()) {
       // Check if the user can list its contents.
       const stats = await fsp.stat(this.absolutePath);
 
@@ -773,14 +768,12 @@ export default class Resource implements ResourceInterface {
     } else {
       await fsp.writeFile(filepath, JSON.stringify(meta, null, 2));
 
-      if (!exists && this.adapter.pam) {
-        const stat = await fsp.stat(this.absolutePath);
-        try {
-          await fsp.chown(filepath, stat.uid, stat.gid);
-          await fsp.chmod(filepath, stat.mode % 0o1000);
-        } catch (e: any) {
-          // Ignore errors on setting ownership of meta file.
-        }
+      const stat = await fsp.stat(this.absolutePath);
+      try {
+        await fsp.chown(filepath, stat.uid, stat.gid);
+        await fsp.chmod(filepath, stat.mode % 0o1000);
+      } catch (e: any) {
+        // Ignore errors on setting ownership of meta file.
       }
     }
   }

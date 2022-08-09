@@ -156,7 +156,10 @@ export class COPY extends Method {
               // collection, its contents mustn't be merged, but instead,
               // replaced by the source resource. In order to comply, we're just
               // going to delete all the destination's contents.
-              const del = new DELETE(this.adapter, this.opts);
+              const del = new DELETE(
+                { adapter: this.adapter, authenticator: this.authenticator },
+                this.opts
+              );
               const childrenDeleted = await del.recursivelyDelete(
                 destinationResource,
                 request,

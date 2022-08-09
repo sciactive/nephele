@@ -1,7 +1,6 @@
 import type { Lock as LockInterface } from 'nephele';
 
 import Resource from './Resource.js';
-import User from './User.js';
 
 export default class Lock implements LockInterface {
   resource: Resource;
@@ -12,11 +11,17 @@ export default class Lock implements LockInterface {
   depth: '0' | 'infinity' = '0';
   provisional: boolean = false;
   owner: any = {};
-  user: User;
+  username: string;
 
-  constructor({ resource, user }: { resource: Resource; user: User }) {
+  constructor({
+    resource,
+    username,
+  }: {
+    resource: Resource;
+    username: string;
+  }) {
     this.resource = resource;
-    this.user = user;
+    this.username = username;
   }
 
   async save() {
@@ -27,7 +32,7 @@ export default class Lock implements LockInterface {
     }
 
     meta.locks[this.token] = {
-      username: this.user.username,
+      username: this.username,
       date: this.date.getTime(),
       timeout: this.timeout,
       scope: this.scope,

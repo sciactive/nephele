@@ -11,6 +11,7 @@ import createDebug from 'debug';
 
 import server from './packages/nephele/dist/index.js';
 import FileSystemAdapter from './packages/adapter-file-system/dist/index.js';
+import PamAuthenticator from './packages/authenticator-pam/dist/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -20,15 +21,16 @@ const app = express();
 const host = hostname();
 const port = 8080;
 const root = process.argv.length > 2 ? resolve(process.argv[2]) : __dirname;
+const pam = !process.env.NOPAM;
 
 app.use(
   '/',
-  server(
-    new FileSystemAdapter({
+  server({
+    adapter: new FileSystemAdapter({
       root,
-      pam: !process.env.NOPAM,
-    })
-  )
+    }),
+    authenticator: new PamAuthenticator(),
+  })
 );
 
 app.listen(port, () => {

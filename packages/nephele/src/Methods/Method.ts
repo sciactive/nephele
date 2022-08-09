@@ -8,6 +8,7 @@ import vary from 'vary';
 
 import type {
   Adapter,
+  Authenticator,
   AuthResponse,
   Lock,
   Options,
@@ -52,6 +53,7 @@ type IfHeaderList = {
 
 export class Method {
   adapter: Adapter;
+  authenticator: Authenticator;
   opts: Options;
 
   DEV = process.env.NODE_ENV !== 'production';
@@ -76,8 +78,15 @@ export class Method {
         }),
   });
 
-  constructor(adapter: Adapter, opts: Options) {
+  constructor(
+    {
+      adapter,
+      authenticator,
+    }: { adapter: Adapter; authenticator: Authenticator },
+    opts: Options
+  ) {
     this.adapter = adapter;
+    this.authenticator = authenticator;
     this.opts = opts;
   }
 

@@ -1,28 +1,22 @@
 import pam from 'authenticate-pam';
-import userid from 'userid';
 import type { User as UserInterface } from 'nephele';
 import { UnauthorizedError } from 'nephele';
 
-import type Adapter from './Adapter.js';
-
-const { uid, ids, gids } = userid;
-
 export default class User implements UserInterface {
   username: string;
-  adapter: Adapter;
 
   private authenticated = false;
 
-  constructor({ username, adapter }: { username: string; adapter: Adapter }) {
+  constructor({ username }: { username: string }) {
     this.username = username;
-    this.adapter = adapter;
+  }
+
+  async usernameMapsToSystemUser() {
+    // All users map to system users.
+    return true;
   }
 
   async authenticate(password: string) {
-    if (!this.adapter.pam) {
-      this.authenticated = true;
-      return;
-    }
     if (this.authenticated) {
       return;
     }
@@ -42,29 +36,5 @@ export default class User implements UserInterface {
         { serviceName: 'login', remoteHost: 'localhost' }
       );
     });
-  }
-
-  async getUid(): Promise<number> {
-    if (!this.adapter.pam) {
-      return -1;
-    }
-
-    return uid(this.username);
-  }
-
-  async getGid(): Promise<number> {
-    if (!this.adapter.pam) {
-      return -1;
-    }
-
-    return ids(this.username).gid;
-  }
-
-  async getGids(): Promise<number[]> {
-    if (!this.adapter.pam) {
-      return [];
-    }
-
-    return gids(this.username);
   }
 }

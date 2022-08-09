@@ -1,5 +1,6 @@
 import type {
   Adapter,
+  Authenticator,
   AuthResponse,
   Cache,
   Lock,
@@ -21,6 +22,7 @@ export * from './MultiStatus.js';
 
 export {
   Adapter,
+  Authenticator,
   AuthResponse,
   Cache,
   Lock,

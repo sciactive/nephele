@@ -1,5 +1,8 @@
-import type { Adapter, AuthResponse } from './Adapter.js';
-export type { Adapter, AuthResponse };
+import type { Adapter } from './Adapter.js';
+export type { Adapter };
+
+import type { Authenticator, AuthResponse } from './Authenticator.js';
+export type { Authenticator, AuthResponse };
 
 import type { Cache } from './Cache.js';
 export type { Cache };

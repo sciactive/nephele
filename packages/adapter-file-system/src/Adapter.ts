@@ -4,11 +4,11 @@ import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
 import userid from 'userid';
 import type { Request } from 'express';
-import basicAuth from 'basic-auth';
 import type {
   Adapter as AdapterInterface,
-  AuthResponse as NepheleAuthResponse,
+  AuthResponse,
   Method,
+  User,
 } from 'nephele';
 import {
   BadGatewayError,
@@ -28,12 +28,9 @@ import {
   otherWriteBit,
   otherExecuteBit,
 } from './FileSystemBits.js';
-import User from './User.js';
 import Resource from './Resource.js';
 
-const { username, groupname } = userid;
-
-export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
+const { username, groupname, uid, ids, gids } = userid;
 
 export type AdapterConfig = {
   /**
@@ -41,11 +38,6 @@ export type AdapterConfig = {
    * service.
    */
   root?: string;
-  /**
-   * Whether PAM authentication should be used. Otherwise, the server will be
-   * completely open and any username/password will work.
-   */
-  pam?: boolean;
   /**
    * The maximum filesize in megabytes to calculate etags by a CRC-32C checksum
    * of the file contents. Anything above this file size will use a CRC-32C
@@ -66,22 +58,16 @@ export type AdapterConfig = {
 
 /**
  * Nephele file system adapter.
- *
- * Read the details on https://www.npmjs.com/package/authenticate-pam, which is
- * required for PAM authentication.
  */
 export default class Adapter implements AdapterInterface {
   root: string;
-  pam: boolean;
   contentEtagMaxMB: number;
 
   constructor({
     root = process.cwd(),
-    pam = true,
     contentEtagMaxMB = 100,
   }: AdapterConfig = {}) {
     this.root = root.replace(/\/?$/, () => '/');
-    this.pam = pam;
     this.contentEtagMaxMB = contentEtagMaxMB;
 
     try {
@@ -114,19 +100,35 @@ export default class Adapter implements AdapterInterface {
   }
 
   async getUsername(uid: number): Promise<string> {
-    if (!this.pam) {
-      return 'nobody';
-    }
-
     return username(uid);
   }
 
   async getGroupname(gid: number): Promise<string> {
-    if (!this.pam) {
-      return 'nobody';
+    return groupname(gid);
+  }
+
+  async getUid(user: User): Promise<number> {
+    if (!(await user.usernameMapsToSystemUser())) {
+      return -1;
     }
 
-    return groupname(gid);
+    return uid(user.username);
+  }
+
+  async getGid(user: User): Promise<number> {
+    if (!(await user.usernameMapsToSystemUser())) {
+      return -1;
+    }
+
+    return ids(user.username).gid;
+  }
+
+  async getGids(user: User): Promise<number[]> {
+    if (!(await user.usernameMapsToSystemUser())) {
+      return [];
+    }
+
+    return gids(user.username);
   }
 
   async getComplianceClasses(
@@ -156,29 +158,6 @@ export default class Adapter implements AdapterInterface {
     // This adapter doesn't do anything special for individual URLs, so a max
     // age of one week is fine.
     return 'max-age=604800';
-  }
-
-  async authenticate(request: Request, _response: AuthResponse) {
-    const authorization = request.get('Authorization');
-    let username = 'nobody';
-    let password = '';
-
-    if (authorization) {
-      const auth = basicAuth.parse(authorization);
-      if (auth) {
-        username = auth.name;
-        password = auth.pass;
-      }
-    }
-    const user = new User({ username, adapter: this });
-    await user.authenticate(password);
-
-    return user;
-  }
-
-  async cleanAuthentication(_request: Request, _response: AuthResponse) {
-    // Nothing is required for auth cleanup.
-    return;
   }
 
   async isAuthorized(url: URL, method: string, baseUrl: string, user: User) {
@@ -213,8 +192,8 @@ export default class Adapter implements AdapterInterface {
     }
 
     // We need the user and group IDs.
-    const uid = await user.getUid();
-    const gids = await user.getGids();
+    const uid = await this.getUid(user);
+    const gids = await this.getGids(user);
 
     // First make sure the server process and user has access to all
     // directories in the tree.
@@ -237,7 +216,7 @@ export default class Adapter implements AdapterInterface {
       exists = false;
     }
 
-    if (this.pam) {
+    if (await user.usernameMapsToSystemUser()) {
       for (let i = 1; i <= parts.length; i++) {
         const ipathname = path.join('/', ...parts.slice(0, i));
 
@@ -293,7 +272,7 @@ export default class Adapter implements AdapterInterface {
 
     // If we get to here, it means either the file exists and user has
     // permission, or the file doesn't exist, and the user has access to all
-    // directories above it. (Or pam is disabled.)
+    // directories above it.
     return true;
   }
 

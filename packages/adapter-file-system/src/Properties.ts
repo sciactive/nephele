@@ -1,4 +1,4 @@
-import type { Properties as PropertiesInterface } from 'nephele';
+import type { Properties as PropertiesInterface, User } from 'nephele';
 import {
   ForbiddenError,
   PropertyIsProtectedError,
@@ -7,7 +7,6 @@ import {
 
 import type { MetaStorage } from './Resource.js';
 import Resource from './Resource.js';
-import User from './User.js';
 
 export default class Properties implements PropertiesInterface {
   resource: Resource;
@@ -75,8 +74,24 @@ export default class Properties implements PropertiesInterface {
             throw e;
           }
         }
+    }
+
+    // Fall back to a metadata file based prop store.
+    const meta = await this.resource.readMetadataFile();
+
+    if (meta.props == null || !(name in meta.props)) {
+      throw new PropertyNotFoundError(
+        `${name} property doesn't exist on resource.`
+      );
+    }
+
+    return meta.props[name];
+  }
+
+  async getByUser(name: string, user: User) {
+    switch (name) {
       case 'owner':
-        if (this.resource.adapter.pam) {
+        if (await user.usernameMapsToSystemUser()) {
           try {
             const stats = await this.resource.getStats();
             return await this.resource.adapter.getUsername(stats.uid);
@@ -91,7 +106,7 @@ export default class Properties implements PropertiesInterface {
           }
         }
       case 'group':
-        if (this.resource.adapter.pam) {
+        if (await user.usernameMapsToSystemUser()) {
           try {
             const stats = await this.resource.getStats();
             return await this.resource.adapter.getGroupname(stats.gid);
@@ -107,19 +122,6 @@ export default class Properties implements PropertiesInterface {
         }
     }
 
-    // Fall back to a metadata file based prop store.
-    const meta = await this.resource.readMetadataFile();
-
-    if (meta.props == null || !(name in meta.props)) {
-      throw new PropertyNotFoundError(
-        `${name} property doesn't exist on resource.`
-      );
-    }
-
-    return meta.props[name];
-  }
-
-  async getByUser(name: string, _user: User) {
     return await this.get(name);
   }
 
@@ -131,8 +133,15 @@ export default class Properties implements PropertiesInterface {
     }
   }
 
-  async setByUser(name: string, value: string, _user: User) {
-    await this.set(name, value);
+  async setByUser(name: string, value: string, user: User) {
+    const errors = await this.runInstructionsByUser(
+      [['set', name, value]],
+      user
+    );
+
+    if (errors != null && errors.length) {
+      throw errors[0][1];
+    }
   }
 
   async remove(name: string) {
@@ -143,11 +152,21 @@ export default class Properties implements PropertiesInterface {
     }
   }
 
-  async removeByUser(name: string, _user: User) {
-    await this.remove(name);
+  async removeByUser(name: string, user: User) {
+    const errors = await this.runInstructionsByUser(
+      [['remove', name, undefined]],
+      user
+    );
+
+    if (errors != null && errors.length) {
+      throw errors[0][1];
+    }
   }
 
-  async runInstructions(instructions: ['set' | 'remove', string, any][]) {
+  async runInstructions(
+    instructions: ['set' | 'remove', string, any][],
+    additionalProtectedProperties: string[] = []
+  ) {
     let meta: MetaStorage = {};
     let changed = false;
     let errors: [string, Error][] = [];
@@ -181,8 +200,7 @@ export default class Properties implements PropertiesInterface {
           'supportedlock',
           'quota-available-bytes',
           'quota-used-bytes',
-          'owner',
-          'group',
+          ...additionalProtectedProperties,
         ].includes(name)
       ) {
         errors.push([
@@ -259,9 +277,12 @@ export default class Properties implements PropertiesInterface {
 
   async runInstructionsByUser(
     instructions: ['set' | 'remove', string, any][],
-    _user: User
+    user: User
   ) {
-    return await this.runInstructions(instructions);
+    return await this.runInstructions(
+      instructions,
+      (await user.usernameMapsToSystemUser()) ? ['owner', 'group'] : []
+    );
   }
 
   async getAll() {
@@ -279,25 +300,30 @@ export default class Properties implements PropertiesInterface {
       'quota-available-bytes': await this.get('quota-available-bytes'),
       'quota-used-bytes': await this.get('quota-used-bytes'),
       'LCGDM:%%mode': await this.get('LCGDM:%%mode'),
-      ...(this.resource.adapter.pam
-        ? {
-            owner: await this.get('owner'),
-            group: await this.get('group'),
-          }
-        : {}),
     };
   }
 
-  async getAllByUser(_user: User) {
-    return await this.getAll();
+  async getAllByUser(user: User) {
+    return {
+      ...(await this.getAll()),
+      ...((await user.usernameMapsToSystemUser())
+        ? {
+            owner: await this.getByUser('owner', user),
+            group: await this.getByUser('group', user),
+          }
+        : {}),
+    };
   }
 
   async list() {
     return [...(await this.listLive()), ...(await this.listDead())];
   }
 
-  async listByUser(_user: User) {
-    return await this.list();
+  async listByUser(user: User) {
+    return [
+      ...(await this.listLiveByUser(user)),
+      ...(await this.listDeadByUser(user)),
+    ];
   }
 
   async listLive() {
@@ -312,12 +338,14 @@ export default class Properties implements PropertiesInterface {
       'quota-available-bytes',
       'quota-used-bytes',
       'LCGDM:%%mode',
-      ...(this.resource.adapter.pam ? ['owner', 'group'] : []),
     ];
   }
 
-  async listLiveByUser(_user: User) {
-    return await this.listLive();
+  async listLiveByUser(user: User) {
+    return [
+      ...(await this.listLive()),
+      ...((await user.usernameMapsToSystemUser()) ? ['owner', 'group'] : []),
+    ];
   }
 
   async listDead() {
