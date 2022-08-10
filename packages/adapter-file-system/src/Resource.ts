@@ -131,8 +131,7 @@ export default class Resource implements ResourceInterface {
 
   async getStream(range?: { start: number; end: number }) {
     if (await this.isCollection()) {
-      const stream = Readable.from([]);
-      return stream;
+      return Readable.from([]);
     }
 
     const handle = await fsp.open(this.absolutePath, 'r');
@@ -620,7 +619,7 @@ export default class Resource implements ResourceInterface {
 
     url += encodeURI((await this.getCanonicalPath()).replace(/^\//, () => ''));
 
-    return new URL(url);
+    return new URL(url, baseUrl);
   }
 
   async isCollection() {

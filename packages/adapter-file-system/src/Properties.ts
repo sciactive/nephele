@@ -282,26 +282,33 @@ export default class Properties implements PropertiesInterface {
 
   async getAll() {
     const meta = await this.resource.readMetadataFile();
+    const props = { ...meta.props };
 
-    return {
-      ...meta.props,
-      creationdate: await this.get('creationdate'),
-      getcontentlength: await this.get('getcontentlength'),
-      getcontenttype: await this.get('getcontenttype'),
-      getetag: await this.get('getetag'),
-      getlastmodified: await this.get('getlastmodified'),
-      resourcetype: await this.get('resourcetype'),
-      supportedlock: await this.get('supportedlock'),
-      'quota-available-bytes': await this.get('quota-available-bytes'),
-      'quota-used-bytes': await this.get('quota-used-bytes'),
-      'LCGDM:%%mode': await this.get('LCGDM:%%mode'),
+    for (let name of [
+      'creationdate',
+      'getcontentlength',
+      'getcontenttype',
+      'getetag',
+      'getlastmodified',
+      'resourcetype',
+      'supportedlock',
+      'quota-available-bytes',
+      'quota-used-bytes',
+      'LCGDM:%%mode',
       ...(this.resource.adapter.usernamesMapToSystemUsers
-        ? {
-            owner: await this.get('owner'),
-            group: await this.get('group'),
-          }
-        : {}),
-    };
+        ? ['owner', 'group']
+        : []),
+    ]) {
+      try {
+        props[name] = await this.get(name);
+      } catch (e: any) {
+        if (!(e instanceof PropertyNotFoundError)) {
+          throw e;
+        }
+      }
+    }
+
+    return props;
   }
 
   async getAllByUser(_user: User) {

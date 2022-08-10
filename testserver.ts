@@ -11,6 +11,7 @@ import createDebug from 'debug';
 
 import server from './packages/nephele/dist/index.js';
 import FileSystemAdapter from './packages/adapter-file-system/dist/index.js';
+import VirtualAdapter from './packages/adapter-virtual/dist/index.js';
 import PamAuthenticator from './packages/authenticator-pam/dist/index.js';
 import InsecureAuthenticator from './packages/authenticator-none/dist/index.js';
 
@@ -23,20 +24,32 @@ const host = hostname();
 const port = 8080;
 const root = process.argv.length > 2 ? resolve(process.argv[2]) : __dirname;
 const pam = !process.env.NOPAM;
+const virtual = !process.env.VIRTUALFS;
 
 app.use(
   '/',
   server({
-    adapter: new FileSystemAdapter({
-      root,
-      usernamesMapToSystemUsers: pam,
-    }),
+    adapter: virtual
+      ? new VirtualAdapter({
+          files: {
+            properties: {
+              creationdate: new Date(),
+              getlastmodified: new Date(),
+            },
+            locks: {},
+            children: [],
+          },
+        })
+      : new FileSystemAdapter({
+          root,
+          usernamesMapToSystemUsers: pam,
+        }),
     authenticator: pam ? new PamAuthenticator() : new InsecureAuthenticator(),
   })
 );
 
 app.listen(port, () => {
   debug(`Listening on ${host}:${port}.`);
-  debug(`Serving files from "${root}".`);
+  debug(`Serving files from ${virtual ? 'RAM' : `"${root}"`}.`);
   console.log(`Example Nephele WebDAV server listening on port ${port}`);
 });
