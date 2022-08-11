@@ -45,18 +45,24 @@ export class OPTIONS extends Method {
         response
       );
 
-    request.on('data', () => {
+    let stream = await this.getBodyStream(request, response);
+    let providedBody = false;
+    stream.on('data', (data: Buffer) => {
+      if (data.toString().trim()) {
+        providedBody = true;
+      }
+    });
+    await new Promise<void>((resolve, _reject) => {
+      stream.on('end', () => {
+        resolve();
+      });
+    });
+    if (providedBody) {
       response.locals.debug('Provided body to OPTIONS.');
       throw new MediaTypeNotSupportedError(
         "This server doesn't understand the body sent in the request."
       );
-    });
-
-    await new Promise<void>((resolve, _reject) => {
-      request.on('end', () => {
-        resolve();
-      });
-    });
+    }
 
     response.status(204); // No Content
     response.set({

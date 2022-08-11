@@ -147,7 +147,6 @@ export class LOCK extends Method {
         'Content-Type': `${contentType}; charset=utf-8`,
       });
       this.sendBodyContent(response, responseXml, encoding);
-
       return;
     }
 
@@ -342,14 +341,20 @@ export class LOCK extends Method {
         );
       }
 
-      const locks = await resource.getLocks();
+      const locks = await this.getCurrentResourceLocks(resource);
 
-      if (locks.length) {
+      if (
+        locks.length &&
+        (locks.length !== 1 || locks[0].token !== lock.token)
+      ) {
         if (lock.scope === 'exclusive') {
           throw new LockedError('Cannot create a conflicting lock.');
         }
 
         for (let checkLock of locks) {
+          if (checkLock.token === lock.token) {
+            continue;
+          }
           if (checkLock.scope === 'exclusive') {
             throw new LockedError('Cannot create a conflicting lock.');
           }
@@ -435,6 +440,7 @@ export class LOCK extends Method {
         'Content-Type': `${contentType}; charset=utf-8`,
       });
       this.sendBodyContent(response, responseXml, encoding);
+      return;
     }
 
     // There's no conflicting lock below this one, so continue on.

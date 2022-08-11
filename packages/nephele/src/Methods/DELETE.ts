@@ -36,19 +36,23 @@ export class DELETE extends Method {
     );
 
     let stream = await this.getBodyStream(request, response);
-
-    stream.on('data', () => {
-      response.locals.debug('Provided body to DELETE.');
-      throw new MediaTypeNotSupportedError(
-        "This server doesn't understand the body sent in the request."
-      );
+    let providedBody = false;
+    stream.on('data', (data: Buffer) => {
+      if (data.toString().trim()) {
+        providedBody = true;
+      }
     });
-
     await new Promise<void>((resolve, _reject) => {
       stream.on('end', () => {
         resolve();
       });
     });
+    if (providedBody) {
+      response.locals.debug('Provided body to DELETE.');
+      throw new MediaTypeNotSupportedError(
+        "This server doesn't understand the body sent in the request."
+      );
+    }
 
     const lockPermission = await this.getLockPermission(
       request,

@@ -1,7 +1,7 @@
 /**
  * This file requires the --experimental-specifier-resolution=node option.
  *
- * sudo env NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver-multi.ts testroot
+ * env NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver-multi.ts testroot
  */
 import { hostname } from 'node:os';
 import { dirname, resolve, join } from 'node:path';

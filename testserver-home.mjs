@@ -1,7 +1,7 @@
 /**
  * This file requires the --experimental-specifier-resolution=node option.
  *
- * sudo env NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver-home.ts
+ * sudo node --experimental-specifier-resolution=node testserver-home.mjs
  */
 import { hostname } from 'node:os';
 import express from 'express';
