@@ -4,7 +4,7 @@ A pluggable WebDAV, CardDAV, and CalDAV server for Node.js and Express.
 
 # Work in Progress
 
-Nephele is currently a work in progress.
+Nephele is currently a work in progress. You can [install and run it](https://www.npmjs.com/package/nephele), but building adapters and authenticators for it is not recommended yet, because it will significantly change before the 1.0 release.
 
 It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
 
@@ -45,7 +45,7 @@ mkdir testroot
 env DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts testroot
 ```
 
-If you want to run it without PAM authentication, set the `NOPAM` env var, like this. (This will allow unrestricted access to any user who can reach your host on the network.)
+If you want to run it without PAM authentication (allow unrestricted access to any user who can reach your host on the network), set the `NOPAM` env var, like this.
 
 ```
 env NOPAM=true DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts testroot

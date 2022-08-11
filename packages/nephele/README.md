@@ -42,29 +42,122 @@ app.listen(port, () => {
 
 You can also provide options as a second argument to the create server function.
 
-# Adapters
+## Conditional Adapters and Authenticators
 
-Nephele handles data storage, retrieval, and manipulation by using [adapters](https://www.npmjs.com/search?q=keywords%3Anephele%20adapter). An adapter is responsible for actually performing changes in the storage backend, while Nephele is responsible for implementing the WebDAV spec on top of Express.
+You can load conditional adapters and authenticators by providing a function that returns them instead.
 
-## Resources
+```js
+import express from 'express';
+import nepheleServer from 'nephele';
+import ExampleUnauthorizedAdapter from '@nephele/adapter-example-unauthorized';
+import ExampleAuthorizedAdapter from '@nephele/adapter-example-authorized';
+import ExampleAuthenticator from '@nephele/authenticator-example';
+
+const app = express();
+const port = 8080;
+
+app.use(
+  '/',
+  nepheleServer({
+    adapter: async (_request, response) => {
+      if (response.locals.user == null) {
+        return new ExampleUnauthorizedAdapter();
+      }
+
+      return new ExampleAuthorizedAdapter({
+        username: response.locals.user.username,
+      });
+    },
+    authenticator: new ExampleAuthenticator(),
+  })
+);
+
+app.listen(port, () => {
+  console.log(`Nephele WebDAV server listening on port ${port}`);
+});
+```
+
+# Mounted Adapters and Authenticators
+
+You can mount adapters and authenticators to different points in the namespace by providing an object whose keys are the mount points instead. There must always be an adapter mounted at the "/" mount point.
+
+```js
+import express from 'express';
+import nepheleServer from 'nephele';
+import VirtualAdapter from '@nephele/adapter-virtual';
+import ExampleAdapter from '@nephele/adapter-example';
+import AnotherAdapter from '@nephele/adapter-another';
+import ExampleAuthenticator from '@nephele/authenticator-example';
+
+const app = express();
+const port = 8080;
+
+app.use(
+  '/',
+  nepheleServer({
+    adapter: {
+      '/': new VirtualAdapter({
+        files: {
+          properties: {
+            creationdate: new Date(),
+            getlastmodified: new Date(),
+            owner: 'root',
+          },
+          locks: {},
+          children: [
+            {
+              name: 'Sub Directory',
+              properties: {
+                creationdate: new Date(),
+                getlastmodified: new Date(),
+                owner: 'root',
+              },
+              locks: {},
+              children: [],
+            },
+          ],
+        },
+      }),
+      '/Sub%20Directory/': new ExampleAdapter(),
+    },
+    authenticator: new ExampleAuthenticator(),
+  })
+);
+
+app.listen(port, () => {
+  console.log(`Nephele WebDAV server listening on port ${port}`);
+});
+```
+
+This object can also be returned from an adapter and/or authenticator function.
+
+# How it Works
+
+Nephele implements the WebDAV spec while being storage and authentication agnostic. It does this through a number of interfaces that, when implemented, allow Nephele to provide WebDAV functionality on top of any storage and authentication backends.
+
+## Adapters
+
+Nephele handles resource storage, listing, retrieval, and manipulation by using [adapters](https://www.npmjs.com/search?q=keywords%3Anephele%20adapter). An adapter is responsible for actually performing changes in the storage backend.
+
+### Resources
 
 Resources are the meat of WebDAV. They represent an item on your server. This could be a directory, a file, a contact card, etc. Non-collection resources generally have a bytestream as content, and that bytestream is what the Resource class is responsible for reading and manipulating.
 
-### Collections
+#### Collections
 
 Collection resources represent a container of other resources. This could be a directory, an address book, etc. Collection resources generally don't have a bytestream, but they still have properties.
 
-## Properties
+### Properties
 
 Properties are the metadata associated with resources. Live properties are data that is generally derived from the content of the resource or actions of the user. These include creation date, modified date, size, etc. They are generally managed by the server. Dead properties (don't blame me, I didn't come up with the name) are managed by the client. The server only stores them.
 
-# Authenticators
+## Authenticators
 
-Nephele handles access control by using [authenticators](https://www.npmjs.com/search?q=keywords%3Anephele%20authenticator). An authenticator is responsible for authenticating the HTTP request and providing a user to Nephele and the adapter.
+Nephele handles access control by using [authenticators](https://www.npmjs.com/search?q=keywords%3Anephele%20authenticator). An authenticator is responsible for authenticating the HTTP request and providing a user for Nephele to give to the adapter.
 
-## Users
+### Users
 
-Users are extremely flexible in Nephele. Basically Nephele hands your authenticator a request, and you provide whatever you like back as the user for that request. Later, when Nephele asks you to do certain things, it will provide this same user back to you.
+Users are extremely flexible in Nephele. Basically Nephele hands your authenticator a request, and you provide whatever you like back as the user for that request. Later, when Nephele asks the adapter to do certain things, it will provide this user to it.
 
 # Service Location for CardDAV and CalDAV Clients
 
