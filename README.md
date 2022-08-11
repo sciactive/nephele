@@ -8,6 +8,12 @@ Nephele is currently a work in progress. You can [install and run it](https://ww
 
 It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
 
+# Compliance
+
+Nephele focuses on complete compliance with the implemented specifications. The specifications (RFCs) include [keywords](https://www.rfc-editor.org/rfc/rfc2119) which determine what behavior is required to be fully compliant. Nephele follows all behaviors described as "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", and "NOT RECOMMENDED". Unless otherwise stated in an adapter's or authenticator's readme, the official adapters and authenticators also follow these behaviors.
+
+If you find behavior in Nephele or the official adapters/authenticators that does not align with behavior described in the spec using the aforementioned keywords, this should be considered a bug, and a bug report in this repository would be greatly appreciated.
+
 # Implemented RFCs
 
 ## WebDAV
