@@ -2,7 +2,7 @@ import zlib from 'node:zlib';
 import { pipeline, Readable } from 'node:stream';
 import path from 'node:path';
 import type { Request } from 'express';
-import { Builder, Parser } from 'xml2js';
+import * as xml2js from 'xml2js';
 import contentType from 'content-type';
 import splitn from '@sciactive/splitn';
 import vary from 'vary';
@@ -56,10 +56,10 @@ export class Method {
 
   DEV = process.env.NODE_ENV !== 'production';
 
-  xmlParser = new Parser({
+  xmlParser = new xml2js.Parser({
     xmlns: true,
   });
-  xmlBuilder = new Builder({
+  xmlBuilder = new xml2js.Builder({
     xmldec: { version: '1.0', encoding: 'UTF-8' },
     ...(this.DEV
       ? {

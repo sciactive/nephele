@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import { Parser } from 'xml2js';
+import * as xml2js from 'xml2js';
 
 import type { AuthResponse } from '../Interfaces/index.js';
 import {
@@ -15,7 +15,7 @@ import { MultiStatus, Status, PropStatStatus } from '../MultiStatus.js';
 import { Method } from './Method.js';
 
 export class PROPPATCH extends Method {
-  xmlParserPreserveOrder = new Parser({
+  xmlParserPreserveOrder = new xml2js.Parser({
     xmlns: true,
     explicitChildren: true,
     preserveChildrenOrder: true,

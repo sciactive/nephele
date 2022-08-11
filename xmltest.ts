@@ -2,7 +2,7 @@
  * Run this file with `npx ts-node --esm xmltest.ts`
  */
 import { inspect } from 'node:util';
-import { Builder, Parser } from 'xml2js';
+import * as xml2js from 'xml2js';
 
 import {
   Method,
@@ -13,10 +13,10 @@ import {
   Adapter,
 } from './packages/nephele/dist/index.js';
 
-const builder = new Builder({
+const builder = new xml2js.Builder({
   xmldec: { version: '1.0', encoding: 'UTF-8' },
 });
-const parser = new Parser({
+const parser = new xml2js.Parser({
   xmlns: true,
 });
 
