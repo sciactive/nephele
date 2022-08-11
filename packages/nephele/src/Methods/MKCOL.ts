@@ -5,6 +5,7 @@ import {
   ForbiddenError,
   LockedError,
   MediaTypeNotSupportedError,
+  ResourceExistsError,
   ResourceNotFoundError,
   ResourceTreeNotCompleteError,
 } from '../Errors/index.js';
@@ -21,6 +22,12 @@ export class MKCOL extends Method {
       url,
       response.locals.baseUrl
     );
+
+    if (!url.toString().endsWith('/')) {
+      response.set({
+        'Content-Location': `${url}/`,
+      });
+    }
 
     try {
       const parent = await this.getParentResource(request, response, resource);
@@ -80,7 +87,14 @@ export class MKCOL extends Method {
       Date: new Date().toUTCString(),
     });
 
-    await resource.create(response.locals.user);
+    try {
+      await resource.create(response.locals.user);
+    } catch (e: any) {
+      if (e instanceof ResourceExistsError) {
+        response.removeHeader('Content-Location');
+      }
+      throw e;
+    }
 
     response.status(201); // Created
     response.set({

@@ -41,6 +41,12 @@ export class COPY extends Method {
       response.locals.baseUrl
     );
 
+    if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
+      response.set({
+        'Content-Location': `${url}/`,
+      });
+    }
+
     if (!destination) {
       throw new BadRequestError('Destination header is required.');
     }

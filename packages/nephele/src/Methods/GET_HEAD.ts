@@ -25,6 +25,13 @@ export class GET_HEAD extends Method {
       url,
       response.locals.baseUrl
     );
+
+    if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
+      response.set({
+        'Content-Location': `${url}/`,
+      });
+    }
+
     const properties = await resource.getProperties();
     const etagPromise = resource.getEtag();
     const lastModifiedPromise = properties.get('getlastmodified');

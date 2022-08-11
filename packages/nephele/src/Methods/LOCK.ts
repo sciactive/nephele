@@ -48,6 +48,12 @@ export class LOCK extends Method {
       }
     }
 
+    if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
+      response.set({
+        'Content-Location': `${url}/`,
+      });
+    }
+
     const timeoutRequests = timeoutHeader.split(/,\s+/);
     let timeout = Infinity;
     for (let curTreq of timeoutRequests) {

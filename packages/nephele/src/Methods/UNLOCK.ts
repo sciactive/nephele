@@ -26,6 +26,12 @@ export class UNLOCK extends Method {
       response.locals.baseUrl
     );
 
+    if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
+      response.set({
+        'Content-Location': `${url}/`,
+      });
+    }
+
     if (lockTokenHeader == null || lockTokenHeader.trim() === '') {
       throw new BadRequestError(
         'UNLOCK method must include a lock token in the Lock-Token header.'

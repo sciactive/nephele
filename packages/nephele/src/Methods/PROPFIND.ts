@@ -29,6 +29,12 @@ export class PROPFIND extends Method {
       response.locals.baseUrl
     );
 
+    if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
+      response.set({
+        'Content-Location': `${url}/`,
+      });
+    }
+
     if (!['0', '1', 'infinity'].includes(depth)) {
       throw new BadRequestError(
         'Depth header must be one of "0", "1", or "infinity".'

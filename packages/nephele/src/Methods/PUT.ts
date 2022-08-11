@@ -35,6 +35,12 @@ export class PUT extends Method {
       }
     }
 
+    if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
+      response.set({
+        'Content-Location': `${url}/`,
+      });
+    }
+
     try {
       const parent = await this.getParentResource(request, response, resource);
       if (!(await parent?.isCollection())) {

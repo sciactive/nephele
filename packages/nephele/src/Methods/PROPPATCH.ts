@@ -35,6 +35,13 @@ export class PROPPATCH extends Method {
       url,
       response.locals.baseUrl
     );
+
+    if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
+      response.set({
+        'Content-Location': `${url}/`,
+      });
+    }
+
     const props = await resource.getProperties();
 
     const xmlBody = await this.getBodyXML(request, response);
