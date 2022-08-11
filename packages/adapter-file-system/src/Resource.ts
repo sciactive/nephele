@@ -385,12 +385,16 @@ export default class Resource implements ResourceInterface {
       }
       try {
         metaFilePath = path.join(destinationPath, '.nephelemeta');
+
         try {
           await fsp.unlink(metaFilePath);
         } catch (e: any) {
           // Ignore errors deleting a possibly non-existend file.
         }
-        await fsp.copyFile(await this.getMetadataFilePath(), metaFilePath);
+
+        const meta = await this.readMetadataFile();
+        meta.locks = {};
+        await this.saveMetadataFile(meta, metaFilePath);
       } catch (e: any) {
         // Ignore errors while copying metadata files.
         metaFilePath = undefined;
@@ -401,12 +405,16 @@ export default class Resource implements ResourceInterface {
         const dirname = path.dirname(destinationPath);
         const basename = path.basename(destinationPath);
         metaFilePath = path.join(dirname, `${basename}.nephelemeta`);
+
         try {
           await fsp.unlink(metaFilePath);
         } catch (e: any) {
           // Ignore errors deleting a possibly non-existend file.
         }
-        await fsp.copyFile(await this.getMetadataFilePath(), metaFilePath);
+
+        const meta = await this.readMetadataFile();
+        meta.locks = {};
+        await this.saveMetadataFile(meta, metaFilePath);
       } catch (e: any) {
         // Ignore errors while copying metadata files.
         metaFilePath = undefined;
@@ -542,6 +550,11 @@ export default class Resource implements ResourceInterface {
       } catch (e: any) {
         // Ignore errors deleting a possibly non-existend file.
       }
+
+      const meta = await this.readMetadataFile();
+      meta.locks = {};
+      await this.saveMetadataFile(meta);
+
       await fsp.rename(await this.getMetadataFilePath(), metaFilePath);
     } catch (e: any) {
       // Ignore errors while moving metadata files.
@@ -742,8 +755,10 @@ export default class Resource implements ResourceInterface {
     return meta;
   }
 
-  async saveMetadataFile(meta: MetaStorage) {
-    const filepath = await this.getMetadataFilePath();
+  async saveMetadataFile(meta: MetaStorage, filepath?: string) {
+    if (!filepath) {
+      filepath = await this.getMetadataFilePath();
+    }
     let exists = true;
 
     try {

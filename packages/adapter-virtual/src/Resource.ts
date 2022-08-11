@@ -517,6 +517,7 @@ export default class Resource implements ResourceInterface {
     destinationResource.setFile({
       ...this.file,
       name: path.basename(destinationPath),
+      locks: {},
     });
   }
 

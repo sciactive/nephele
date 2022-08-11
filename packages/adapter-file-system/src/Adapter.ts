@@ -55,8 +55,8 @@ export type AdapterConfig = {
    * cost of reduced accuracy of etags. A file that has the exact same content,
    * but a different modified time will not be pulled from cache by the client.
    *
-   * - Set this value to `Infinity` if you wish to fully follow the HTTP spec to
-   *   the letter.
+   * - Set this value to `Infinity` if you wish to fully follow the WebDAV spec
+   *   to the letter.
    * - Set this value to `-1` if you want to absolutely minimize disk IO.
    * - `100` is a good value for fast disks, like SSDs. If you are serving files
    *   from spinning hard disks or optical media, you should consider lowering

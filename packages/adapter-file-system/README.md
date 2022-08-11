@@ -52,7 +52,7 @@ If this is set to true, and they don't, you **will** see errors. The adapter wil
 
 Anything above this file size will use a CRC-32C checksum of the size, created time, and modified time instead. This will significantly speed up responses to requests for these files, but at the cost of reduced accuracy of etags. A file that has the exact same content, but a different modified time will not be pulled from cache by the client.
 
-- Set this value to `Infinity` if you wish to fully follow the HTTP spec to the letter.
+- Set this value to `Infinity` if you wish to fully follow the WebDAV spec to the letter.
 - Set this value to `-1` if you want to absolutely minimize disk IO.
 - `100` is a good value for fast disks, like SSDs. If you are serving files from spinning hard disks or optical media, you should consider lowering this threshold.
 

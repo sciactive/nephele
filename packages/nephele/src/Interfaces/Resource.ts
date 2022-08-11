@@ -104,6 +104,8 @@ export interface Resource {
    * If the resource is a collection, do not copy its contents (internal
    * members), only its properties.
    *
+   * This **must not** copy any locks along with the resource.
+   *
    * If the resource doesn't exist, a ResourceNotFoundError should be thrown.
    *
    * If the user doesn't have permission to copy the resource, an
@@ -130,6 +132,8 @@ export interface Resource {
    *
    * This will only be called on non-collection resources. Collection resources
    * will instead by copied, have their contents moved, then be deleted.
+   *
+   * This **must not** move any locks along with the resource.
    *
    * If the resource doesn't exist, a ResourceNotFoundError should be thrown.
    *

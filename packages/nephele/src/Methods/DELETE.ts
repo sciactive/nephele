@@ -83,6 +83,12 @@ export class DELETE extends Method {
       await this.recursivelyDelete(resource, request, response, multiStatus);
 
       if (multiStatus.statuses.length === 0) {
+        // Delete its locks.
+        const locks = await this.getCurrentResourceLocks(resource);
+        for (let lock of locks) {
+          await lock.delete();
+        }
+
         await resource.delete(response.locals.user);
 
         response.status(204); // No Content
@@ -98,6 +104,12 @@ export class DELETE extends Method {
         this.sendBodyContent(response, responseXml, encoding);
       }
     } else {
+      // Delete its locks.
+      const locks = await this.getCurrentResourceLocks(resource);
+      for (let lock of locks) {
+        await lock.delete();
+      }
+
       await resource.delete(response.locals.user);
 
       response.status(204); // No Content
@@ -150,6 +162,12 @@ export class DELETE extends Method {
                   response,
                   multiStatus
                 ));
+            }
+
+            // Delete its locks.
+            const locks = await this.getCurrentResourceLocks(child);
+            for (let lock of locks) {
+              await lock.delete();
             }
 
             await child.delete(response.locals.user);
