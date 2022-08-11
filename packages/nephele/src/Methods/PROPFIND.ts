@@ -106,15 +106,24 @@ export class PROPFIND extends Method {
         `Retrieving props for ${await resource.getCanonicalPath()}`
       );
 
-      // If the resource is the root of another adapter, we need its copy of the
-      // resource in order to continue getting props.
-      if (await this.isAdapterRoot(request, response, url)) {
-        const absoluteUrl = new URL(url.toString().replace(/\/?$/, () => '/'));
-        const adapter = await this.getAdapter(
-          response,
-          decodeURI(absoluteUrl.pathname.substring(request.baseUrl.length))
-        );
-        resource = await adapter.getResource(absoluteUrl, absoluteUrl);
+      try {
+        // If the resource is the root of another adapter, we need its copy of the
+        // resource in order to continue getting props.
+        if (await this.isAdapterRoot(request, response, url)) {
+          const absoluteUrl = new URL(
+            url.toString().replace(/\/?$/, () => '/')
+          );
+          const adapter = await this.getAdapter(
+            response,
+            decodeURI(absoluteUrl.pathname.substring(request.baseUrl.length))
+          );
+          resource = await adapter.getResource(absoluteUrl, absoluteUrl);
+        }
+      } catch (e: any) {
+        const error = new Status(url, 500);
+        error.description = 'An internal server error occurred.';
+        multiStatus.addStatus(error);
+        return;
       }
 
       // Use the resource's adapter and baseUrl, because this could be on
