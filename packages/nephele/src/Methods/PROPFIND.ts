@@ -24,7 +24,10 @@ export class PROPFIND extends Method {
     }
 
     const depth = request.get('Depth') || 'infinity';
-    const resource = await this.adapter.getResource(url, request.baseUrl);
+    const resource = await response.locals.adapter.getResource(
+      url,
+      response.locals.baseUrl
+    );
 
     if (!['0', '1', 'infinity'].includes(depth)) {
       throw new BadRequestError(
@@ -92,18 +95,29 @@ export class PROPFIND extends Method {
 
     let level = 0;
     const addResourceProps = async (resource: Resource) => {
-      const url = await resource.getCanonicalUrl(
-        this.getRequestBaseUrl(request)
-      );
+      const url = await resource.getCanonicalUrl();
       response.locals.debug(
         `Retrieving props for ${await resource.getCanonicalPath()}`
       );
 
+      // If the resource is the root of another adapter, we need its copy of the
+      // resource in order to continue getting props.
+      if (await this.isAdapterRoot(request, response, url)) {
+        const absoluteUrl = new URL(url.toString().replace(/\/?$/, () => '/'));
+        const adapter = await this.getAdapter(
+          response,
+          decodeURI(absoluteUrl.pathname.substring(request.baseUrl.length))
+        );
+        resource = await adapter.getResource(absoluteUrl, absoluteUrl);
+      }
+
+      // Use the resource's adapter and baseUrl, because this could be on
+      // another adapter than the request.
       if (
-        !(await this.adapter.isAuthorized(
+        !(await resource.adapter.isAuthorized(
           url,
           'PROPFIND',
-          request.baseUrl,
+          resource.baseUrl,
           response.locals.user
         ))
       ) {
@@ -119,7 +133,7 @@ export class PROPFIND extends Method {
 
       try {
         const supportsLocks = (
-          await this.adapter.getComplianceClasses(url, request, response)
+          await resource.adapter.getComplianceClasses(url, request, response)
         ).includes('2');
 
         if (propname) {
@@ -176,11 +190,12 @@ export class PROPFIND extends Method {
             supportsLocks &&
             (allprop || requestedProps.includes('lockdiscovery'))
           ) {
-            const currentLocks = await this.getLocks(request, resource);
-            propObj.lockdiscovery = await this.formatLocks(
-              currentLocks.all,
-              this.getRequestBaseUrl(request)
+            const currentLocks = await this.getLocks(
+              request,
+              response,
+              resource
             );
+            propObj.lockdiscovery = await this.formatLocks(currentLocks.all);
           }
 
           if (Object.keys(propObj).length) {

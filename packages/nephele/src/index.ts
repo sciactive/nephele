@@ -8,11 +8,11 @@ import type {
   Resource,
   User,
 } from './Interfaces/index.js';
-import type { Options } from './Options.js';
+import type { Options, Config } from './Options.js';
 
 export * from './Errors/index.js';
 import createServer from './createServer.js';
-import { defaults } from './Options.js';
+import { defaults, getAdapter, getAuthenticator } from './Options.js';
 
 export * from './Methods/index.js';
 
@@ -25,11 +25,14 @@ export {
   Authenticator,
   AuthResponse,
   Cache,
+  Config,
   Lock,
   Properties,
   Resource,
   User,
   Options,
+  getAdapter,
+  getAuthenticator,
 };
 
 export { createServer, defaults };

@@ -12,7 +12,11 @@ export class OPTIONS extends Method {
     const complianceClasses = [
       '1',
       '3',
-      ...(await this.adapter.getComplianceClasses(url, request, response)),
+      ...(await response.locals.adapter.getComplianceClasses(
+        url,
+        request,
+        response
+      )),
     ];
     const allowedMethods = [
       'OPTIONS',
@@ -28,13 +32,18 @@ export class OPTIONS extends Method {
       'PROPFIND',
       'PROPPATCH',
       ...(complianceClasses.includes('2') ? ['LOCK', 'UNLOCK'] : []),
-      ...(await this.adapter.getAllowedMethods(url, request, response)),
+      ...(await response.locals.adapter.getAllowedMethods(
+        url,
+        request,
+        response
+      )),
     ];
-    const cacheControl = await this.adapter.getOptionsResponseCacheControl(
-      url,
-      request,
-      response
-    );
+    const cacheControl =
+      await response.locals.adapter.getOptionsResponseCacheControl(
+        url,
+        request,
+        response
+      );
 
     request.on('data', () => {
       response.locals.debug('Provided body to OPTIONS.');

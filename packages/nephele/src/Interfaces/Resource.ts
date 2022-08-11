@@ -1,10 +1,22 @@
 import type { Readable } from 'node:stream';
 
+import type { Adapter } from './Adapter.js';
 import type { Lock } from './Lock.js';
 import type { Properties } from './Properties.js';
 import type { User } from './User.js';
 
 export interface Resource {
+  /**
+   * The adapter this resource belongs to.
+   */
+  adapter: Adapter;
+  /**
+   * The root of the adapter's namespace.
+   *
+   * This is given to the adapter when the resource is requested.
+   */
+  baseUrl: URL;
+
   /**
    * Return any locks currently saved for this resource.
    *
@@ -33,6 +45,9 @@ export interface Resource {
    */
   createLockForUser(user: User): Promise<Lock>;
 
+  /**
+   * Return a properties object for this resource.
+   */
   getProperties(): Promise<Properties>;
 
   /**
@@ -86,8 +101,8 @@ export interface Resource {
   /**
    * Copy the resource to the destination.
    *
-   * If the resource is a collection, do not copy its contents, only its
-   * properties.
+   * If the resource is a collection, do not copy its contents (internal
+   * members), only its properties.
    *
    * If the resource doesn't exist, a ResourceNotFoundError should be thrown.
    *
@@ -108,7 +123,7 @@ export interface Resource {
    * or the destination falls under the source itself, a ForbiddenError should
    * be thrown.
    */
-  copy(destination: URL, baseUrl: string, user: User): Promise<void>;
+  copy(destination: URL, baseUrl: URL, user: User): Promise<void>;
 
   /**
    * Move the resource to the destination.
@@ -135,10 +150,17 @@ export interface Resource {
    * or the destination falls under the source itself, a ForbiddenError should
    * be thrown.
    */
-  move(destination: URL, baseUrl: string, user: User): Promise<void>;
+  move(destination: URL, baseUrl: URL, user: User): Promise<void>;
 
+  /**
+   * Return the length, in bytes, of this resource's content (what would be
+   * returned from getStream).
+   */
   getLength(): Promise<number>;
 
+  /**
+   * Return the current ETag for this resource.
+   */
   getEtag(): Promise<string>;
 
   /**
@@ -157,18 +179,24 @@ export interface Resource {
   getCanonicalName(): Promise<string>;
 
   /**
-   * The canonical path relative to the root of the WebDAV server.
+   * The canonical path relative to the root of the adapter.
+   *
+   * This should **not** be URL encoded.
    */
   getCanonicalPath(): Promise<string>;
 
   /**
-   * The canonical URL must be within the WebDAV server's namespace, and must
+   * The canonical URL must be within the adapter's namespace, and must
    * not have query parameters.
    *
-   * The server's namespace in the current request is provided as `baseUrl`.
+   * The adapter's namespace in the current request is provided to the adapter
+   * as `baseUrl` when the resource is requested.
    */
-  getCanonicalUrl(baseUrl: URL): Promise<URL>;
+  getCanonicalUrl(): Promise<URL>;
 
+  /**
+   * Return whether this resource is a collection.
+   */
   isCollection(): Promise<boolean>;
 
   /**

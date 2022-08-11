@@ -1,6 +1,9 @@
 import type { Request, Response } from 'express';
 import type { Debugger } from 'debug';
 
+import type { AdapterConfig, AuthenticatorConfig } from '../Options.js';
+
+import type { Adapter } from './Adapter.js';
 import type { User } from './User.js';
 
 export type AuthResponse<
@@ -8,7 +11,17 @@ export type AuthResponse<
   Locals extends Record<string, any> = Record<string, any>
 > = Response<
   ResBody,
-  { user: User; requestId: string; debug: Debugger; error?: Error } & Locals
+  {
+    adapterConfig: AdapterConfig;
+    authenticatorConfig: AuthenticatorConfig;
+    adapter: Adapter;
+    authenticator: Authenticator;
+    baseUrl: URL;
+    user: User;
+    requestId: string;
+    debug: Debugger;
+    error?: Error;
+  } & Locals
 >;
 
 export interface Authenticator {

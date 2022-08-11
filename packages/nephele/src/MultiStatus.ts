@@ -134,9 +134,9 @@ export class Status {
     this.propStatStatuses.push(propStatStatus);
   }
 
-  render(fullHref = false) {
+  render() {
     let response: { [k: string]: any } = {
-      href: fullHref ? { _: this.href.toString() } : { _: this.href.pathname },
+      href: { _: this.href.toString() },
     };
 
     if (this.description != null) {
@@ -195,17 +195,8 @@ export class MultiStatus {
 
     xml.multistatus.response = responses;
 
-    let outOfHostStatusExists = false;
-    let host = this.statuses[0].href.host;
     for (let status of this.statuses) {
-      if (status.href.host !== host) {
-        outOfHostStatusExists = true;
-        break;
-      }
-    }
-
-    for (let status of this.statuses) {
-      responses.push(status.render(outOfHostStatusExists));
+      responses.push(status.render());
     }
 
     return xml;

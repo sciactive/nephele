@@ -19,23 +19,27 @@ import Properties from './Properties.js';
 import Lock from './Lock.js';
 
 export default class Resource implements ResourceInterface {
-  path: string;
   adapter: Adapter;
+  baseUrl: URL;
+  path: string;
   file: RootFolder | Folder | File;
   exists: boolean;
   collection: boolean;
 
   constructor({
-    path: filePath,
     adapter,
+    baseUrl,
+    path: filePath,
     collection,
   }: {
-    path: string;
     adapter: Adapter;
+    baseUrl: URL;
+    path: string;
     collection?: true;
   }) {
-    this.path = filePath;
     this.adapter = adapter;
+    this.baseUrl = baseUrl;
+    this.path = filePath;
 
     const basename = path.basename(this.path);
     const file = this.getFile();
@@ -247,8 +251,9 @@ export default class Resource implements ResourceInterface {
     }
 
     const dir = new Resource({
-      path: path.dirname(this.path),
       adapter: this.adapter,
+      baseUrl: this.baseUrl,
+      path: path.dirname(this.path),
     }).getFile();
 
     if (dir == null) {
@@ -318,7 +323,7 @@ export default class Resource implements ResourceInterface {
     this.unsetFile();
   }
 
-  async copy(destination: URL, baseUrl: string, user: User) {
+  async copy(destination: URL, baseUrl: URL, user: User) {
     const destinationPath = this.adapter.urlToRelativePath(
       destination,
       baseUrl
@@ -415,7 +420,7 @@ export default class Resource implements ResourceInterface {
     destinationResource.setFile(file);
   }
 
-  async move(destination: URL, baseUrl: string, user: User) {
+  async move(destination: URL, baseUrl: URL, user: User) {
     if (!('content' in this.file)) {
       throw new Error('Move called on a collection resource.');
     }
@@ -556,12 +561,11 @@ export default class Resource implements ResourceInterface {
     return this.path;
   }
 
-  async getCanonicalUrl(baseUrl: URL) {
-    let url = baseUrl.toString().replace(/\/?$/, () => '/');
-
-    url += encodeURI((await this.getCanonicalPath()).replace(/^\//, () => ''));
-
-    return new URL(url, baseUrl);
+  async getCanonicalUrl() {
+    return new URL(
+      encodeURI((await this.getCanonicalPath()).replace(/^\//, () => '')),
+      this.baseUrl
+    );
   }
 
   async isCollection() {
@@ -579,6 +583,7 @@ export default class Resource implements ResourceInterface {
       resources.push(
         new Resource({
           path: path.join(this.path, file.name),
+          baseUrl: this.baseUrl,
           adapter: this.adapter,
         })
       );

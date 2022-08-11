@@ -17,10 +17,13 @@ export class MKCOL extends Method {
 
     await this.checkAuthorization(request, response, 'MKCOL');
 
-    const resource = await this.adapter.newCollection(url, request.baseUrl);
+    const resource = await response.locals.adapter.newCollection(
+      url,
+      response.locals.baseUrl
+    );
 
     try {
-      const parent = await this.getParentResource(request, resource);
+      const parent = await this.getParentResource(request, response, resource);
       if (!(await parent?.isCollection())) {
         throw new ForbiddenError('Parent resource is not a collection.');
       }
@@ -52,6 +55,7 @@ export class MKCOL extends Method {
 
     const lockPermission = await this.getLockPermission(
       request,
+      response,
       resource,
       response.locals.user
     );
@@ -80,9 +84,7 @@ export class MKCOL extends Method {
 
     response.status(201); // Created
     response.set({
-      Location: (
-        await resource.getCanonicalUrl(this.getRequestBaseUrl(request))
-      ).toString(),
+      Location: (await resource.getCanonicalUrl()).toString(),
     });
     response.end();
   }

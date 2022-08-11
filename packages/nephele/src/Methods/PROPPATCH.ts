@@ -31,7 +31,10 @@ export class PROPPATCH extends Method {
       throw new NotAcceptableError('Requested content type is not supported.');
     }
 
-    const resource = await this.adapter.getResource(url, request.baseUrl);
+    const resource = await response.locals.adapter.getResource(
+      url,
+      response.locals.baseUrl
+    );
     const props = await resource.getProperties();
 
     const xmlBody = await this.getBodyXML(request, response);
@@ -54,6 +57,7 @@ export class PROPPATCH extends Method {
 
     const lockPermission = await this.getLockPermission(
       request,
+      response,
       resource,
       response.locals.user
     );

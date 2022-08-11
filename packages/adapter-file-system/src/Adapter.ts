@@ -91,18 +91,21 @@ export default class Adapter implements AdapterInterface {
     }
   }
 
-  urlToRelativePath(url: URL, baseUrl: string) {
-    if (!url.pathname.startsWith(baseUrl)) {
+  urlToRelativePath(url: URL, baseUrl: URL) {
+    if (!url.pathname.replace(/\/?$/, () => '/').startsWith(baseUrl.pathname)) {
       return null;
     }
 
     return path.join(
       '/',
-      decodeURI(url.pathname.substring(baseUrl.length)).replace(/\/?$/, '')
+      decodeURI(url.pathname.substring(baseUrl.pathname.length)).replace(
+        /\/?$/,
+        ''
+      )
     );
   }
 
-  urlToAbsolutePath(url: URL, baseUrl: string) {
+  urlToAbsolutePath(url: URL, baseUrl: URL) {
     const relativePath = this.urlToRelativePath(url, baseUrl);
 
     if (relativePath == null) {
@@ -173,7 +176,7 @@ export default class Adapter implements AdapterInterface {
     return 'max-age=604800';
   }
 
-  async isAuthorized(url: URL, method: string, baseUrl: string, user: User) {
+  async isAuthorized(url: URL, method: string, baseUrl: URL, user: User) {
     // What type of file access do we need?
     let access = 'u';
 
@@ -211,7 +214,8 @@ export default class Adapter implements AdapterInterface {
     // First make sure the server process and user has access to all
     // directories in the tree.
     const pathname = this.urlToRelativePath(url, baseUrl);
-    if (pathname == null) {
+    const absolutePathname = this.urlToAbsolutePath(url, baseUrl);
+    if (pathname == null || absolutePathname == null) {
       return false;
     }
     const parts = [
@@ -222,7 +226,7 @@ export default class Adapter implements AdapterInterface {
 
     try {
       await fsp.access(
-        pathname,
+        absolutePathname,
         access === 'w' ? constants.W_OK : constants.R_OK
       );
     } catch (e: any) {
@@ -289,7 +293,7 @@ export default class Adapter implements AdapterInterface {
     return true;
   }
 
-  async getResource(url: URL, baseUrl: string) {
+  async getResource(url: URL, baseUrl: URL) {
     const path = this.urlToRelativePath(url, baseUrl);
 
     if (path == null) {
@@ -299,8 +303,9 @@ export default class Adapter implements AdapterInterface {
     }
 
     const resource = new Resource({
-      path,
       adapter: this,
+      baseUrl,
+      path,
     });
 
     if (!(await resource.exists())) {
@@ -310,7 +315,7 @@ export default class Adapter implements AdapterInterface {
     return resource;
   }
 
-  async newResource(url: URL, baseUrl: string) {
+  async newResource(url: URL, baseUrl: URL) {
     const path = this.urlToRelativePath(url, baseUrl);
 
     if (path == null) {
@@ -320,12 +325,13 @@ export default class Adapter implements AdapterInterface {
     }
 
     return new Resource({
-      path,
       adapter: this,
+      baseUrl,
+      path,
     });
   }
 
-  async newCollection(url: URL, baseUrl: string) {
+  async newCollection(url: URL, baseUrl: URL) {
     const path = this.urlToRelativePath(url, baseUrl);
 
     if (path == null) {
@@ -335,8 +341,9 @@ export default class Adapter implements AdapterInterface {
     }
 
     return new Resource({
-      path,
       adapter: this,
+      baseUrl,
+      path,
       collection: true,
     });
   }

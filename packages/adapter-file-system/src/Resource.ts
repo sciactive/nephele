@@ -49,22 +49,26 @@ export type MetaStorage = {
 };
 
 export default class Resource implements ResourceInterface {
-  path: string;
   adapter: Adapter;
+  baseUrl: URL;
+  path: string;
   private createCollection: boolean | undefined = undefined;
   private etag: string | undefined = undefined;
 
   constructor({
-    path,
     adapter,
+    baseUrl,
+    path,
     collection,
   }: {
-    path: string;
     adapter: Adapter;
+    baseUrl: URL;
+    path: string;
     collection?: true;
   }) {
-    this.path = path;
     this.adapter = adapter;
+    this.baseUrl = baseUrl;
+    this.path = path;
 
     if (collection) {
       this.createCollection = true;
@@ -286,7 +290,7 @@ export default class Resource implements ResourceInterface {
     }
   }
 
-  async copy(destination: URL, baseUrl: string, user: User) {
+  async copy(destination: URL, baseUrl: URL, user: User) {
     const destinationPath = this.adapter.urlToAbsolutePath(
       destination,
       baseUrl
@@ -444,7 +448,7 @@ export default class Resource implements ResourceInterface {
     return;
   }
 
-  async move(destination: URL, baseUrl: string, user: User) {
+  async move(destination: URL, baseUrl: URL, user: User) {
     if (await this.isCollection()) {
       throw new Error('Move called on a collection resource.');
     }
@@ -614,12 +618,11 @@ export default class Resource implements ResourceInterface {
     return this.path;
   }
 
-  async getCanonicalUrl(baseUrl: URL) {
-    let url = baseUrl.toString().replace(/\/?$/, () => '/');
-
-    url += encodeURI((await this.getCanonicalPath()).replace(/^\//, () => ''));
-
-    return new URL(url, baseUrl);
+  async getCanonicalUrl() {
+    return new URL(
+      encodeURI((await this.getCanonicalPath()).replace(/^\//, () => '')),
+      this.baseUrl
+    );
   }
 
   async isCollection() {
@@ -672,6 +675,7 @@ export default class Resource implements ResourceInterface {
       resources.push(
         new Resource({
           path: path.join(this.path, name),
+          baseUrl: this.baseUrl,
           adapter: this.adapter,
         })
       );

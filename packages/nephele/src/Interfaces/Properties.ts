@@ -1,6 +1,12 @@
+import type { Resource } from './Resource.js';
 import type { User } from './User.js';
 
 export interface Properties {
+  /**
+   * The resource these properties belong to.
+   */
+  resource: Resource;
+
   /**
    * Get a property's value.
    *
@@ -31,6 +37,10 @@ export interface Properties {
    * string '%%' prepended to its name, like "LCGDM:%%mode".
    */
   get(name: string): Promise<string | Object | Object[] | undefined>;
+
+  /**
+   * Same as get, but for a specific user.
+   */
   getByUser(
     name: string,
     user: User
@@ -64,6 +74,10 @@ export interface Properties {
     name: string,
     value: string | Object | Object[] | undefined
   ): Promise<void>;
+
+  /**
+   * Same as set, but for a specific user.
+   */
   setByUser(
     name: string,
     value: string | Object | Object[] | undefined,
@@ -74,6 +88,10 @@ export interface Properties {
    * Completely remove a property.
    */
   remove(name: string): Promise<void>;
+
+  /**
+   * Same as remove, but for a specific user.
+   */
   removeByUser(name: string, user: User): Promise<void>;
 
   /**
@@ -99,6 +117,10 @@ export interface Properties {
   runInstructions(
     instructions: ['set' | 'remove', string, any][]
   ): Promise<undefined | [string, Error][]>;
+
+  /**
+   * Same as runInstructions, but for a specific user.
+   */
   runInstructionsByUser(
     instructions: ['set' | 'remove', string, any][],
     user: User
@@ -117,6 +139,10 @@ export interface Properties {
    * - lockdiscovery
    */
   getAll(): Promise<{ [k: string]: string | Object | Object[] }>;
+
+  /**
+   * Same as getAll, but for a specific user.
+   */
   getAllByUser(
     user: User
   ): Promise<{ [k: string]: string | Object | Object[] }>;
@@ -131,9 +157,35 @@ export interface Properties {
    * - lockdiscovery
    */
   list(): Promise<string[]>;
+
+  /**
+   * Same as list, but for a specific user.
+   */
   listByUser(user: User): Promise<string[]>;
+
+  /**
+   * Return the names of all live properties.
+   *
+   * The following property is handled by Nephele, and it is automatically
+   * included if your adapter supports locks, indicated by returning compliance
+   * class "2".
+   *
+   * - lockdiscovery
+   */
   listLive(): Promise<string[]>;
+
+  /**
+   * Same as listLive, but for a specific user.
+   */
   listLiveByUser(user: User): Promise<string[]>;
+
+  /**
+   * Return the names of all dead properties.
+   */
   listDead(): Promise<string[]>;
+
+  /**
+   * Same as listDead, but for a specific user.
+   */
   listDeadByUser(user: User): Promise<string[]>;
 }

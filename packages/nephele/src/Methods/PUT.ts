@@ -19,10 +19,16 @@ export class PUT extends Method {
     let resource: Resource;
     let newResource = false;
     try {
-      resource = await this.adapter.getResource(url, request.baseUrl);
+      resource = await response.locals.adapter.getResource(
+        url,
+        response.locals.baseUrl
+      );
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
-        resource = await this.adapter.newResource(url, request.baseUrl);
+        resource = await response.locals.adapter.newResource(
+          url,
+          response.locals.baseUrl
+        );
         newResource = true;
       } else {
         throw e;
@@ -30,9 +36,8 @@ export class PUT extends Method {
     }
 
     try {
-      const parent = await this.getParentResource(request, resource);
+      const parent = await this.getParentResource(request, response, resource);
       if (!(await parent?.isCollection())) {
-        console.log(parent);
         throw new ForbiddenError('Parent resource is not a collection.');
       }
     } catch (e: any) {
@@ -48,6 +53,7 @@ export class PUT extends Method {
 
     const lockPermission = await this.getLockPermission(
       request,
+      response,
       resource,
       response.locals.user
     );
@@ -81,9 +87,7 @@ export class PUT extends Method {
     response.status(newResource ? 201 : 204); // Created or No Content
     if (newResource) {
       response.set({
-        Location: (
-          await resource.getCanonicalUrl(this.getRequestBaseUrl(request))
-        ).toString(),
+        Location: (await resource.getCanonicalUrl()).toString(),
       });
     }
     response.end();

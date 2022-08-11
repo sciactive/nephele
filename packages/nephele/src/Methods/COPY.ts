@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
 import {
   BadRequestError,
+  ForbiddenError,
   LockedError,
   MediaTypeNotSupportedError,
   NotAcceptableError,
@@ -20,6 +21,11 @@ export class COPY extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url, encoding } = this.getRequestData(request, response);
 
+    if (await this.isAdapterRoot(request, response, url)) {
+      // Can't copy the root of an adapter.
+      throw new ForbiddenError('This collection cannot be copied.');
+    }
+
     await this.checkAuthorization(request, response, 'COPY');
 
     const contentType = request.accepts('application/xml', 'text/xml');
@@ -30,7 +36,10 @@ export class COPY extends Method {
     let destination = this.getRequestDestination(request);
     const depth = request.get('Depth') || 'infinity';
     const overwrite = request.get('Overwrite');
-    const resource = await this.adapter.getResource(url, request.baseUrl);
+    const resource = await response.locals.adapter.getResource(
+      url,
+      response.locals.baseUrl
+    );
 
     if (!destination) {
       throw new BadRequestError('Destination header is required.');
@@ -45,6 +54,18 @@ export class COPY extends Method {
       // but logically, it's impossible, since the spec says to recursively
       // delete everything at the destination first.
       throw new BadRequestError("Can't copy a resource to its own ancestor.");
+    }
+
+    const adapter = await this.getAdapter(
+      response,
+      decodeURI(destination.pathname.substring(request.baseUrl.length))
+    );
+
+    // Can't copy to another adapter.
+    if (adapter !== response.locals.adapter) {
+      throw new ForbiddenError(
+        'This resource cannot be copied to the destination.'
+      );
     }
 
     if (await resource.isCollection()) {
@@ -88,18 +109,32 @@ export class COPY extends Method {
     ) => {
       const run = catchErrors(
         async () => {
+          const adapter = await this.getAdapter(
+            response,
+            decodeURI(
+              destination.pathname.substring(request.baseUrl.length)
+            ).replace(/\/?$/, () => '/')
+          );
+
+          // Can't copy to another adapter.
+          if (adapter !== response.locals.adapter) {
+            throw new ForbiddenError(
+              'This resource cannot be copied to the destination.'
+            );
+          }
+
           let destinationResource: Resource;
           let destinationExists = true;
           try {
-            destinationResource = await this.adapter.getResource(
+            destinationResource = await response.locals.adapter.getResource(
               destination,
-              request.baseUrl
+              response.locals.baseUrl
             );
           } catch (e: any) {
             if (e instanceof ResourceNotFoundError) {
-              destinationResource = await this.adapter.newResource(
+              destinationResource = await response.locals.adapter.newResource(
                 destination,
-                request.baseUrl
+                response.locals.baseUrl
               );
               destinationExists = false;
             } else {
@@ -117,10 +152,10 @@ export class COPY extends Method {
           // Check permissions to write to destination.
           const collection = await resource.isCollection();
           if (
-            !(await this.adapter.isAuthorized(
+            !(await response.locals.adapter.isAuthorized(
               destination,
               collection ? 'MKCOL' : 'PUT',
-              request.baseUrl,
+              response.locals.baseUrl,
               response.locals.user
             ))
           ) {
@@ -130,7 +165,7 @@ export class COPY extends Method {
           }
 
           if (topLevel) {
-            const lockPermission = await this.getLockPermission(
+            const lockPermission = await response.locals.getLockPermission(
               request,
               destinationResource,
               response.locals.user
@@ -156,10 +191,7 @@ export class COPY extends Method {
               // collection, its contents mustn't be merged, but instead,
               // replaced by the source resource. In order to comply, we're just
               // going to delete all the destination's contents.
-              const del = new DELETE(
-                { adapter: this.adapter, authenticator: this.authenticator },
-                this.opts
-              );
+              const del = new DELETE(this.opts);
               const childrenDeleted = await del.recursivelyDelete(
                 destinationResource,
                 request,
@@ -176,6 +208,7 @@ export class COPY extends Method {
 
               const lockPermission = await this.getLockPermission(
                 request,
+                response,
                 destinationResource,
                 response.locals.user
               );
@@ -194,7 +227,7 @@ export class COPY extends Method {
 
           await resource.copy(
             destination,
-            request.baseUrl,
+            response.locals.baseUrl,
             response.locals.user
           );
 
@@ -207,8 +240,7 @@ export class COPY extends Method {
               for (let child of children) {
                 const name = await child.getCanonicalName();
                 const destinationUrl = new URL(
-                  destination.toString().replace(/\/$/, '') +
-                    '/' +
+                  destination.toString().replace(/\/?$/, () => '/') +
                     encodeURIComponent(name) +
                     ((await child.isCollection()) ? '/' : ''),
                   `${destination.protocol}://${destination.host}`

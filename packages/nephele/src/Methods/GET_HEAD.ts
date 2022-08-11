@@ -21,7 +21,10 @@ export class GET_HEAD extends Method {
 
     await this.checkAuthorization(request, response, request.method);
 
-    const resource = await this.adapter.getResource(url, request.baseUrl);
+    const resource = await response.locals.adapter.getResource(
+      url,
+      response.locals.baseUrl
+    );
     const properties = await resource.getProperties();
     const etagPromise = resource.getEtag();
     const lastModifiedPromise = properties.get('getlastmodified');

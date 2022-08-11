@@ -3,6 +3,7 @@ import type { Request } from 'express';
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
 import {
   BadRequestError,
+  ForbiddenError,
   LockedError,
   MediaTypeNotSupportedError,
   NotAcceptableError,
@@ -20,6 +21,11 @@ export class MOVE extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url, encoding } = this.getRequestData(request, response);
 
+    if (await this.isAdapterRoot(request, response, url)) {
+      // Can't move the root of an adapter.
+      throw new ForbiddenError('This collection cannot be moved.');
+    }
+
     await this.checkAuthorization(request, response, 'MOVE');
 
     const contentType = request.accepts('application/xml', 'text/xml');
@@ -33,7 +39,10 @@ export class MOVE extends Method {
     // a reminder of that fact.
     const _depth = 'infinity';
     const overwrite = request.get('Overwrite');
-    const resource = await this.adapter.getResource(url, request.baseUrl);
+    const resource = await response.locals.adapter.getResource(
+      url,
+      response.locals.baseUrl
+    );
 
     if (!destination) {
       throw new BadRequestError('Destination header is required.');
@@ -48,6 +57,18 @@ export class MOVE extends Method {
       // but logically, it's impossible, since the spec says to recursively
       // delete everything at the destination first.
       throw new BadRequestError("Can't move a resource to its own ancestor.");
+    }
+
+    const adapter = await this.getAdapter(
+      response,
+      decodeURI(destination.pathname.substring(request.baseUrl.length))
+    );
+
+    // Can't move to another adapter.
+    if (adapter !== response.locals.adapter) {
+      throw new ForbiddenError(
+        'This resource cannot be moved to the destination.'
+      );
     }
 
     let stream = await this.getBodyStream(request, response);
@@ -81,18 +102,32 @@ export class MOVE extends Method {
     ) => {
       const run = catchErrors(
         async () => {
+          const adapter = await this.getAdapter(
+            response,
+            decodeURI(
+              destination.pathname.substring(request.baseUrl.length)
+            ).replace(/\/?$/, () => '/')
+          );
+
+          // Can't move to another adapter.
+          if (adapter !== response.locals.adapter) {
+            throw new ForbiddenError(
+              'This resource cannot be moved to the destination.'
+            );
+          }
+
           let destinationResource: Resource;
           let destinationExists = true;
           try {
-            destinationResource = await this.adapter.getResource(
+            destinationResource = await response.locals.adapter.getResource(
               destination,
-              request.baseUrl
+              response.locals.baseUrl
             );
           } catch (e: any) {
             if (e instanceof ResourceNotFoundError) {
-              destinationResource = await this.adapter.newResource(
+              destinationResource = await response.locals.adapter.newResource(
                 destination,
-                request.baseUrl
+                response.locals.baseUrl
               );
               destinationExists = false;
             } else {
@@ -110,10 +145,10 @@ export class MOVE extends Method {
           // Check permissions to write to destination.
           const collection = await resource.isCollection();
           if (
-            !(await this.adapter.isAuthorized(
+            !(await response.locals.adapter.isAuthorized(
               destination,
               collection ? 'MKCOL' : 'PUT',
-              request.baseUrl,
+              response.locals.baseUrl,
               response.locals.user
             ))
           ) {
@@ -124,6 +159,7 @@ export class MOVE extends Method {
 
           const lockPermission = await this.getLockPermission(
             request,
+            response,
             resource,
             response.locals.user
           );
@@ -144,6 +180,7 @@ export class MOVE extends Method {
           if (topLevel) {
             const lockPermission = await this.getLockPermission(
               request,
+              response,
               destinationResource,
               response.locals.user
             );
@@ -168,10 +205,7 @@ export class MOVE extends Method {
               // collection, its contents mustn't be merged, but instead,
               // replaced by the source resource. In order to comply, we're just
               // going to delete all the destination's contents.
-              const del = new DELETE(
-                { adapter: this.adapter, authenticator: this.authenticator },
-                this.opts
-              );
+              const del = new DELETE(this.opts);
               const childrenDeleted = await del.recursivelyDelete(
                 destinationResource,
                 request,
@@ -188,6 +222,7 @@ export class MOVE extends Method {
 
               const lockPermission = await this.getLockPermission(
                 request,
+                response,
                 destinationResource,
                 response.locals.user
               );
@@ -207,7 +242,7 @@ export class MOVE extends Method {
           if (collection) {
             await resource.copy(
               destination,
-              request.baseUrl,
+              response.locals.baseUrl,
               response.locals.user
             );
 
@@ -221,8 +256,7 @@ export class MOVE extends Method {
               for (let child of children) {
                 const name = await child.getCanonicalName();
                 const destinationUrl = new URL(
-                  destination.toString().replace(/\/$/, '') +
-                    '/' +
+                  destination.toString().replace(/\/?$/, () => '/') +
                     encodeURIComponent(name)
                 );
 
@@ -249,7 +283,7 @@ export class MOVE extends Method {
           } else {
             await resource.move(
               destination,
-              request.baseUrl,
+              response.locals.baseUrl,
               response.locals.user
             );
           }

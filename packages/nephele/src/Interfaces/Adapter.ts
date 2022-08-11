@@ -83,7 +83,7 @@ export interface Adapter {
   isAuthorized(
     url: URL,
     method: string,
-    baseUrl: string,
+    baseUrl: URL,
     user: User
   ): Promise<boolean>;
 
@@ -92,35 +92,35 @@ export interface Adapter {
    *
    * If the resource doesn't exist, a ResourceNotFoundError should be thrown.
    *
-   * If the resource is not managed by this server, a BadGatewayError should be
+   * If the resource is not managed by this adapter, a BadGatewayError should be
    * thrown.
    *
    * @param url Resource URL.
-   * @param baseUrl The root of the WebDav server's namespace on the server.
+   * @param baseUrl The root of the adapter's namespace on the server.
    */
-  getResource(url: URL, baseUrl: string): Promise<Resource>;
+  getResource(url: URL, baseUrl: URL): Promise<Resource>;
 
   /**
    * Create a new non-collection resource object.
    *
-   * If the resource is not managed by this server, a BadGatewayError should be
+   * If the resource is not managed by this adapter, a BadGatewayError should be
    * thrown.
    *
    * @param url Resource URL.
-   * @param baseUrl The root of the WebDav server's namespace on the server.
+   * @param baseUrl The root of the adapter's namespace on the server.
    */
-  newResource(url: URL, baseUrl: string): Promise<Resource>;
+  newResource(url: URL, baseUrl: URL): Promise<Resource>;
 
   /**
    * Create a new collection resource object.
    *
-   * If the resource is not managed by this server, a BadGatewayError should be
+   * If the resource is not managed by this adapter, a BadGatewayError should be
    * thrown.
    *
    * @param url Resource URL.
-   * @param baseUrl The root of the WebDav server's namespace on the server.
+   * @param baseUrl The root of the adapter's namespace on the server.
    */
-  newCollection(url: URL, baseUrl: string): Promise<Resource>;
+  newCollection(url: URL, baseUrl: URL): Promise<Resource>;
 
   /**
    * Get a handler class for an additional method.

@@ -1,5 +1,6 @@
 import zlib from 'node:zlib';
 import { pipeline, Readable } from 'node:stream';
+import path from 'node:path';
 import type { Request } from 'express';
 import xml2js from 'xml2js';
 import contentType from 'content-type';
@@ -7,14 +8,11 @@ import splitn from '@sciactive/splitn';
 import vary from 'vary';
 
 import type {
-  Adapter,
-  Authenticator,
   AuthResponse,
   Lock,
-  Options,
   Resource,
   User,
-} from '../index.js';
+} from '../Interfaces/index.js';
 import {
   BadRequestError,
   EncodingNotSupportedError,
@@ -24,7 +22,9 @@ import {
   ResourceNotFoundError,
   ResourceNotModifiedError,
   UnauthorizedError,
-} from '../index.js';
+} from '../Errors/index.js';
+import type { Options } from '../Options.js';
+import { getAdapter } from '../Options.js';
 
 // The following regexes are used in parsing the If header.
 
@@ -52,8 +52,6 @@ type IfHeaderList = {
 };
 
 export class Method {
-  adapter: Adapter;
-  authenticator: Authenticator;
   opts: Options;
 
   DEV = process.env.NODE_ENV !== 'production';
@@ -78,15 +76,7 @@ export class Method {
         }),
   });
 
-  constructor(
-    {
-      adapter,
-      authenticator,
-    }: { adapter: Adapter; authenticator: Authenticator },
-    opts: Options
-  ) {
-    this.adapter = adapter;
-    this.authenticator = authenticator;
+  constructor(opts: Options) {
     this.opts = opts;
   }
 
@@ -114,11 +104,11 @@ export class Method {
     // If the adapter says it can handle the method, just handle the
     // authorization and error handling for it.
     if (
-      !(await this.adapter.isAuthorized(
+      !(await response.locals.adapter.isAuthorized(
         url ||
           new URL(request.url, `${request.protocol}://${request.headers.host}`),
         method || request.method,
-        request.baseUrl,
+        response.locals.baseUrl,
         response.locals.user
       ))
     ) {
@@ -126,21 +116,87 @@ export class Method {
     }
   }
 
-  /**
-   * Return the collection of which the given resource is an internal member.
-   *
-   * Returns `undefined` if the resource is the root of the WebDAV server.
-   */
-  async getParentResource(request: Request, resource: Resource) {
-    const url = await resource.getCanonicalUrl(this.getRequestBaseUrl(request));
+  async getAdapter(response: AuthResponse, unencodedPath: string) {
+    const { adapter } = getAdapter(
+      unencodedPath.replace(/\/?$/, () => '/'),
+      response.locals.adapterConfig
+    );
+    return adapter;
+  }
 
+  async getAdapterBaseUrl(response: AuthResponse, unencodedPath: string) {
+    const { baseUrl } = getAdapter(
+      unencodedPath.replace(/\/?$/, () => '/'),
+      response.locals.adapterConfig
+    );
+    return baseUrl;
+  }
+
+  /**
+   * Determine if a URL is for the root resource of an adapter.
+   */
+  async isAdapterRoot(request: Request, response: AuthResponse, url: URL) {
     if (
       url.pathname.replace(/\/?$/, () => '/') ===
       request.baseUrl.replace(/\/?$/, () => '/')
     ) {
+      return true;
+    }
+
+    const absoluteResource = await response.locals.adapter.getResource(
+      new URL(url.toString().replace(/\/?$/, () => '/')),
+      response.locals.baseUrl
+    );
+
+    const resourceAdapter = await this.getAdapter(
+      response,
+      decodeURI(
+        (
+          await absoluteResource.getCanonicalUrl()
+        ).pathname.substring(request.baseUrl.length)
+      )
+    );
+
+    const parentAdapter = await this.getAdapter(
+      response,
+      decodeURI(
+        path.dirname(
+          (
+            await absoluteResource.getCanonicalUrl()
+          ).pathname.substring(request.baseUrl.length)
+        )
+      )
+    );
+
+    return resourceAdapter !== parentAdapter;
+  }
+
+  /**
+   * Return the collection of which the given resource is an internal member.
+   *
+   * Returns `undefined` if the resource is the root of the entire Nephele
+   * WebDAV server.
+   *
+   * Note that the resource returned from this function may exist on a different
+   * adapter than the resource given to it, and thus the resource returned may
+   * not include the resource given in `getInternalMembers`.
+   */
+  async getParentResource(
+    request: Request,
+    response: AuthResponse,
+    resource: Resource
+  ) {
+    const url = await resource.getCanonicalUrl();
+
+    if (url.pathname === '/' || url.pathname === request.baseUrl) {
       return undefined;
     }
 
+    const parentPath = decodeURI(path.dirname(url.pathname));
+    const { adapter: parentAdapter, baseUrl: parentBaseUrl } = getAdapter(
+      parentPath.replace(/\/?$/, () => '/'),
+      response.locals.adapterConfig
+    );
     const splitPath = url.pathname.replace(/\/?$/, '').split('/');
     const newPath = splitPath
       .slice(0, -1)
@@ -148,12 +204,16 @@ export class Method {
       .replace(/\/?$/, () => '/');
 
     if (!newPath.startsWith(request.baseUrl.replace(/\/?$/, () => '/'))) {
+      // If the new path is outside of the server's basepath, return undefined.
       return undefined;
     }
 
-    return await this.adapter.getResource(
-      new URL(newPath, this.getRequestBaseUrl(request)),
-      request.baseUrl
+    return await parentAdapter.getResource(
+      new URL(newPath, `${request.protocol}://${request.headers.host}`),
+      new URL(
+        path.join(request.baseUrl || '/', parentBaseUrl),
+        `${request.protocol}://${request.headers.host}`
+      )
     );
   }
 
@@ -187,6 +247,7 @@ export class Method {
 
   private async getLocksGeneral(
     request: Request,
+    response: AuthResponse,
     resource: Resource,
     getLocks: (resource: Resource) => Promise<Lock[]>
   ) {
@@ -203,7 +264,7 @@ export class Method {
       depthInfinity: [],
     };
 
-    let parent = await this.getParentResource(request, resource);
+    let parent = await this.getParentResource(request, response, resource);
     let firstLevelParent = true;
     while (parent) {
       const parentLocks = await getLocks(parent);
@@ -218,16 +279,17 @@ export class Method {
         }
       }
 
-      parent = await this.getParentResource(request, parent);
+      parent = await this.getParentResource(request, response, parent);
       firstLevelParent = false;
     }
 
     return locks;
   }
 
-  async getLocks(request: Request, resource: Resource) {
+  async getLocks(request: Request, response: AuthResponse, resource: Resource) {
     return await this.getLocksGeneral(
       request,
+      response,
       resource,
       async (resource: Resource) =>
         (
@@ -236,9 +298,15 @@ export class Method {
     );
   }
 
-  async getLocksByUser(request: Request, resource: Resource, user: User) {
+  async getLocksByUser(
+    request: Request,
+    response: AuthResponse,
+    resource: Resource,
+    user: User
+  ) {
     return await this.getLocksGeneral(
       request,
+      response,
       resource,
       async (resource: Resource) =>
         (
@@ -247,9 +315,14 @@ export class Method {
     );
   }
 
-  async getProvisionalLocks(request: Request, resource: Resource) {
+  async getProvisionalLocks(
+    request: Request,
+    response: AuthResponse,
+    resource: Resource
+  ) {
     return await this.getLocksGeneral(
       request,
+      response,
       resource,
       async (resource: Resource) =>
         (
@@ -284,17 +357,23 @@ export class Method {
    */
   async getLockPermission(
     request: Request,
+    response: AuthResponse,
     resource: Resource,
     user: User
   ): Promise<0 | 1 | 2 | 3> {
-    const locks = await this.getLocks(request, resource);
+    const locks = await this.getLocks(request, response, resource);
     const lockTokens = this.getRequestLockTockens(request);
 
     if (!locks.all.length) {
       return 2;
     }
 
-    const userLocks = await this.getLocksByUser(request, resource, user);
+    const userLocks = await this.getLocksByUser(
+      request,
+      response,
+      resource,
+      user
+    );
     const lockTokenSet = new Set(lockTokens);
 
     if (userLocks.all.find((userLock) => lockTokenSet.has(userLock.token))) {
@@ -512,12 +591,24 @@ export class Method {
       if (needEtag || needTokens) {
         try {
           await this.checkAuthorization(request, response, 'GET', url);
-          const resource = await this.adapter.getResource(url, request.baseUrl);
+          const { adapter, baseUrl } = getAdapter(
+            decodeURI(url.pathname).replace(/\/?$/, () => '/'),
+            response.locals.adapterConfig
+          );
+          const resource = await adapter.getResource(
+            url,
+            new URL(
+              `${request.protocol}://${request.headers.host}${path.join(
+                request.baseUrl || '/',
+                baseUrl
+              )}`
+            )
+          );
           if (needEtag) {
             etag = await resource.getEtag();
           }
           if (needTokens) {
-            tokens = (await this.getLocks(request, resource)).all.map(
+            tokens = (await this.getLocks(request, response, resource)).all.map(
               (lock) => lock.token
             );
           }
@@ -578,10 +669,16 @@ export class Method {
     let resource: Resource;
     let newResource = false;
     try {
-      resource = await this.adapter.getResource(requestURL, request.baseUrl);
+      resource = await response.locals.adapter.getResource(
+        requestURL,
+        response.locals.baseUrl
+      );
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
-        resource = await this.adapter.newResource(requestURL, request.baseUrl);
+        resource = await response.locals.adapter.newResource(
+          requestURL,
+          response.locals.baseUrl
+        );
         newResource = true;
       } else {
         throw e;
@@ -717,13 +814,6 @@ export class Method {
     );
   }
 
-  getRequestBaseUrl(request: Request) {
-    return new URL(
-      request.baseUrl,
-      `${request.protocol}://${request.headers.host}`
-    );
-  }
-
   getRequestedEncoding(request: Request, response: AuthResponse) {
     const acceptEncoding =
       request.get('Accept-Encoding') || 'identity, *;q=0.5';
@@ -810,6 +900,10 @@ export class Method {
   }
 
   async getBodyStream(request: Request, response: AuthResponse) {
+    if (request.get('Content-Length') === '0') {
+      return Readable.from(Buffer.from([]));
+    }
+
     response.locals.debug('Getting body stream.');
 
     request.setTimeout(this.opts.timeout);
@@ -1347,7 +1441,7 @@ export class Method {
   /**
    * Format a list of locks into an object acceptable by xml2js.
    */
-  async formatLocks(locks: Lock[], baseUrl: URL) {
+  async formatLocks(locks: Lock[]) {
     const xml = { activelock: [] as any[] };
 
     if (locks != null) {
@@ -1380,7 +1474,7 @@ export class Method {
           locktoken: { href: { _: lock.token } },
           lockroot: {
             href: {
-              _: (await lock.resource.getCanonicalUrl(baseUrl)).pathname,
+              _: (await lock.resource.getCanonicalUrl()).pathname,
             },
           },
         });

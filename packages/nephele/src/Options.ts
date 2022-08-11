@@ -1,7 +1,39 @@
 import { Request } from 'express';
 
 import type { ResourceNotModifiedError } from './Errors/index.js';
-import type { AuthResponse } from './Interfaces/index.js';
+import type {
+  Adapter,
+  Authenticator,
+  AuthResponse,
+} from './Interfaces/index.js';
+
+export type AdapterConfig = Adapter | { [k: string]: Adapter };
+
+type DefinedAdapter = {
+  adapter: AdapterConfig;
+};
+
+type DynamicAdapter = {
+  adapter: (request: Request, response: AuthResponse) => Promise<AdapterConfig>;
+};
+
+export type AuthenticatorConfig =
+  | Authenticator
+  | { [k: string]: Authenticator };
+
+type DefinedAuthenticator = {
+  authenticator: AuthenticatorConfig;
+};
+
+type DynamicAuthenticator = {
+  authenticator: (
+    request: Request,
+    response: AuthResponse
+  ) => Promise<AuthenticatorConfig>;
+};
+
+export type Config = (DefinedAdapter | DynamicAdapter) &
+  (DefinedAuthenticator | DynamicAuthenticator);
 
 export interface Options {
   /**
@@ -126,3 +158,47 @@ export const defaults: Options = {
     response.send(body);
   },
 };
+
+export function getAdapter(
+  unencodedPath: string,
+  config: AdapterConfig
+): { adapter: Adapter; baseUrl: string } {
+  if ('getComplianceClasses' in config) {
+    return { adapter: config as Adapter, baseUrl: '/' };
+  } else {
+    const keys = Object.keys(config).sort((a, b) => b.length - a.length);
+    const key = keys.find((key) =>
+      (unencodedPath || '/').startsWith(decodeURI(key))
+    );
+
+    if (!key) {
+      throw new Error(
+        `Adapter not found for route "${unencodedPath}". You should always have an adapter for the root path "/".`
+      );
+    }
+
+    return { adapter: config[key], baseUrl: key };
+  }
+}
+
+export function getAuthenticator(
+  unencodedPath: string,
+  config: AuthenticatorConfig
+): Authenticator {
+  if ('authenticate' in config) {
+    return config as Authenticator;
+  } else {
+    const keys = Object.keys(config).sort((a, b) => b.length - a.length);
+    const key = keys.find((key) =>
+      (unencodedPath || '/').startsWith(decodeURI(key))
+    );
+
+    if (!key) {
+      throw new Error(
+        `Authenticator not found for route "${unencodedPath}". You should always have an authenticator for the root path "/".`
+      );
+    }
+
+    return config[key];
+  }
+}

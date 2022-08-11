@@ -21,7 +21,10 @@ export class UNLOCK extends Method {
     if (!contentType) {
       throw new NotAcceptableError('Requested content type is not supported.');
     }
-    let resource = await this.adapter.getResource(url, request.baseUrl);
+    let resource = await response.locals.adapter.getResource(
+      url,
+      response.locals.baseUrl
+    );
 
     if (lockTokenHeader == null || lockTokenHeader.trim() === '') {
       throw new BadRequestError(
@@ -32,6 +35,7 @@ export class UNLOCK extends Method {
     const token = lockTokenHeader.trim().slice(1, -1);
     const locks = await this.getLocksByUser(
       request,
+      response,
       resource,
       response.locals.user
     );
@@ -42,7 +46,7 @@ export class UNLOCK extends Method {
 
     if (lock == null) {
       // Does the lock exist?
-      const allLocks = await this.getLocks(request, resource);
+      const allLocks = await this.getLocks(request, response, resource);
       const someoneElsesLock =
         allLocks.resource.find((lock) => lock.token === token) ||
         allLocks.depthInfinity.find((lock) => lock.token === token);

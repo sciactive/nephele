@@ -1,7 +1,9 @@
+import path from 'node:path';
 import type { Request } from 'express';
 
 import type { AuthResponse, Resource } from '../Interfaces/index.js';
 import {
+  ForbiddenError,
   LockedError,
   MediaTypeNotSupportedError,
   NotAcceptableError,
@@ -16,6 +18,11 @@ export class DELETE extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url, encoding } = this.getRequestData(request, response);
 
+    if (await this.isAdapterRoot(request, response, url)) {
+      // Can't delete the root of an adapter.
+      throw new ForbiddenError('This collection cannot be deleted.');
+    }
+
     await this.checkAuthorization(request, response, 'DELETE');
 
     const contentType = request.accepts('application/xml', 'text/xml');
@@ -23,7 +30,10 @@ export class DELETE extends Method {
       throw new NotAcceptableError('Requested content type is not supported.');
     }
 
-    const resource = await this.adapter.getResource(url, request.baseUrl);
+    const resource = await response.locals.adapter.getResource(
+      url,
+      response.locals.baseUrl
+    );
 
     let stream = await this.getBodyStream(request, response);
 
@@ -42,6 +52,7 @@ export class DELETE extends Method {
 
     const lockPermission = await this.getLockPermission(
       request,
+      response,
       resource,
       response.locals.user
     );
@@ -109,8 +120,20 @@ export class DELETE extends Method {
       for (let child of children) {
         const run = catchErrors(
           async () => {
+            if (
+              await this.isAdapterRoot(
+                request,
+                response,
+                await child.getCanonicalUrl()
+              )
+            ) {
+              // Can't delete the root of another adapter.
+              throw new ForbiddenError('This collection cannot be deleted.');
+            }
+
             const lockPermission = await this.getLockPermission(
               request,
+              response,
               child,
               response.locals.user
             );
@@ -136,9 +159,7 @@ export class DELETE extends Method {
               response.locals.debug('Unknown Error: %o', error);
             }
 
-            const url = await child.getCanonicalUrl(
-              this.getRequestBaseUrl(request)
-            );
+            const url = await child.getCanonicalUrl();
             let status = new Status(url, code);
 
             if (message) {
@@ -160,9 +181,7 @@ export class DELETE extends Method {
 
       return allDeleted;
     } catch (e: any) {
-      const url = await collection.getCanonicalUrl(
-        this.getRequestBaseUrl(request)
-      );
+      const url = await collection.getCanonicalUrl();
       let error = new Status(url, 500);
       if (e instanceof UnauthorizedError) {
         error = new Status(url, 401);

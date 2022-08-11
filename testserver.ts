@@ -1,7 +1,7 @@
 /**
  * This file requires the --experimental-specifier-resolution=node option.
  *
- * env NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts
+ * env NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts testroot
  */
 import { hostname } from 'node:os';
 import { dirname, resolve } from 'node:path';

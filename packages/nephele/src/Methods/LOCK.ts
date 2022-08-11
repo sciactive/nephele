@@ -32,10 +32,16 @@ export class LOCK extends Method {
     let resource: Resource;
     let newResource = false;
     try {
-      resource = await this.adapter.getResource(url, request.baseUrl);
+      resource = await response.locals.adapter.getResource(
+        url,
+        response.locals.baseUrl
+      );
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
-        resource = await this.adapter.newResource(url, request.baseUrl);
+        resource = await response.locals.adapter.newResource(
+          url,
+          response.locals.baseUrl
+        );
         newResource = true;
       } else {
         throw e;
@@ -90,6 +96,7 @@ export class LOCK extends Method {
       const token = lockTokens[0];
       const locks = await this.getLocksByUser(
         request,
+        response,
         resource,
         response.locals.user
       );
@@ -122,13 +129,10 @@ export class LOCK extends Method {
       await lock.save();
 
       // Lock returned only in response body. Why? The spec says so.
-      const currentLocks = await this.getLocks(request, resource);
+      const currentLocks = await this.getLocks(request, response, resource);
       const responseObj = {
         prop: {
-          lockdiscovery: await this.formatLocks(
-            currentLocks.all,
-            this.getRequestBaseUrl(request)
-          ),
+          lockdiscovery: await this.formatLocks(currentLocks.all),
         },
       };
       const responseXml = await this.renderXml(responseObj);
@@ -199,6 +203,7 @@ export class LOCK extends Method {
     const checkForLockAbove = async () => {
       const lockPermission = await this.getLockPermission(
         request,
+        response,
         resource,
         response.locals.user
       );
@@ -236,6 +241,7 @@ export class LOCK extends Method {
         // Check for provisional locks that are blocking this one.
         const provisionalLocks = await this.getProvisionalLocks(
           request,
+          response,
           resource
         );
 
@@ -300,12 +306,28 @@ export class LOCK extends Method {
       resource: Resource,
       firstLevel = true
     ) => {
+      // If the resource is the root of another adapter, we need its copy of the
+      // resource in order to continue looking for locks below.
+      const resourceUrl = await resource.getCanonicalUrl();
+      if (await this.isAdapterRoot(request, response, resourceUrl)) {
+        const absoluteUrl = new URL(
+          resourceUrl.toString().replace(/\/?$/, () => '/')
+        );
+        const adapter = await this.getAdapter(
+          response,
+          decodeURI(resourceUrl.pathname.substring(request.baseUrl.length))
+        );
+        resource = await adapter.getResource(absoluteUrl, absoluteUrl);
+      }
+
       // Check permissions to lock the resource.
       if (
-        !(await this.adapter.isAuthorized(
-          await resource.getCanonicalUrl(this.getRequestBaseUrl(request)),
+        // Use the resource's adapter and baseUrl, because this could be on
+        // another adapter than the request.
+        !(await resource.adapter.isAuthorized(
+          await resource.getCanonicalUrl(),
           'LOCK',
-          request.baseUrl,
+          resource.baseUrl,
           response.locals.user
         ))
       ) {
@@ -348,9 +370,7 @@ export class LOCK extends Method {
                 response.locals.debug('Unknown Error: %o', error);
               }
 
-              const url = await child.getCanonicalUrl(
-                this.getRequestBaseUrl(request)
-              );
+              const url = await child.getCanonicalUrl();
               let status = new Status(url, code);
 
               if (message) {
@@ -371,48 +391,31 @@ export class LOCK extends Method {
     };
 
     // And check below for any conflicting lock.
-    try {
-      if (await resource.isCollection()) {
-        const children = await resource.getInternalMembers(
-          response.locals.user
-        );
-
-        for (let child of children) {
-          const run = catchErrors(
-            async () => {
-              if (!multiStatus.statuses.length) {
-                await checkForPermissionAndLocksBelow(child);
-              }
-            },
-            async (code, message, error) => {
-              if (code === 500 && error) {
-                response.locals.debug('Unknown Error: %o', error);
-              }
-
-              const url = await child.getCanonicalUrl(
-                this.getRequestBaseUrl(request)
-              );
-              let status = new Status(url, code);
-
-              if (message) {
-                status.description = message;
-              }
-
-              if (error instanceof LockedError) {
-                status.setBody({ error: [{ 'no-conflicting-lock': {} }] });
-              }
-
-              multiStatus.addStatus(status);
-            }
-          );
-
-          await run();
+    const run = catchErrors(
+      async () => {
+        await checkForPermissionAndLocksBelow(resource);
+      },
+      async (code, message, error) => {
+        if (code === 500 && error) {
+          response.locals.debug('Unknown Error: %o', error);
         }
+
+        const url = await resource.getCanonicalUrl();
+        let status = new Status(url, code);
+
+        if (message) {
+          status.description = message;
+        }
+
+        if (error instanceof LockedError) {
+          status.setBody({ error: [{ 'no-conflicting-lock': {} }] });
+        }
+
+        multiStatus.addStatus(status);
       }
-    } catch (e: any) {
-      await lock.delete();
-      throw e;
-    }
+    );
+
+    await run();
 
     if (multiStatus.statuses.length) {
       await lock.delete();
@@ -447,13 +450,10 @@ export class LOCK extends Method {
     await lock.save();
 
     // Lock returned in Lock-Token header and response body.
-    const currentLocks = await this.getLocks(request, resource);
+    const currentLocks = await this.getLocks(request, response, resource);
     const responseObj = {
       prop: {
-        lockdiscovery: await this.formatLocks(
-          currentLocks.all,
-          this.getRequestBaseUrl(request)
-        ),
+        lockdiscovery: await this.formatLocks(currentLocks.all),
       },
     };
     const responseXml = await this.renderXml(responseObj, prefixes);

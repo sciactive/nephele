@@ -6,13 +6,9 @@ import cookieParser from 'cookie-parser';
 import createDebug from 'debug';
 import { nanoid } from 'nanoid';
 
-import type {
-  Adapter,
-  Authenticator,
-  AuthResponse,
-} from './Interfaces/index.js';
-import type { Options } from './Options.js';
-import { defaults } from './Options.js';
+import type { AuthResponse } from './Interfaces/index.js';
+import type { Config, Options } from './Options.js';
+import { defaults, getAdapter, getAuthenticator } from './Options.js';
 import { catchErrors } from './catchErrors.js';
 import { ForbiddenError, UnauthorizedError } from './Errors/index.js';
 import {
@@ -51,10 +47,7 @@ const pkg = JSON.parse(
  * @see http://sciactive.com/
  */
 export default function createServer(
-  {
-    adapter,
-    authenticator,
-  }: { adapter: Adapter; authenticator: Authenticator },
+  { adapter, authenticator }: Config,
   options: Partial<Options> = {}
 ) {
   const opts = Object.assign({}, defaults, options) as Options;
@@ -101,6 +94,31 @@ export default function createServer(
   // Log the details of the response.
   app.use(debugLoggerEnd);
 
+  async function loadAuthenticator(
+    request: Request,
+    response: AuthResponse,
+    next: NextFunction
+  ) {
+    if (typeof authenticator === 'function') {
+      const auth = await authenticator(request, response);
+      response.locals.authenticatorConfig = auth;
+      response.locals.authenticator = getAuthenticator(
+        decodeURI(request.path),
+        auth
+      );
+    } else {
+      response.locals.authenticatorConfig = authenticator;
+      response.locals.authenticator = getAuthenticator(
+        decodeURI(request.path),
+        authenticator
+      );
+    }
+    next();
+  }
+
+  // Get the authenticator.
+  app.use(loadAuthenticator);
+
   async function authenticate(
     request: Request,
     response: AuthResponse,
@@ -111,7 +129,7 @@ export default function createServer(
         response.locals.debug(`Skipping authentication for OPTIONS request.`);
       } else {
         response.locals.debug(`Authenticating user.`);
-        response.locals.user = await authenticator.authenticate(
+        response.locals.user = await response.locals.authenticator.authenticate(
           request,
           response
         );
@@ -142,6 +160,41 @@ export default function createServer(
   // Authenticate before the request.
   app.use(authenticate);
 
+  async function loadAdapter(
+    request: Request,
+    response: AuthResponse,
+    next: NextFunction
+  ) {
+    if (typeof adapter === 'function') {
+      const adapt = await adapter(request, response);
+      response.locals.adapterConfig = adapt;
+      const parsedAdapter = getAdapter(
+        decodeURI(request.path).replace(/\/?$/, () => '/'),
+        adapt
+      );
+      response.locals.adapter = parsedAdapter.adapter;
+      response.locals.baseUrl = new URL(
+        path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
+        `${request.protocol}://${request.headers.host}`
+      );
+    } else {
+      response.locals.adapterConfig = adapter;
+      const parsedAdapter = getAdapter(
+        decodeURI(request.path).replace(/\/?$/, () => '/'),
+        adapter
+      );
+      response.locals.adapter = parsedAdapter.adapter;
+      response.locals.baseUrl = new URL(
+        path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
+        `${request.protocol}://${request.headers.host}`
+      );
+    }
+    next();
+  }
+
+  // Get the adapter.
+  app.use(loadAdapter);
+
   async function unauthenticate(
     request: Request,
     response: AuthResponse,
@@ -149,7 +202,10 @@ export default function createServer(
   ) {
     response.on('close', async () => {
       try {
-        await authenticator.cleanAuthentication(request, response);
+        await response.locals.authenticator.cleanAuthentication(
+          request,
+          response
+        );
       } catch (e: any) {
         response.locals.debug('Error during authentication cleanup: %o', e);
       }
@@ -200,23 +256,21 @@ export default function createServer(
     );
   };
 
-  const methodProps = { adapter, authenticator };
-
-  app.options('*', runMethodCatchErrors(new OPTIONS(methodProps, opts)));
-  app.get('*', runMethodCatchErrors(new GET_HEAD(methodProps, opts)));
-  app.head('*', runMethodCatchErrors(new GET_HEAD(methodProps, opts)));
-  app.put('*', runMethodCatchErrors(new PUT(methodProps, opts)));
-  app.delete('*', runMethodCatchErrors(new DELETE(methodProps, opts)));
-  app.copy('*', runMethodCatchErrors(new COPY(methodProps, opts)));
-  app.move('*', runMethodCatchErrors(new MOVE(methodProps, opts)));
-  app.mkcol('*', runMethodCatchErrors(new MKCOL(methodProps, opts)));
-  app.lock('*', runMethodCatchErrors(new LOCK(methodProps, opts)));
-  app.unlock('*', runMethodCatchErrors(new UNLOCK(methodProps, opts)));
+  app.options('*', runMethodCatchErrors(new OPTIONS(opts)));
+  app.get('*', runMethodCatchErrors(new GET_HEAD(opts)));
+  app.head('*', runMethodCatchErrors(new GET_HEAD(opts)));
+  app.put('*', runMethodCatchErrors(new PUT(opts)));
+  app.delete('*', runMethodCatchErrors(new DELETE(opts)));
+  app.copy('*', runMethodCatchErrors(new COPY(opts)));
+  app.move('*', runMethodCatchErrors(new MOVE(opts)));
+  app.mkcol('*', runMethodCatchErrors(new MKCOL(opts)));
+  app.lock('*', runMethodCatchErrors(new LOCK(opts)));
+  app.unlock('*', runMethodCatchErrors(new UNLOCK(opts)));
   // TODO: Available once rfc5323 is implemented.
-  // app.search('*', runMethodCatchErrors(new SEARCH(methodProps, opts)));
+  // app.search('*', runMethodCatchErrors(new SEARCH(opts)));
 
-  const propfind = runMethodCatchErrors(new PROPFIND(methodProps, opts));
-  const proppatch = runMethodCatchErrors(new PROPPATCH(methodProps, opts));
+  const propfind = runMethodCatchErrors(new PROPFIND(opts));
+  const proppatch = runMethodCatchErrors(new PROPPATCH(opts));
 
   app.all('*', async (request, response: AuthResponse) => {
     switch (request.method) {
@@ -229,8 +283,10 @@ export default function createServer(
       default:
         const run = catchErrors(
           async () => {
-            const MethodClass = adapter.getMethod(request.method);
-            const method = new MethodClass(methodProps, opts);
+            const MethodClass = response.locals.adapter.getMethod(
+              request.method
+            );
+            const method = new MethodClass(opts);
             await method.run(request, response);
           },
           async (code, message, error) => {
