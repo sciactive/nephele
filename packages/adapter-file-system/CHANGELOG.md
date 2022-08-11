@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.9](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2022-08-11)
+
+
+### Bug Fixes
+
+* switch from mmmagic to mime, only report regular files with file system adapter ([fde40df](https://github.com/sciactive/nephele/commit/fde40df164a96aab1245938099d4072cab1d1403))
+
+
+
+
+
 # [1.0.0-alpha.8](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.7...v1.0.0-alpha.8) (2022-08-11)
 
 **Note:** Version bump only for package @nephele/adapter-file-system

@@ -1,6 +1,6 @@
 {
   "name": "@nephele/adapter-file-system",
-  "version": "1.0.0-alpha.8",
+  "version": "1.0.0-alpha.9",
   "description": "A file system adapter for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -44,7 +44,7 @@
   "dependencies": {
     "check-disk-space": "^3.3.1",
     "mime": "^3.0.0",
-    "nephele": "^1.0.0-alpha.8",
+    "nephele": "^1.0.0-alpha.9",
     "sse4_crc32": "^7.0.0",
     "userid": "^1.2.5"
   },
