@@ -170,7 +170,7 @@ export interface Resource {
   /**
    * MIME type.
    *
-   * You can use mmmagic if you don't know it.
+   * You can use `mime` or `mmmagic` if you don't know it.
    *
    * If the resource doesn't have a media type (like a folder in a filesystem),
    * return null.
