@@ -2,7 +2,7 @@ import { Readable } from 'node:stream';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
-import mmm, { Magic } from 'mmmagic';
+import mime from 'mime';
 import checkDiskSpace from 'check-disk-space';
 import Sse4Crc32 from 'sse4_crc32';
 import type { Resource as ResourceInterface, User } from 'nephele';
@@ -606,18 +606,18 @@ export default class Resource implements ResourceInterface {
       return null;
     }
 
-    const mediaType = await new Promise<string>((resolve, reject) => {
-      const magic = new Magic(mmm.MAGIC_MIME_TYPE);
-      magic.detectFile(this.absolutePath, function (err, result) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(result as string); // didn't use MAGIC_CONTINUE, so only one string.
-      });
-    });
-
-    return mediaType;
+    const mediaType = mime.getType(path.basename(this.absolutePath));
+    if (!mediaType) {
+      return 'application/octet-stream';
+    } else if (Array.isArray(mediaType)) {
+      return typeof mediaType[0] === 'string'
+        ? mediaType[0]
+        : 'application/octet-stream';
+    } else if (typeof mediaType === 'string') {
+      return mediaType;
+    } else {
+      return 'application/octet-stream';
+    }
   }
 
   async getCanonicalName() {
@@ -682,6 +682,21 @@ export default class Resource implements ResourceInterface {
 
     for (let name of listing) {
       if (name.endsWith('.nephelemeta')) {
+        continue;
+      }
+
+      try {
+        const absolutePath = path.join(this.absolutePath, name);
+        const stats = await fsp.stat(absolutePath);
+        // This adapter only supports directories, files, and symlinks.
+        if (
+          !stats.isDirectory() &&
+          !stats.isFile() &&
+          !stats.isSymbolicLink()
+        ) {
+          continue;
+        }
+      } catch (e: any) {
         continue;
       }
 

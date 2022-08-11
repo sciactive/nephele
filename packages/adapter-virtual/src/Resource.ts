@@ -1,6 +1,6 @@
 import { Readable } from 'node:stream';
 import path from 'node:path';
-import mmm, { Magic } from 'mmmagic';
+import mime from 'mime';
 import Sse4Crc32 from 'sse4_crc32';
 import type { Resource as ResourceInterface, User } from 'nephele';
 import {
@@ -547,14 +547,18 @@ export default class Resource implements ResourceInterface {
         return;
       }
 
-      const magic = new Magic(mmm.MAGIC_MIME_TYPE);
-      magic.detect(this.file.content, function (err, result) {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(result as string); // didn't use MAGIC_CONTINUE, so only one string.
-      });
+      const mediaType = mime.getType(this.file.name);
+      if (!mediaType) {
+        return 'application/octet-stream';
+      } else if (Array.isArray(mediaType)) {
+        return typeof mediaType[0] === 'string'
+          ? mediaType[0]
+          : 'application/octet-stream';
+      } else if (typeof mediaType === 'string') {
+        return mediaType;
+      } else {
+        return 'application/octet-stream';
+      }
     });
   }
 
