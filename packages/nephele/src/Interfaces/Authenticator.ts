@@ -31,6 +31,9 @@ export interface Authenticator {
    * The object returned here will be placed in `response.locals.user`, and
    * sometimes passed to other functions that take a `User` argument.
    *
+   * If the request does not result in successful authentication, you should
+   * throw an UnauthorizedError.
+   *
    * @param request The server request.
    * @param response The unauthenticated server response.
    */

@@ -48,7 +48,7 @@ export default class Authenticator implements AuthenticatorInterface {
     }
     const user = new User({ username });
     try {
-      await user.authenticate(password);
+      await user.authenticate(password, request.hostname);
     } catch (e: any) {
       if (e instanceof UnauthorizedError) {
         response.set(

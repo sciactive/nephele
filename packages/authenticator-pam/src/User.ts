@@ -11,7 +11,7 @@ export default class User implements UserInterface {
     this.username = username;
   }
 
-  async authenticate(password: string) {
+  async authenticate(password: string, remoteHost: string = 'localhost') {
     if (this.authenticated) {
       return;
     }
@@ -28,7 +28,7 @@ export default class User implements UserInterface {
             resolve();
           }
         },
-        { serviceName: 'login', remoteHost: 'localhost' }
+        { serviceName: 'login', remoteHost }
       );
     });
   }

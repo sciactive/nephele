@@ -24,7 +24,7 @@ const host = hostname();
 const port = 8080;
 const root = process.argv.length > 2 ? resolve(process.argv[2]) : __dirname;
 const pam = !process.env.NOPAM;
-const virtual = !process.env.VIRTUALFS;
+const virtual = !!process.env.VIRTUALFS;
 
 app.use(
   '/',
