@@ -13,6 +13,9 @@ import server from './packages/nephele/dist/index.js';
 import FileSystemAdapter from './packages/adapter-file-system/dist/index.js';
 import VirtualAdapter from './packages/adapter-virtual/dist/index.js';
 import PamAuthenticator from './packages/authenticator-pam/dist/index.js';
+import CustomAuthenticator, {
+  User as CustomUser,
+} from './packages/authenticator-custom/dist/index.js';
 import InsecureAuthenticator from './packages/authenticator-none/dist/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -25,6 +28,9 @@ const port = 8080;
 const root = process.argv.length > 2 ? resolve(process.argv[2]) : __dirname;
 const pam = !process.env.NOPAM;
 const virtual = !!process.env.VIRTUALFS;
+const envuser = process.env.USERNAME || process.env.USER;
+const envpass = process.env.PASSWORD;
+const userpassdefined = !!(envuser && envpass);
 
 app.use(
   '/',
@@ -42,9 +48,20 @@ app.use(
         })
       : new FileSystemAdapter({
           root,
-          usernamesMapToSystemUsers: pam,
+          usernamesMapToSystemUsers: !userpassdefined && pam,
         }),
-    authenticator: pam ? new PamAuthenticator() : new InsecureAuthenticator(),
+    authenticator: userpassdefined
+      ? new CustomAuthenticator({
+          auth: async (username, password) => {
+            if (username === envuser && password === envpass) {
+              return new CustomUser({ username });
+            }
+            return null;
+          },
+        })
+      : pam
+      ? new PamAuthenticator()
+      : new InsecureAuthenticator(),
   })
 );
 
