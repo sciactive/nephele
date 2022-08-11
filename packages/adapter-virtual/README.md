@@ -15,7 +15,7 @@ The default export is the adapter, and it's also a named export "Adapter". Insta
 ```js
 import express from 'express';
 import nepheleServer from 'nephele';
-import VirtualAdapter from '@nephele/adapter-file-system';
+import VirtualAdapter from '@nephele/adapter-virtual';
 import ExampleAuthenticator from '@nephele/authenticator-example';
 
 const app = express();
