@@ -150,6 +150,13 @@ export default class Resource implements ResourceInterface {
       this.file = file;
     }
 
+    if (
+      !('creationdate' in this.file.properties) ||
+      this.file.properties.creationdate == null
+    ) {
+      this.file.properties.creationdate = new Date();
+    }
+    this.file.properties.getlastmodified = new Date();
     this.collection = 'children' in this.file;
     this.exists = true;
   }
