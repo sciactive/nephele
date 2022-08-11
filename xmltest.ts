@@ -2,7 +2,7 @@
  * Run this file with `npx ts-node --esm xmltest.ts`
  */
 import { inspect } from 'node:util';
-import xml2js from 'xml2js';
+import { Builder, Parser } from 'xml2js';
 
 import {
   Method,
@@ -13,10 +13,10 @@ import {
   Adapter,
 } from './packages/nephele/dist/index.js';
 
-const builder = new xml2js.Builder({
+const builder = new Builder({
   xmldec: { version: '1.0', encoding: 'UTF-8' },
 });
-const parser = new xml2js.Parser({
+const parser = new Parser({
   xmlns: true,
 });
 
@@ -447,7 +447,7 @@ const parseproppatch = async () => {
 </D:propertyupdate>
 `;
 
-  const method = new Method({} as Adapter, defaults);
+  const method = new Method(defaults);
   // const parsed = await parser.parseStringPromise(xml);
   const { output: parsed } = await method.parseXml(xml);
 
@@ -469,7 +469,7 @@ const parsexml = async () => {
 </D:propfind>
 `;
 
-  const method = new Method({} as Adapter, defaults);
+  const method = new Method(defaults);
   // const parsed = await parser.parseStringPromise(xml);
   const { output: parsed } = await method.parseXml(xml);
 
