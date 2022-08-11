@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.6](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.5...v1.0.0-alpha.6) (2022-08-11)
+
+
+### Features
+
+* use remote host during pam authentication ([feed076](https://github.com/sciactive/nephele/commit/feed07681be143c552280b8c15a6826e54661074))
+
+
+
+
+
 # [1.0.0-alpha.5](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2022-08-11)
 
 **Note:** Version bump only for package @nephele/authenticator-pam
