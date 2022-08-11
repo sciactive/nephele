@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.5](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.4...v1.0.0-alpha.5) (2022-08-11)
+
+
+### Bug Fixes
+
+* don't move or copy locks with a resource ([0e12543](https://github.com/sciactive/nephele/commit/0e125438ca0571beba54950217938d00a2e7af1a)), closes [#1](https://github.com/sciactive/nephele/issues/1)
+
+
+
+
+
 # [1.0.0-alpha.4](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.3...v1.0.0-alpha.4) (2022-08-11)
 
 
