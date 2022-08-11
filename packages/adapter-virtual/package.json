@@ -1,6 +1,6 @@
 {
   "name": "@nephele/adapter-virtual",
-  "version": "1.0.0-alpha.6",
+  "version": "1.0.0-alpha.7",
   "description": "A virtual resource adapter for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -44,7 +44,7 @@
   },
   "dependencies": {
     "mmmagic": "^0.5.3",
-    "nephele": "^1.0.0-alpha.6",
+    "nephele": "^1.0.0-alpha.7",
     "sse4_crc32": "^7.0.0"
   },
   "engines": {
