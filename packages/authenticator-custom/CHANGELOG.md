@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.10](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.9...v1.0.0-alpha.10) (2022-08-18)
+
+
+### Features
+
+* add digest auth support to custom authenticator ([ee9a255](https://github.com/sciactive/nephele/commit/ee9a2550e79372fd992aa6e9cbe5c66b9ed055f8))
+
+
+
+
+
 # [1.0.0-alpha.9](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.8...v1.0.0-alpha.9) (2022-08-11)
 
 **Note:** Version bump only for package @nephele/authenticator-custom
