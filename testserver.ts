@@ -52,11 +52,17 @@ app.use(
         }),
     authenticator: userpassdefined
       ? new CustomAuthenticator({
-          auth: async (username, password) => {
-            if (username === envuser && password === envpass) {
+          getUser: async (username) => {
+            if (username === envuser) {
               return new CustomUser({ username });
             }
             return null;
+          },
+          authBasic: async (user, password) => {
+            if (user.username === envuser && password === envpass) {
+              return true;
+            }
+            return false;
           },
         })
       : pam
