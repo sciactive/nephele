@@ -79,7 +79,7 @@ app.listen(port, () => {
 
 # Mounted Adapters and Authenticators
 
-You can mount adapters and authenticators to different points in the namespace by providing an object whose keys are the mount points instead. There must always be an adapter mounted at the "/" mount point.
+You can mount adapters and authenticators to different points in the namespace by providing an object whose keys are the mount points instead. There must always be an adapter and authenticator mounted at the "/" mount point.
 
 ```js
 import express from 'express';
@@ -87,7 +87,9 @@ import nepheleServer from 'nephele';
 import VirtualAdapter from '@nephele/adapter-virtual';
 import ExampleAdapter from '@nephele/adapter-example';
 import AnotherAdapter from '@nephele/adapter-another';
+import InsecureAuthenticator from '@nephele/authenticator-none';
 import ExampleAuthenticator from '@nephele/authenticator-example';
+import AnotherAuthenticator from '@nephele/authenticator-another';
 
 const app = express();
 const port = 8080;
@@ -106,7 +108,17 @@ app.use(
           locks: {},
           children: [
             {
-              name: 'Sub Directory',
+              name: 'Some Directory',
+              properties: {
+                creationdate: new Date(),
+                getlastmodified: new Date(),
+                owner: 'root',
+              },
+              locks: {},
+              children: [],
+            },
+            {
+              name: 'Another Directory',
               properties: {
                 creationdate: new Date(),
                 getlastmodified: new Date(),
@@ -118,9 +130,14 @@ app.use(
           ],
         },
       }),
-      '/Sub%20Directory/': new ExampleAdapter(),
+      '/Some%20Directory/': new ExampleAdapter(),
+      '/Another%20Directory/': new AnotherAdapter(),
     },
-    authenticator: new ExampleAuthenticator(),
+    authenticator: {
+      '/': new InsecureAuthenticator(),
+      '/Some%20Directory/': new ExampleAuthenticator(),
+      '/Another%20Directory/': new AnotherAuthenticator(),
+    },
   })
 );
 
