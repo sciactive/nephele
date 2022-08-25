@@ -17,6 +17,17 @@ export type AuthenticatorConfig = {
    * semicolon).
    */
   realm?: string;
+  /**
+   * Comma separated UID ranges that are allowed to log in.
+   *
+   * You can set, for example, "0,1000-1999" to allow the first 1000 normal
+   * users and root to log in.
+   *
+   * Root is always UID 0. On most systems, daemon users are assigned UIDs in
+   * the range 2-999, normal users are assigned UIDs in the range 1000-65533,
+   * and the "nobody" user is assigned UID 65534.
+   */
+  allowedUIDs?: string;
 };
 
 export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
@@ -29,14 +40,19 @@ export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
  */
 export default class Authenticator implements AuthenticatorInterface {
   realm: string;
+  allowedUIDs: string[];
 
-  constructor({ realm = 'Nephele WebDAV Service' }: AuthenticatorConfig = {}) {
+  constructor({
+    realm = 'Nephele WebDAV Service',
+    allowedUIDs = '1000-59999',
+  }: AuthenticatorConfig = {}) {
     this.realm = realm;
+    this.allowedUIDs = allowedUIDs.split(',').map((range) => range.trim());
   }
 
   async authenticate(request: Request, response: AuthResponse) {
     const authorization = request.get('Authorization');
-    let username = 'nobody';
+    let username = '';
     let password = '';
 
     if (authorization) {
@@ -46,9 +62,20 @@ export default class Authenticator implements AuthenticatorInterface {
         password = auth.pass;
       }
     }
-    const user = new User({ username });
+
     try {
+      if (username.trim() === '') {
+        throw new UnauthorizedError(
+          'Authentication is required to use this server.'
+        );
+      }
+
+      const user = new User({ username });
+
       await user.authenticate(password, request.hostname);
+      await user.checkUID(this.allowedUIDs);
+
+      return user;
     } catch (e: any) {
       if (e instanceof UnauthorizedError) {
         response.set(
@@ -58,8 +85,6 @@ export default class Authenticator implements AuthenticatorInterface {
       }
       throw e;
     }
-
-    return user;
   }
 
   async cleanAuthentication(_request: Request, _response: AuthResponse) {
