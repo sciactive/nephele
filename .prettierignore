@@ -4,3 +4,4 @@ node_modules
 /CHANGELOG.md
 /packages/*/CHANGELOG.md
 /packages/*/dist
+/packages/*/bin
