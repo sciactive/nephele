@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.14](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.13...v1.0.0-alpha.14) (2022-09-02)
+
+
+### Bug Fixes
+
+* load server from cjs file for compatibility with pm2 ([cd77579](https://github.com/sciactive/nephele/commit/cd7757955cd66c0a93c9b47e689eddbdc3772d09))
+
+
+
+
+
 # [1.0.0-alpha.13](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.12...v1.0.0-alpha.13) (2022-09-02)
 
 
