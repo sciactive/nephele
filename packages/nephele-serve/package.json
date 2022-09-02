@@ -4,7 +4,7 @@
   "description": "Run Nephele WebDAV server to serve local files.",
   "type": "module",
   "bin": {
-    "nephele-serve": "nephele-serve"
+    "nephele-serve": "nephele-serve.js"
   },
   "scripts": {
     "clean": "test -d bin && rm -r bin || true",
