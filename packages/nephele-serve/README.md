@@ -4,6 +4,10 @@ Run Nephele WebDAV server to serve local files.
 
 # Installation
 
+Follow the steps here for your OS: https://www.npmjs.com/package/authenticate-pam#Install
+
+Then,
+
 ```sh
 sudo npm install -g nephele-serve
 ```
