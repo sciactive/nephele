@@ -1,3 +1,5 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
-env node --experimental-specifier-resolution=node "$(dirname $0)/bin/index.js" "$@"
+SCRIPT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
+
+env node --experimental-specifier-resolution=node "$SCRIPT_DIR/index.js" "$@"
