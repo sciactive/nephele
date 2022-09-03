@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.16](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.15...v1.0.0-alpha.16) (2022-09-03)
+
+
+### Bug Fixes
+
+* don't set usernamesMapToSystemUsers if auth is turned off ([52281c8](https://github.com/sciactive/nephele/commit/52281c817bd19047a71c94d1918f10f0228db3d0))
+
+
+
+
+
 # [1.0.0-alpha.15](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.14...v1.0.0-alpha.15) (2022-09-03)
 
 

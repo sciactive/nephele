@@ -1,6 +1,6 @@
 {
   "name": "nephele",
-  "version": "1.0.0-alpha.15",
+  "version": "1.0.0-alpha.16",
   "description": "A pluggable WebDAV, CardDAV, and CalDAV server for Node.js and Express.",
   "type": "module",
   "main": "dist/index.js",
