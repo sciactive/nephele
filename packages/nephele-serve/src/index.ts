@@ -269,6 +269,7 @@ try {
               fs.mkdirSync(root);
               const { uid, gid } = ids(response.locals.user.username);
               fs.chownSync(root, uid, gid);
+              fs.chmodSync(root, 0o750);
             }
 
             return new FileSystemAdapter({
