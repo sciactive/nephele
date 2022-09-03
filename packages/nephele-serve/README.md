@@ -38,7 +38,7 @@ If you want to run it without installing it, you can do that too.
 sudo npx nephele-serve .
 ```
 
-If you want to run it without root, you can do that too, but you must set the port to something higher than 1000.
+If you want to run it without root, you can do that too, but you must set the port to something higher than 1000, and you'll likely only be able to log in with the user who runs the script.
 
 ```sh
 nephele-serve -p 8080 .

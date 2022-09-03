@@ -280,7 +280,7 @@ try {
 
           return new FileSystemAdapter({
             root: directory,
-            usernamesMapToSystemUsers: true,
+            usernamesMapToSystemUsers: auth,
           });
         } catch (e) {
           throw new Error("Couldn't mount server root.");
