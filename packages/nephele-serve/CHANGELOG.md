@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.15](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.14...v1.0.0-alpha.15) (2022-09-03)
+
+
+### Features
+
+* change new user directory mode to remove other rwx ([81256d8](https://github.com/sciactive/nephele/commit/81256d8dc4e789b9844a0cb22fbc8212e5fb1e00))
+
+
+
+
+
 # [1.0.0-alpha.14](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.13...v1.0.0-alpha.14) (2022-09-02)
 
 

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.15](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.14...v1.0.0-alpha.15) (2022-09-03)
+
+
+### Bug Fixes
+
+* set user and group of file before streaming content into it ([5b42a6c](https://github.com/sciactive/nephele/commit/5b42a6cdd64c7e6cf936a97babd3b19700c1cc09)), closes [#2](https://github.com/sciactive/nephele/issues/2)
+
+
+
+
+
 # [1.0.0-alpha.14](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.13...v1.0.0-alpha.14) (2022-09-02)
 
 **Note:** Version bump only for package @nephele/adapter-file-system
