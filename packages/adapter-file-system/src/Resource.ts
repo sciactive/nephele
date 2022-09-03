@@ -171,6 +171,15 @@ export default class Resource implements ResourceInterface {
       exists = false;
     }
 
+    if (!exists && this.adapter.usernamesMapToSystemUsers) {
+      await fsp.writeFile(this.absolutePath, Buffer.from([]));
+      await fsp.chown(
+        this.absolutePath,
+        await this.adapter.getUid(user),
+        await this.adapter.getGid(user)
+      );
+    }
+
     this.etag = undefined;
 
     const handle = await fsp.open(this.absolutePath, 'w');
@@ -180,22 +189,16 @@ export default class Resource implements ResourceInterface {
 
     return new Promise<void>((resolve, reject) => {
       stream.on('close', async () => {
-        if (!exists && this.adapter.usernamesMapToSystemUsers) {
-          await fsp.chown(
-            this.absolutePath,
-            await this.adapter.getUid(user),
-            await this.adapter.getGid(user)
-          );
-        }
-
         resolve();
       });
 
       stream.on('error', (err) => {
+        handle.close();
         reject(err);
       });
 
       input.on('error', (err) => {
+        handle.close();
         reject(err);
       });
     });
