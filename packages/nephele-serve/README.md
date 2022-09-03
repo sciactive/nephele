@@ -46,6 +46,22 @@ nephele-serve -p 8080 .
 
 Only regular users (UIDs 1000-59999) are allowed to log in.
 
+# Cluster with PM2
+
+You can load Nephele as a cluster using PM2. The following will start a cluster of 8 instances serving users' home directories.
+
+```sh
+sudo npm install -g pm2
+sudo pm2 start -i 8 -u root --uid 0 nephele-serve --node-args "--experimental-specifier-resolution=node" -- --home-directories
+```
+
+Then you can save it and have it load at system startup.
+
+```sh
+sudo pm2 save
+sudo pm2 startup systemd
+```
+
 # Help
 
 ```sh
