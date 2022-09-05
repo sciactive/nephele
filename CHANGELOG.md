@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.18](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.17...v1.0.0-alpha.18) (2022-09-05)
+
+
+### Features
+
+* add redirect server in nephele-serve to redirect insecure traffic ([f35c503](https://github.com/sciactive/nephele/commit/f35c5031cc4238ffe42e866a2a40e412304e77d5))
+
+
+
+
+
 # [1.0.0-alpha.17](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.16...v1.0.0-alpha.17) (2022-09-05)
 
 
