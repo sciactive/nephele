@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.17](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.16...v1.0.0-alpha.17) (2022-09-05)
+
+
+### Bug Fixes
+
+* proper URI encoding and decoding for special characters ([1d2ef37](https://github.com/sciactive/nephele/commit/1d2ef3709fd0d8852c0e28317a22997daf86dbfa))
+
+
+
+
+
 # [1.0.0-alpha.16](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.15...v1.0.0-alpha.16) (2022-09-03)
 
 **Note:** Version bump only for package @nephele/adapter-file-system
