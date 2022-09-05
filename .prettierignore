@@ -1,7 +1,8 @@
 node_modules
 /.vscode
 /docs
-/CHANGELOG.md
-/packages/*/CHANGELOG.md
+/testroot
 /packages/*/dist
 /packages/*/bin
+/CHANGELOG.md
+/packages/*/CHANGELOG.md
