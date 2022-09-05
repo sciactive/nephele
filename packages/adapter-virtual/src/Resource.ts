@@ -354,7 +354,14 @@ export default class Resource implements ResourceInterface {
 
     try {
       const parent = await this.adapter.getResource(
-        new URL(encodeURI(path.dirname(destinationPath)), baseUrl),
+        new URL(
+          path
+            .dirname(destinationPath)
+            .split('/')
+            .map(encodeURIComponent)
+            .join('/'),
+          baseUrl
+        ),
         baseUrl
       );
 
@@ -575,7 +582,11 @@ export default class Resource implements ResourceInterface {
 
   async getCanonicalUrl() {
     return new URL(
-      encodeURI((await this.getCanonicalPath()).replace(/^\//, () => '')),
+      (await this.getCanonicalPath())
+        .replace(/^\//, () => '')
+        .split('/')
+        .map(encodeURIComponent)
+        .join('/'),
       this.baseUrl
     );
   }

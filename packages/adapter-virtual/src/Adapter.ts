@@ -67,10 +67,9 @@ export default class Adapter implements AdapterInterface {
 
     return path.join(
       '/',
-      decodeURI(url.pathname.substring(baseUrl.pathname.length)).replace(
-        /\/?$/,
-        ''
-      )
+      decodeURIComponent(
+        url.pathname.substring(baseUrl.pathname.length)
+      ).replace(/\/?$/, '')
     );
   }
 

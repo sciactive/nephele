@@ -636,7 +636,11 @@ export default class Resource implements ResourceInterface {
 
   async getCanonicalUrl() {
     return new URL(
-      encodeURI((await this.getCanonicalPath()).replace(/^\//, () => '')),
+      (await this.getCanonicalPath())
+        .replace(/^\//, () => '')
+        .split('/')
+        .map(encodeURIComponent)
+        .join('/'),
       this.baseUrl
     );
   }
