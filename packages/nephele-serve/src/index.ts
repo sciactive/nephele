@@ -35,6 +35,7 @@ type Conf = {
   cert?: string;
   key?: string;
   port?: number;
+  redirectPort?: number;
   homeDirectories: boolean;
   userDirectories: boolean;
   auth: boolean;
@@ -70,6 +71,12 @@ program
       'The port to listen on. Defaults to 443 if a cert is provided, 80 otherwise.'
     ).argParser(parseInt)
   )
+  .addOption(
+    new Option(
+      '--redirect-port <redirect_port>',
+      'The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.'
+    ).argParser(parseInt)
+  )
   .option(
     '--home-directories',
     "Serve users' home directories to them when they log in."
@@ -92,6 +99,8 @@ program.addHelpText(
   `
 Environment Variables:
   HOST                 Same as --host.
+  PORT                 Same as --port.
+  REDIRECT_PORT        Same as --redirect-port.
   REALM                Same as --realm.
   CERT_FILE            Same as --cert.
   CERT                 Text of a cert in PEM format.
@@ -123,6 +132,7 @@ try {
     cert,
     key,
     port,
+    redirectPort,
     homeDirectories,
     userDirectories,
     auth,
@@ -162,6 +172,14 @@ try {
   const secure = !!(cert && key);
   if (port == null) {
     port = parseInt(process.env.PORT || (secure ? '443' : '80'));
+  }
+
+  if (redirectPort == null && secure) {
+    redirectPort = parseInt(process.env.REDIRECT_PORT || '0');
+  }
+
+  if (redirectPort != null && redirectPort <= 0) {
+    redirectPort = undefined;
   }
 
   // Validate args.
@@ -298,6 +316,34 @@ try {
     server = https
       .createServer({ cert, key }, app)
       .listen(port, host === '::' ? undefined : host);
+
+    if (redirectPort != null) {
+      const redirectApp = express();
+
+      redirectApp.use((req, res) => {
+        // Redirect to the secure app.
+        return res.redirect(req.protocol + 's://' + req.headers.host + req.url);
+      });
+
+      const redirectServer = http
+        .createServer({}, redirectApp)
+        .listen(redirectPort, host === '::' ? undefined : host);
+
+      redirectServer.on('listening', () => {
+        console.log(
+          `Nephele redirect server listening on ${serverHosts
+            .map(
+              ({ name, address }) =>
+                `dav://${address}:${redirectPort} (${name})`
+            )
+            .join(', ')}`
+        );
+      });
+
+      redirectServer.on('close', () => {
+        console.log('Nephele redirect server closed.');
+      });
+    }
   } else {
     server = http
       .createServer({}, app)
@@ -317,7 +363,6 @@ try {
 
   server.on('close', () => {
     console.log('Nephele server closed.');
-    process.exit(0);
   });
 } catch (e: any) {
   console.error('Error:', e.message);

@@ -4,7 +4,7 @@ Run Nephele WebDAV server to serve local files.
 
 # Installation
 
-Follow the steps here for your OS: https://www.npmjs.com/package/authenticate-pam#Install
+Follow the steps here to install PAM development libraries for your OS: https://www.npmjs.com/package/authenticate-pam#Install
 
 Then,
 
@@ -48,7 +48,7 @@ Only regular users (UIDs 1000-59999) are allowed to log in.
 
 # Cluster with PM2
 
-You can load Nephele as a cluster using PM2. The following will start a cluster of 8 instances serving users' home directories.
+You can load Nephele as a cluster of worker processes using PM2. The following will start a cluster of 8 instances serving users' home directories.
 
 ```sh
 sudo npm install -g pm2
@@ -58,6 +58,28 @@ sudo pm2 start -i 8 -u root --uid 0 nephele-serve --node-args "--experimental-sp
 Then you can save it and have it load at system startup.
 
 ```sh
+sudo pm2 save
+sudo pm2 startup systemd
+```
+
+So, putting it all together, if you:
+
+- use Ubuntu Server
+- use a Let's Encrypt certificate for TLS
+- want to serve user directories out of a custom folder
+- want to use a cluster of 8 worker processes
+- want to have the server load on startup
+
+You'd do this (replacing example.com with your domain, and the path at the end with your server root path).
+
+```sh
+sudo apt install libpam0g-dev nodejs npm
+sudo npm i -g npm n
+sudo n 16
+sudo npm i -g nephele-serve pm2
+
+sudo pm2 start -i 8 -u root --uid 0 nephele-serve --node-args "--experimental-specifier-resolution=node" -- --user-directories --cert /etc/letsencrypt/live/example.com/fullchain.pem --key /etc/letsencrypt/live/example.com/privkey.pem /path/to/your/data/directory/
+
 sudo pm2 save
 sudo pm2 startup systemd
 ```
@@ -76,22 +98,25 @@ Usage: nephele-serve [options] [directory]
 Run Nephele WebDAV server to serve local files.
 
 Arguments:
-  directory            The path of the directory to use as the server root.
+  directory                        The path of the directory to use as the server root.
 
 Options:
-  -v, --version        Print the current version
-  -h, --host <host>    A host address to listen on. The default is to listen on all hosts. (default: "::")
-  -r, --realm <realm>  The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.
-  --cert <cert_file>   The filename of a certificate to use for HTTPS in PEM format.
-  --key <key_file>     The filename of a private key to use for HTTPS in PEM format.
-  -p, --port <port>    The port to listen on. Defaults to 443 if a cert is provided, 80 otherwise.
-  --home-directories   Serve users' home directories to them when they log in.
-  --user-directories   Serve users their own directory under the server root when they log in.
-  --no-auth            Don't require authorization. (Not compatible with serving home directories or user directories.)
-  --help               display help for command
+  -v, --version                    Print the current version
+  -h, --host <host>                A host address to listen on. The default is to listen on all hosts. (default: "::")
+  -r, --realm <realm>              The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.
+  --cert <cert_file>               The filename of a certificate to use for HTTPS in PEM format.
+  --key <key_file>                 The filename of a private key to use for HTTPS in PEM format.
+  -p, --port <port>                The port to listen on. Defaults to 443 if a cert is provided, 80 otherwise.
+  --redirect-port <redirect_port>  The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
+  --home-directories               Serve users' home directories to them when they log in.
+  --user-directories               Serve users their own directory under the server root when they log in.
+  --no-auth                        Don't require authorization. (Not compatible with serving home directories or user directories.)
+  --help                           display help for command
 
 Environment Variables:
   HOST                 Same as --host.
+  PORT                 Same as --port.
+  REDIRECT_PORT        Same as --redirect-port.
   REALM                Same as --realm.
   CERT_FILE            Same as --cert.
   CERT                 Text of a cert in PEM format.
