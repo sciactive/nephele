@@ -103,13 +103,13 @@ export default function createServer(
       const auth = await authenticator(request, response);
       response.locals.authenticatorConfig = auth;
       response.locals.authenticator = getAuthenticator(
-        decodeURI(request.path),
+        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
         auth
       );
     } else {
       response.locals.authenticatorConfig = authenticator;
       response.locals.authenticator = getAuthenticator(
-        decodeURI(request.path),
+        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
         authenticator
       );
     }
@@ -169,7 +169,7 @@ export default function createServer(
       const adapt = await adapter(request, response);
       response.locals.adapterConfig = adapt;
       const parsedAdapter = getAdapter(
-        decodeURI(request.path).replace(/\/?$/, () => '/'),
+        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
         adapt
       );
       response.locals.adapter = parsedAdapter.adapter;
@@ -180,7 +180,7 @@ export default function createServer(
     } else {
       response.locals.adapterConfig = adapter;
       const parsedAdapter = getAdapter(
-        decodeURI(request.path).replace(/\/?$/, () => '/'),
+        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
         adapter
       );
       response.locals.adapter = parsedAdapter.adapter;

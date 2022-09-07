@@ -53,7 +53,7 @@ app.use(
             locks: {},
             children: [
               {
-                name: 'First',
+                name: 'Directory (1)',
                 properties: {
                   creationdate: instanceDate,
                   getlastmodified: instanceDate,
@@ -63,7 +63,7 @@ app.use(
                 children: [],
               },
               {
-                name: 'Second',
+                name: 'Directory (2)',
                 properties: {
                   creationdate: instanceDate,
                   getlastmodified: instanceDate,
@@ -75,11 +75,11 @@ app.use(
             ],
           },
         }),
-        '/First/': new FileSystemAdapter({
+        '/Directory (1)/': new FileSystemAdapter({
           root: join(root, 'First'),
           usernamesMapToSystemUsers: pam,
         }),
-        '/Second/': new FileSystemAdapter({
+        '/Directory (2)/': new FileSystemAdapter({
           root: join(root, 'Second'),
           usernamesMapToSystemUsers: pam,
         }),

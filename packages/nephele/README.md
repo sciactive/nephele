@@ -130,13 +130,13 @@ app.use(
           ],
         },
       }),
-      '/Some%20Directory/': new ExampleAdapter(),
-      '/Another%20Directory/': new AnotherAdapter(),
+      '/Some Directory/': new ExampleAdapter(),
+      '/Another Directory/': new AnotherAdapter(),
     },
     authenticator: {
       '/': new InsecureAuthenticator(),
-      '/Some%20Directory/': new ExampleAuthenticator(),
-      '/Another%20Directory/': new AnotherAuthenticator(),
+      '/Some Directory/': new ExampleAuthenticator(),
+      '/Another Directory/': new AnotherAuthenticator(),
     },
   })
 );

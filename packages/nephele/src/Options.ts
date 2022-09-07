@@ -167,9 +167,7 @@ export function getAdapter(
     return { adapter: config as Adapter, baseUrl: '/' };
   } else {
     const keys = Object.keys(config).sort((a, b) => b.length - a.length);
-    const key = keys.find((key) =>
-      (unencodedPath || '/').startsWith(decodeURI(key))
-    );
+    const key = keys.find((key) => (unencodedPath || '/').startsWith(key));
 
     if (!key) {
       throw new Error(
@@ -189,9 +187,7 @@ export function getAuthenticator(
     return config as Authenticator;
   } else {
     const keys = Object.keys(config).sort((a, b) => b.length - a.length);
-    const key = keys.find((key) =>
-      (unencodedPath || '/').startsWith(decodeURI(key))
-    );
+    const key = keys.find((key) => (unencodedPath || '/').startsWith(key));
 
     if (!key) {
       throw new Error(

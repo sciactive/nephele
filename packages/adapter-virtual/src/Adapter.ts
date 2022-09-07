@@ -61,15 +61,19 @@ export default class Adapter implements AdapterInterface {
   }
 
   urlToRelativePath(url: URL, baseUrl: URL) {
-    if (!url.pathname.replace(/\/?$/, () => '/').startsWith(baseUrl.pathname)) {
+    if (
+      !decodeURIComponent(url.pathname)
+        .replace(/\/?$/, () => '/')
+        .startsWith(decodeURIComponent(baseUrl.pathname))
+    ) {
       return null;
     }
 
     return path.join(
       '/',
-      decodeURIComponent(
-        url.pathname.substring(baseUrl.pathname.length)
-      ).replace(/\/?$/, '')
+      decodeURIComponent(url.pathname)
+        .substring(decodeURIComponent(baseUrl.pathname).length)
+        .replace(/\/?$/, '')
     );
   }
 
