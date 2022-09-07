@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.19](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.18...v1.0.0-alpha.19) (2022-09-07)
+
+
+### Bug Fixes
+
+* differently encoded URIs resolving to incorrect path names ([7f694db](https://github.com/sciactive/nephele/commit/7f694db35184aad14df91c1041534b8e7e14ee23))
+
+
+
+
+
 # [1.0.0-alpha.18](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.17...v1.0.0-alpha.18) (2022-09-05)
 
 **Note:** Version bump only for package @nephele/adapter-virtual
