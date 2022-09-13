@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 import path from 'node:path';
 import mime from 'mime';
 import checkDiskSpace from 'check-disk-space';
-import Sse4Crc32 from 'sse4_crc32';
+import crc32 from 'cyclic-32';
 import type { Resource as ResourceInterface, User } from 'nephele';
 import {
   BadGatewayError,
@@ -583,23 +583,35 @@ export default class Resource implements ResourceInterface {
 
     const stat = await fsp.stat(this.absolutePath);
 
-    let etag: number;
+    let etag: string;
     if (
       (await this.isCollection()) ||
       stat.size / (1024 * 1024) > this.adapter.contentEtagMaxMB
     ) {
-      etag = Sse4Crc32.calculate(
-        `size: ${stat.size}; ctime: ${stat.ctimeMs}; mtime: ${stat.mtimeMs}`
-      );
+      etag = crc32
+        .c(
+          Buffer.from(
+            `size: ${stat.size}; ctime: ${stat.ctimeMs}; mtime: ${stat.mtimeMs}`,
+            'utf8'
+          )
+        )
+        .toString(16);
     } else {
       etag = await new Promise(async (resolve, reject) => {
-        const stream = Sse4Crc32.fromStream(await this.getStream());
+        const stream = (await this.getStream()).pipe(
+          crc32.createHash({
+            seed: 0,
+            table: crc32.TABLE.CASTAGNOLI,
+          })
+        );
         stream.on('error', reject);
-        stream.on('finish', () => resolve(stream.crc));
+        stream.on('data', (buffer: Buffer) => {
+          resolve(buffer.toString('hex'));
+        });
       });
     }
 
-    this.etag = `${etag.toString(16)}`;
+    this.etag = etag;
 
     return this.etag;
   }
