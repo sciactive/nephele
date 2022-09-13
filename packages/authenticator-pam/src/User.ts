@@ -30,8 +30,6 @@ export default class User implements UserInterface {
         this.gids = undefined;
       }
     }
-
-    console.log(this);
   }
 
   async authenticate(password: string, remoteHost: string = 'localhost') {

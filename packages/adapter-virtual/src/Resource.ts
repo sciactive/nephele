@@ -1,7 +1,7 @@
 import { Readable } from 'node:stream';
 import path from 'node:path';
 import mime from 'mime';
-import Sse4Crc32 from 'sse4_crc32';
+import crc32 from 'cyclic-32';
 import type { Resource as ResourceInterface, User } from 'nephele';
 import {
   BadGatewayError,
@@ -537,14 +537,19 @@ export default class Resource implements ResourceInterface {
   }
 
   async getEtag() {
-    const etag = Sse4Crc32.calculate(
-      `size: ${
-        ('content' in this.file ? this.file.content : Buffer.from([]))
-          .byteLength
-      }; ctime: ${this.file.properties.creationdate.getTime()}; mtime: ${this.file.properties.getlastmodified.getTime()}`
-    );
+    const etag = crc32
+      .c(
+        Buffer.from(
+          `size: ${
+            ('content' in this.file ? this.file.content : Buffer.from([]))
+              .byteLength
+          }; ctime: ${this.file.properties.creationdate.getTime()}; mtime: ${this.file.properties.getlastmodified.getTime()}`,
+          'utf8'
+        )
+      )
+      .toString(16);
 
-    return `${etag.toString(16)}`;
+    return etag;
   }
 
   async getMediaType() {
