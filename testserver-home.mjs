@@ -40,10 +40,7 @@ app.use(
 
       try {
         const homedir = await userHomePath(response.locals.user.username);
-        return new FileSystemAdapter({
-          root: homedir,
-          usernamesMapToSystemUsers: true,
-        });
+        return new FileSystemAdapter({ root: homedir });
       } catch (e) {
         throw new Error("Couldn't mount user directory as server root.");
       }

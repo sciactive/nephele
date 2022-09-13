@@ -2,7 +2,6 @@ import path from 'node:path';
 import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
-import userid from 'userid';
 import type { Request } from 'express';
 import type {
   Adapter as AdapterInterface,
@@ -30,23 +29,12 @@ import {
 } from './FileSystemBits.js';
 import Resource from './Resource.js';
 
-const { username, groupname, uid, ids, gids } = userid;
-
 export type AdapterConfig = {
   /**
    * The absolute path of the directory that acts as the root directory for the
    * service.
    */
   root: string;
-  /**
-   * Whether the usernames provided by the authenticator map directly to system
-   * usernames.
-   *
-   * If this is set to true, and they don't, you **will** see errors. The
-   * adapter will attempt to `chown` files to the user who is currently
-   * authenticated.
-   */
-  usernamesMapToSystemUsers: boolean;
   /**
    * The maximum filesize in megabytes to calculate etags by a CRC-32C checksum
    * of the file contents. Anything above this file size will use a CRC-32C
@@ -71,15 +59,9 @@ export type AdapterConfig = {
 export default class Adapter implements AdapterInterface {
   root: string;
   contentEtagMaxMB: number;
-  usernamesMapToSystemUsers: boolean;
 
-  constructor({
-    root,
-    usernamesMapToSystemUsers,
-    contentEtagMaxMB = 100,
-  }: AdapterConfig) {
+  constructor({ root, contentEtagMaxMB = 100 }: AdapterConfig) {
     this.root = root.replace(/\/?$/, () => '/');
-    this.usernamesMapToSystemUsers = usernamesMapToSystemUsers;
     this.contentEtagMaxMB = contentEtagMaxMB;
 
     try {
@@ -118,36 +100,16 @@ export default class Adapter implements AdapterInterface {
     return path.join(this.root, relativePath);
   }
 
-  async getUsername(uid: number): Promise<string> {
-    return username(uid);
-  }
-
-  async getGroupname(gid: number): Promise<string> {
-    return groupname(gid);
-  }
-
   async getUid(user: User): Promise<number> {
-    if (!this.usernamesMapToSystemUsers) {
-      return -1;
-    }
-
-    return uid(user.username);
+    return user.uid == null ? -1 : user.uid;
   }
 
   async getGid(user: User): Promise<number> {
-    if (!this.usernamesMapToSystemUsers) {
-      return -1;
-    }
-
-    return ids(user.username).gid;
+    return user.gid == null ? -1 : user.gid;
   }
 
   async getGids(user: User): Promise<number[]> {
-    if (!this.usernamesMapToSystemUsers) {
-      return [];
-    }
-
-    return gids(user.username);
+    return user.gids == null ? [] : user.gids;
   }
 
   async getComplianceClasses(
@@ -236,7 +198,7 @@ export default class Adapter implements AdapterInterface {
       exists = false;
     }
 
-    if (this.usernamesMapToSystemUsers) {
+    if (uid >= 0) {
       for (let i = 1; i <= parts.length; i++) {
         const ipathname = path.join('/', ...parts.slice(0, i));
 

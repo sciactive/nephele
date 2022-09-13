@@ -25,7 +25,9 @@ export type AuthenticatorConfig = {
    *
    * Root is always UID 0. On most systems, daemon users are assigned UIDs in
    * the range 2-999, normal users are assigned UIDs in the range 1000-65533,
-   * and the "nobody" user is assigned UID 65534.
+   * and the "nobody" user is assigned UID 65534. On some systems (including
+   * macOS), normal users are assigned IDs starting at 500, which is why the
+   * default includes this range.
    */
   allowedUIDs?: string;
 };
@@ -44,7 +46,7 @@ export default class Authenticator implements AuthenticatorInterface {
 
   constructor({
     realm = 'Nephele WebDAV Service',
-    allowedUIDs = '1000-59999',
+    allowedUIDs = '500-59999',
   }: AuthenticatorConfig = {}) {
     this.realm = realm;
     this.allowedUIDs = allowedUIDs.split(',').map((range) => range.trim());

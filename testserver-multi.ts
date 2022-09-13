@@ -77,11 +77,9 @@ app.use(
         }),
         '/Directory (1)/': new FileSystemAdapter({
           root: join(root, 'First'),
-          usernamesMapToSystemUsers: pam,
         }),
         '/Directory (2)/': new FileSystemAdapter({
           root: join(root, 'Second'),
-          usernamesMapToSystemUsers: pam,
         }),
       };
     },

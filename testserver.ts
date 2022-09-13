@@ -46,10 +46,7 @@ app.use(
             children: [],
           },
         })
-      : new FileSystemAdapter({
-          root,
-          usernamesMapToSystemUsers: !userpassdefined && pam,
-        }),
+      : new FileSystemAdapter({ root }),
     authenticator: userpassdefined
       ? new CustomAuthenticator({
           getUser: async (username) => {

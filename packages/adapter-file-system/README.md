@@ -26,8 +26,6 @@ app.use(
   nepheleServer({
     adapter: new FileSystemAdapter({
       root: '/path/to/webdav/root',
-      // This option is important to get right.
-      usernamesMapToSystemUsers: false,
     }),
     authenticator: new ExampleAuthenticator(),
   })
@@ -41,12 +39,7 @@ app.listen(port, () => {
 # Options / Defaults
 
 - `root`: The absolute path of the directory that acts as the root directory for the service.
-- `usernamesMapToSystemUsers`: Whether the usernames provided by the authenticator map directly to system usernames.
 - `contentEtagMaxMB` = `100`: The maximum filesize in megabytes to calculate etags by a CRC-32C checksum of the file contents.
-
-## usernamesMapToSystemUsers
-
-If this is set to true, and they don't, you **will** see errors. The adapter will attempt to `chown` files to the user who is currently authenticated.
 
 ## contentEtagMaxMB
 

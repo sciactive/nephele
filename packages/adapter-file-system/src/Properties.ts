@@ -74,38 +74,6 @@ export default class Properties implements PropertiesInterface {
             throw e;
           }
         }
-      case 'owner':
-        if (this.resource.adapter.usernamesMapToSystemUsers) {
-          try {
-            const stats = await this.resource.getStats();
-            return await this.resource.adapter.getUsername(stats.uid);
-          } catch (e: any) {
-            if (e.code === 'ENOENT') {
-              throw new PropertyNotFoundError(
-                `${name} property doesn't exist on resource.`
-              );
-            } else {
-              throw e;
-            }
-          }
-        }
-        break;
-      case 'group':
-        if (this.resource.adapter.usernamesMapToSystemUsers) {
-          try {
-            const stats = await this.resource.getStats();
-            return await this.resource.adapter.getGroupname(stats.gid);
-          } catch (e: any) {
-            if (e.code === 'ENOENT') {
-              throw new PropertyNotFoundError(
-                `${name} property doesn't exist on resource.`
-              );
-            } else {
-              throw e;
-            }
-          }
-        }
-        break;
     }
 
     // Fall back to a metadata file based prop store.
@@ -196,9 +164,6 @@ export default class Properties implements PropertiesInterface {
           'supportedlock',
           'quota-available-bytes',
           'quota-used-bytes',
-          ...(this.resource.adapter.usernamesMapToSystemUsers
-            ? ['owner', 'group']
-            : []),
         ].includes(name)
       ) {
         errors.push([
@@ -295,9 +260,6 @@ export default class Properties implements PropertiesInterface {
       'quota-available-bytes',
       'quota-used-bytes',
       'LCGDM:%%mode',
-      ...(this.resource.adapter.usernamesMapToSystemUsers
-        ? ['owner', 'group']
-        : []),
     ]) {
       try {
         props[name] = await this.get(name);
@@ -338,9 +300,6 @@ export default class Properties implements PropertiesInterface {
       'quota-available-bytes',
       'quota-used-bytes',
       'LCGDM:%%mode',
-      ...(this.resource.adapter.usernamesMapToSystemUsers
-        ? ['owner', 'group']
-        : []),
     ];
   }
 

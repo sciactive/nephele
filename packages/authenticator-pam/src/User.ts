@@ -3,15 +3,35 @@ import userid from 'userid';
 import type { User as UserInterface } from 'nephele';
 import { ForbiddenError, UnauthorizedError } from 'nephele';
 
-const { uid } = userid;
+const { ids, groupname, gids } = userid;
 
 export default class User implements UserInterface {
   username: string;
+  groupname?: string;
+  uid?: number;
+  gid?: number;
+  gids?: number[];
 
   private authenticated = false;
 
   constructor({ username }: { username: string }) {
     this.username = username;
+    try {
+      const { uid, gid } = ids(username);
+      this.uid = uid;
+      this.gid = gid;
+      this.groupname = groupname(gid);
+      this.gids = gids(username);
+    } catch (e: any) {
+      if (e.message.includes('username not found')) {
+        this.uid = undefined;
+        this.gid = undefined;
+        this.groupname = undefined;
+        this.gids = undefined;
+      }
+    }
+
+    console.log(this);
   }
 
   async authenticate(password: string, remoteHost: string = 'localhost') {
@@ -37,7 +57,9 @@ export default class User implements UserInterface {
   }
 
   async checkUID(allowedUIDs: string[]) {
-    const id = uid(this.username);
+    if (this.uid == null) {
+      throw new UnauthorizedError('Unknown user.');
+    }
 
     for (let range of allowedUIDs) {
       const parts = range.split('-');
@@ -47,10 +69,10 @@ export default class User implements UserInterface {
       }
 
       if (
-        (parts.length === 1 && id === parseInt(parts[0])) ||
+        (parts.length === 1 && this.uid === parseInt(parts[0])) ||
         (parts.length === 2 &&
-          id >= parseInt(parts[0]) &&
-          id <= parseInt(parts[1]))
+          this.uid >= parseInt(parts[0]) &&
+          this.uid <= parseInt(parts[1]))
       ) {
         return;
       }

@@ -43,7 +43,7 @@ Specifically, you may need to use `NODE_OPTIONS='--experimental-specifier-resolu
 # Options / Defaults
 
 - `realm` = `'Nephele WebDAV Service'`: The realm is the name reported by the server when the user is prompted to authenticate.
-- `allowedUIDs` = `'1000-59999'`: Comma separated UID ranges that are allowed to log in.
+- `allowedUIDs` = `'500-59999'`: Comma separated UID ranges that are allowed to log in.
 
 ## realm
 
@@ -53,7 +53,7 @@ It should be HTTP header safe (shouldn't include double quotes or semicolon).
 
 You can set, for example, "0,1000-1999" to allow the first 1000 normal users and root to log in.
 
-Root is always UID 0. On most systems, daemon users are assigned UIDs in the range 2-999, normal users are assigned UIDs in the range 1000-65533, and the "nobody" user is assigned UID 65534.
+Root is always UID 0. On most systems, daemon users are assigned UIDs in the range 2-999, normal users are assigned UIDs in the range 1000-65533, and the "nobody" user is assigned UID 65534. On some systems (including macOS), normal users are assigned IDs starting at 500, which is why the default includes this range.
 
 # License
 

@@ -265,10 +265,7 @@ try {
         try {
           if (homeDirectories) {
             const root = await userHomePath(response.locals.user.username);
-            return new FileSystemAdapter({
-              root,
-              usernamesMapToSystemUsers: true,
-            });
+            return new FileSystemAdapter({ root });
           }
 
           if (directory == null || !fs.statSync(directory).isDirectory()) {
@@ -290,16 +287,10 @@ try {
               fs.chmodSync(root, 0o750);
             }
 
-            return new FileSystemAdapter({
-              root,
-              usernamesMapToSystemUsers: true,
-            });
+            return new FileSystemAdapter({ root });
           }
 
-          return new FileSystemAdapter({
-            root: directory,
-            usernamesMapToSystemUsers: auth,
-          });
+          return new FileSystemAdapter({ root: directory });
         } catch (e) {
           throw new Error("Couldn't mount server root.");
         }
