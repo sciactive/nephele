@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.21](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.20...v1.0.0-alpha.21) (2022-09-16)
+
+
+### Bug Fixes
+
+* file system agnostic paths and handle errors on getAll properties ([e258573](https://github.com/sciactive/nephele/commit/e2585730ad473923d0eeb136b4e6cb10b382f987))
+
+
+
+
+
 # [1.0.0-alpha.20](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.19...v1.0.0-alpha.20) (2022-09-13)
 
 
