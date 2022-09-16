@@ -1,5 +1,4 @@
 import { Readable } from 'node:stream';
-import path from 'node:path';
 import mime from 'mime';
 import crc32 from 'cyclic-32';
 import type { Resource as ResourceInterface, User } from 'nephele';
@@ -41,7 +40,7 @@ export default class Resource implements ResourceInterface {
     this.baseUrl = baseUrl;
     this.path = filePath;
 
-    const basename = path.basename(this.path);
+    const basename = this.adapter.basename(this.path);
     const file = this.getFile();
 
     this.exists = !!file;
@@ -108,8 +107,8 @@ export default class Resource implements ResourceInterface {
       return;
     }
 
-    const parentParts = path.dirname(barePath).split('/');
-    const basename = path.basename(barePath);
+    const parentParts = this.adapter.dirname(barePath).split('/');
+    const basename = this.adapter.basename(barePath);
 
     let parent: RootFolder | Folder = this.adapter.files;
     do {
@@ -168,8 +167,8 @@ export default class Resource implements ResourceInterface {
       throw new Error('Tried to delete root folder.');
     }
 
-    const parentParts = path.dirname(barePath).split('/');
-    const basename = path.basename(barePath);
+    const parentParts = this.adapter.dirname(barePath).split('/');
+    const basename = this.adapter.basename(barePath);
 
     let parent: RootFolder | Folder = this.adapter.files;
     do {
@@ -260,7 +259,7 @@ export default class Resource implements ResourceInterface {
     const dir = new Resource({
       adapter: this.adapter,
       baseUrl: this.baseUrl,
-      path: path.dirname(this.path),
+      path: this.adapter.dirname(this.path),
     }).getFile();
 
     if (dir == null) {
@@ -355,7 +354,7 @@ export default class Resource implements ResourceInterface {
     try {
       const parent = await this.adapter.getResource(
         new URL(
-          path
+          this.adapter
             .dirname(destinationPath)
             .split('/')
             .map(encodeURIComponent)
@@ -413,14 +412,14 @@ export default class Resource implements ResourceInterface {
     let file: Folder | File;
     if ('content' in this.file) {
       file = {
-        name: path.basename(destinationPath),
+        name: this.adapter.basename(destinationPath),
         properties: JSON.parse(JSON.stringify(this.file.properties)),
         locks: {},
         content: Buffer.from(this.file.content),
       };
     } else {
       file = {
-        name: path.basename(destinationPath),
+        name: this.adapter.basename(destinationPath),
         properties: JSON.parse(JSON.stringify(this.file.properties)),
         locks: {},
         children: [],
@@ -471,7 +470,7 @@ export default class Resource implements ResourceInterface {
 
     try {
       const parent = await this.adapter.getResource(
-        new URL(path.dirname(destination.toString())),
+        new URL(this.adapter.dirname(destination.toString())),
         baseUrl
       );
 
@@ -523,7 +522,7 @@ export default class Resource implements ResourceInterface {
     this.unsetFile();
     destinationResource.setFile({
       ...this.file,
-      name: path.basename(destinationPath),
+      name: this.adapter.basename(destinationPath),
       locks: {},
     });
   }
@@ -575,7 +574,9 @@ export default class Resource implements ResourceInterface {
   }
 
   async getCanonicalName() {
-    return 'name' in this.file ? this.file.name : path.basename(this.path);
+    return 'name' in this.file
+      ? this.file.name
+      : this.adapter.basename(this.path);
   }
 
   async getCanonicalPath() {
@@ -610,7 +611,7 @@ export default class Resource implements ResourceInterface {
     for (let file of this.file.children) {
       resources.push(
         new Resource({
-          path: path.join(this.path, file.name),
+          path: this.path.replace(/\/?$/, () => '/') + file.name,
           baseUrl: this.baseUrl,
           adapter: this.adapter,
         })

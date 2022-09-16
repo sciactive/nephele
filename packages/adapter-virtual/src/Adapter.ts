@@ -1,4 +1,3 @@
-import path from 'node:path';
 import type { Request } from 'express';
 import type {
   Adapter as AdapterInterface,
@@ -69,12 +68,28 @@ export default class Adapter implements AdapterInterface {
       return null;
     }
 
-    return path.join(
-      '/',
+    return (
+      '/' +
       decodeURIComponent(url.pathname)
         .substring(decodeURIComponent(baseUrl.pathname).length)
+        .replace(/^\/?/, '')
         .replace(/\/?$/, '')
     );
+  }
+
+  basename(path: string) {
+    return (
+      path
+        .split('/')
+        .filter((part) => part != '')
+        .pop() || path
+    );
+  }
+
+  dirname(path: string) {
+    const parts = path.split('/').filter((part) => part != '');
+    parts.pop();
+    return ['', ...parts].join('/');
   }
 
   async getComplianceClasses(
@@ -155,7 +170,7 @@ export default class Adapter implements AdapterInterface {
           }
 
           const parent = await this.getResource(
-            new URL(path.dirname(url.toString())),
+            new URL(this.dirname(url.toString())),
             baseUrl
           );
 
