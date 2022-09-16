@@ -309,7 +309,10 @@ export default class Resource implements ResourceInterface {
       this.absolutePath === destinationPath ||
       ((await this.isCollection()) &&
         destinationPath.startsWith(
-          this.absolutePath.replace(/\/?$/, () => '/')
+          this.absolutePath.replace(
+            new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
+            () => path.sep
+          )
         ))
     ) {
       throw new ForbiddenError(
@@ -479,7 +482,10 @@ export default class Resource implements ResourceInterface {
       this.absolutePath === destinationPath ||
       ((await this.isCollection()) &&
         destinationPath.startsWith(
-          this.absolutePath.replace(/\/?$/, () => '/')
+          this.absolutePath.replace(
+            new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
+            () => path.sep
+          )
         ))
     ) {
       throw new ForbiddenError(
@@ -597,18 +603,29 @@ export default class Resource implements ResourceInterface {
         )
         .toString(16);
     } else {
-      etag = await new Promise(async (resolve, reject) => {
-        const stream = (await this.getStream()).pipe(
-          crc32.createHash({
-            seed: 0,
-            table: crc32.TABLE.CASTAGNOLI,
-          })
-        );
-        stream.on('error', reject);
-        stream.on('data', (buffer: Buffer) => {
-          resolve(buffer.toString('hex'));
+      // Check if we can open the file.
+      try {
+        const handle = await fsp.open(this.absolutePath, 'r');
+        handle.close();
+      } catch (e: any) {
+        throw new Error('Resource is not accessible.');
+      }
+      try {
+        etag = await new Promise(async (resolve, reject) => {
+          const stream = (await this.getStream()).pipe(
+            crc32.createHash({
+              seed: 0,
+              table: crc32.TABLE.CASTAGNOLI,
+            })
+          );
+          stream.on('error', reject);
+          stream.on('data', (buffer: Buffer) => {
+            resolve(buffer.toString('hex'));
+          });
         });
-      });
+      } catch (e: any) {
+        throw new Error('Etag could not be calculated.');
+      }
     }
 
     this.etag = etag;
@@ -641,7 +658,10 @@ export default class Resource implements ResourceInterface {
 
   async getCanonicalPath() {
     if (await this.isCollection()) {
-      return this.path.replace(/\/?$/, () => '/');
+      return this.path.replace(
+        new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
+        () => path.sep
+      );
     }
     return this.path;
   }
@@ -649,10 +669,10 @@ export default class Resource implements ResourceInterface {
   async getCanonicalUrl() {
     return new URL(
       (await this.getCanonicalPath())
-        .replace(/^\//, () => '')
-        .split('/')
+        .split(path.sep)
         .map(encodeURIComponent)
-        .join('/'),
+        .join('/')
+        .replace(/^\//, () => ''),
       this.baseUrl
     );
   }

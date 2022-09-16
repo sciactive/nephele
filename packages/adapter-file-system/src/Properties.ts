@@ -1,3 +1,4 @@
+import { platform } from 'node:os';
 import type { Properties as PropertiesInterface, User } from 'nephele';
 import {
   ForbiddenError,
@@ -62,6 +63,12 @@ export default class Properties implements PropertiesInterface {
       case 'quota-used-bytes':
         return `${await this.resource.getTotalSpace()}`;
       case 'LCGDM:%%mode':
+        if (platform() === 'win32') {
+          throw new PropertyNotFoundError(
+            `${name} property doesn't exist on resource.`
+          );
+        }
+
         try {
           const stats = await this.resource.getStats();
           return `${stats.mode.toString(8)}`;
@@ -164,6 +171,7 @@ export default class Properties implements PropertiesInterface {
           'supportedlock',
           'quota-available-bytes',
           'quota-used-bytes',
+          ...(platform() === 'win32' ? ['LCGDM:%%mode'] : []),
         ].includes(name)
       ) {
         errors.push([
@@ -257,15 +265,15 @@ export default class Properties implements PropertiesInterface {
       'getlastmodified',
       'resourcetype',
       'supportedlock',
-      'quota-available-bytes',
-      'quota-used-bytes',
-      'LCGDM:%%mode',
+      // 'quota-available-bytes', // Intentionally left out, expensive to calculate.
+      // 'quota-used-bytes', // Intentionally left out, expensive to calculate.
+      ...(platform() === 'win32' ? [] : ['LCGDM:%%mode']),
     ]) {
       try {
         props[name] = await this.get(name);
       } catch (e: any) {
         if (!(e instanceof PropertyNotFoundError)) {
-          throw e;
+          props[name] = e;
         }
       }
     }
@@ -299,7 +307,7 @@ export default class Properties implements PropertiesInterface {
       'supportedlock',
       'quota-available-bytes',
       'quota-used-bytes',
-      'LCGDM:%%mode',
+      ...(platform() === 'win32' ? [] : ['LCGDM:%%mode']),
     ];
   }
 

@@ -12,6 +12,7 @@
     "docs": "typedoc",
     "prepare": "husky install && npm run bootstrap && npm run lint",
     "bootstrap": "lerna bootstrap",
+    "bootstrap:win": "lerna bootstrap --ignore '@nephele/authenticator-pam' --ignore 'nephele-serve'",
     "test": "lerna run test --concurrency=1 --stream --no-prefix --no-bail -- -- --passWithNoTests"
   },
   "repository": {

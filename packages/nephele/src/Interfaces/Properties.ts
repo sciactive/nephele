@@ -132,6 +132,9 @@ export interface Properties {
    * This doesn't need to return all live properties. You can choose to leave
    * out properties that are expensive to calculate.
    *
+   * If there is an error retrieving a prop, you can store the error in the
+   * property's entry in the object.
+   *
    * The following property is handled by Nephele, and it is automatically
    * included if your adapter supports locks, indicated by returning compliance
    * class "2".

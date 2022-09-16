@@ -171,6 +171,22 @@ export class PROPFIND extends Method {
           const errorProps: string[] = [];
           if (allprop) {
             propObj = await props.getAllByUser(response.locals.user);
+
+            for (let name in propObj) {
+              if (propObj[name] instanceof ForbiddenError) {
+                forbiddenProps.push(name);
+                delete propObj[name];
+              } else if (propObj[name] instanceof UnauthorizedError) {
+                unauthorizedProps.push(name);
+                delete propObj[name];
+              } else if (propObj[name] instanceof PropertyNotFoundError) {
+                notFoundProps.push(name);
+                delete propObj[name];
+              } else if (propObj[name] instanceof Error) {
+                errorProps.push(name);
+                delete propObj[name];
+              }
+            }
           }
 
           for (let name of requestedProps) {

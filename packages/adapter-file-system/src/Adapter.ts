@@ -61,7 +61,10 @@ export default class Adapter implements AdapterInterface {
   contentEtagMaxMB: number;
 
   constructor({ root, contentEtagMaxMB = 100 }: AdapterConfig) {
-    this.root = root.replace(/\/?$/, () => '/');
+    this.root = root.replace(
+      new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
+      () => path.sep
+    );
     this.contentEtagMaxMB = contentEtagMaxMB;
 
     try {
@@ -83,10 +86,11 @@ export default class Adapter implements AdapterInterface {
     }
 
     return path.join(
-      '/',
-      decodeURIComponent(url.pathname)
+      path.sep,
+      ...decodeURIComponent(url.pathname)
         .substring(decodeURIComponent(baseUrl.pathname).length)
         .replace(/\/?$/, '')
+        .split('/')
     );
   }
 
@@ -200,7 +204,7 @@ export default class Adapter implements AdapterInterface {
 
     if (uid >= 0) {
       for (let i = 1; i <= parts.length; i++) {
-        const ipathname = path.join('/', ...parts.slice(0, i));
+        const ipathname = path.join(path.sep, ...parts.slice(0, i));
 
         // Check if the user can access it.
         try {
