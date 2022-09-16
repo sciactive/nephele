@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.22](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.21...v1.0.0-alpha.22) (2022-09-16)
+
+
+### Bug Fixes
+
+* use non-file-system dependent path functions in virtual adapter ([b800b6e](https://github.com/sciactive/nephele/commit/b800b6e202a49f919edcc37100df0fb015433d95))
+
+
+
+
+
 # [1.0.0-alpha.21](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.20...v1.0.0-alpha.21) (2022-09-16)
 
 **Note:** Version bump only for package @nephele/adapter-virtual
