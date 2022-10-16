@@ -10,6 +10,9 @@ export type { Cache };
 import type { Lock } from './Lock.js';
 export type { Lock };
 
+import type { Plugin } from './Plugin.js';
+export type { Plugin };
+
 import type { Properties } from './Properties.js';
 export type { Properties };
 

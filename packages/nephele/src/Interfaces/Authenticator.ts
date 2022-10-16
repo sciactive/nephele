@@ -1,10 +1,15 @@
 import type { Request, Response } from 'express';
 import type { Debugger } from 'debug';
 
-import type { AdapterConfig, AuthenticatorConfig } from '../Options.js';
+import type {
+  AdapterConfig,
+  AuthenticatorConfig,
+  PluginsConfig,
+} from '../Options.js';
 
 import type { Adapter } from './Adapter.js';
 import type { User } from './User.js';
+import type { Plugin } from './Plugin.js';
 
 export type AuthResponse<
   ResBody = any,
@@ -14,8 +19,10 @@ export type AuthResponse<
   {
     adapterConfig: AdapterConfig;
     authenticatorConfig: AuthenticatorConfig;
+    pluginsConfig: PluginsConfig;
     adapter: Adapter;
     authenticator: Authenticator;
+    plugins: Plugin[];
     baseUrl: URL;
     user: User;
     requestId: string;

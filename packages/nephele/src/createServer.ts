@@ -8,7 +8,12 @@ import { nanoid } from 'nanoid';
 
 import type { AuthResponse } from './Interfaces/index.js';
 import type { Config, Options } from './Options.js';
-import { defaults, getAdapter, getAuthenticator } from './Options.js';
+import {
+  defaults,
+  getAdapter,
+  getAuthenticator,
+  getPlugins,
+} from './Options.js';
 import { catchErrors } from './catchErrors.js';
 import { ForbiddenError, UnauthorizedError } from './Errors/index.js';
 import {
@@ -47,7 +52,7 @@ const pkg = JSON.parse(
  * @see http://sciactive.com/
  */
 export default function createServer(
-  { adapter, authenticator }: Config,
+  { adapter, authenticator, plugins }: Config,
   options: Partial<Options> = {}
 ) {
   const opts = Object.assign({}, defaults, options) as Options;
@@ -93,6 +98,50 @@ export default function createServer(
 
   // Log the details of the response.
   app.use(debugLoggerEnd);
+
+  async function loadPlugins(
+    request: Request,
+    response: AuthResponse,
+    next: NextFunction
+  ) {
+    if (typeof plugins === 'function') {
+      const pluginArray = await plugins(request, response);
+      response.locals.pluginsConfig = pluginArray;
+      response.locals.plugins = getPlugins(
+        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
+        pluginArray
+      );
+    } else if (plugins != null) {
+      response.locals.pluginsConfig = plugins;
+      response.locals.plugins = getPlugins(
+        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
+        plugins
+      );
+    } else {
+      response.locals.pluginsConfig = plugins;
+      response.locals.plugins = [];
+    }
+    next();
+  }
+
+  // Get the plugins.
+  app.use(loadPlugins);
+
+  // Run plugin prepare.
+  app.use(
+    async (request: Request, response: AuthResponse, next: NextFunction) => {
+      for (let plugin of response.locals.plugins) {
+        if ('prepare' in plugin && plugin.prepare) {
+          const result = await plugin.prepare(request, response);
+          if (result === false) {
+            response.end();
+            return;
+          }
+        }
+      }
+      next();
+    }
+  );
 
   async function loadAuthenticator(
     request: Request,

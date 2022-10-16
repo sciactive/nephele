@@ -16,13 +16,15 @@ npm i -s nephele
 
 # Usage
 
-Nephele provides all of the business logic of implementing WebDAV, but it requires [an adapter](https://www.npmjs.com/search?q=keywords%3Anephele%20adapter) to store and serve resources from a storage backend, and [an authenticator](https://www.npmjs.com/search?q=keywords%3Anephele%20authenticator) to authenticate users.
+Nephele provides all of the business logic of implementing WebDAV, but it requires [an adapter](https://www.npmjs.com/search?q=keywords%3Anephele%20adapter) to store and serve resources from a storage backend, and [an authenticator](https://www.npmjs.com/search?q=keywords%3Anephele%20authenticator) to authenticate users. It also can use [plugins](https://www.npmjs.com/search?q=keywords%3Anephele%20plugin) to provide additional features.
 
 ```js
 import express from 'express';
 import nepheleServer from 'nephele';
 import ExampleAdapter from '@nephele/adapter-example';
 import ExampleAuthenticator from '@nephele/authenticator-example';
+import ExamplePluginA from '@nephele/plugin-example-a';
+import ExamplePluginB from '@nephele/plugin-example-b';
 
 const app = express();
 const port = 8080;
@@ -32,6 +34,7 @@ app.use(
   nepheleServer({
     adapter: new ExampleAdapter(),
     authenticator: new ExampleAuthenticator(),
+    plugins: [new ExamplePluginA(), new ExamplePluginB()],
   })
 );
 
@@ -42,9 +45,9 @@ app.listen(port, () => {
 
 You can also provide options as a second argument to the create server function.
 
-## Conditional Adapters and Authenticators
+## Conditional Adapters, Authenticators, and Plugins
 
-You can load conditional adapters and authenticators by providing a function that returns them instead.
+You can load conditional adapters, authenticators, and plugins by providing a function that returns them instead.
 
 ```js
 import express from 'express';
@@ -52,6 +55,7 @@ import nepheleServer from 'nephele';
 import ExampleUnauthorizedAdapter from '@nephele/adapter-example-unauthorized';
 import ExampleAuthorizedAdapter from '@nephele/adapter-example-authorized';
 import ExampleAuthenticator from '@nephele/authenticator-example';
+import ExamplePlugin from '@nephele/plugin-example';
 
 const app = express();
 const port = 8080;
@@ -68,7 +72,16 @@ app.use(
         username: response.locals.user.username,
       });
     },
+
     authenticator: new ExampleAuthenticator(),
+
+    plugins: async (_request, response) => {
+      if (response.locals.user == null) {
+        return [new ExamplePlugin()];
+      }
+
+      return [];
+    },
   })
 );
 
@@ -77,9 +90,9 @@ app.listen(port, () => {
 });
 ```
 
-# Mounted Adapters and Authenticators
+# Mounted Adapters, Authenticators, and Plugins
 
-You can mount adapters and authenticators to different points in the namespace by providing an object whose keys are the mount points instead. There must always be an adapter and authenticator mounted at the "/" mount point.
+You can mount adapters, authenticators, and plugins to different points in the namespace by providing an object whose keys are the mount points instead. There must always be an adapter and authenticator mounted at the "/" mount point.
 
 ```js
 import express from 'express';
@@ -133,6 +146,7 @@ app.use(
       '/Some Directory/': new ExampleAdapter(),
       '/Another Directory/': new AnotherAdapter(),
     },
+
     authenticator: {
       '/': new InsecureAuthenticator(),
       '/Some Directory/': new ExampleAuthenticator(),
@@ -146,7 +160,7 @@ app.listen(port, () => {
 });
 ```
 
-This object can also be returned from an adapter and/or authenticator function.
+This object can also be returned from an adapter, authenticator, and/or plugins function.
 
 # How it Works
 
@@ -175,6 +189,10 @@ Nephele handles access control by using [authenticators](https://www.npmjs.com/s
 ### Users
 
 Users are extremely flexible in Nephele. Basically Nephele hands your authenticator a request, and you provide whatever you like back as the user for that request. Later, when Nephele asks the adapter to do certain things, it will provide this user to it.
+
+## Plugins
+
+Nephele offers additional features using [plugins](https://www.npmjs.com/search?q=keywords%3Anephele%20plugin). A plugin is given the chance to alter the behavior and response throughout the lifecycle of a Nephele request.
 
 # Service Location for CardDAV and CalDAV Clients
 

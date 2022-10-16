@@ -5,6 +5,7 @@ import type {
   Adapter,
   Authenticator,
   AuthResponse,
+  Plugin,
 } from './Interfaces/index.js';
 
 export type AdapterConfig = Adapter | { [k: string]: Adapter };
@@ -32,8 +33,24 @@ type DynamicAuthenticator = {
   ) => Promise<AuthenticatorConfig>;
 };
 
+type Plugins = Plugin[];
+
+export type PluginsConfig = Plugins | { [k: string]: Plugins } | undefined;
+
+type DefinedPlugins = {
+  plugins?: PluginsConfig;
+};
+
+type DynamicPlugins = {
+  plugins?: (
+    request: Request,
+    response: AuthResponse
+  ) => Promise<PluginsConfig>;
+};
+
 export type Config = (DefinedAdapter | DynamicAdapter) &
-  (DefinedAuthenticator | DynamicAuthenticator);
+  (DefinedAuthenticator | DynamicAuthenticator) &
+  (DefinedPlugins | DynamicPlugins);
 
 export interface Options {
   /**
@@ -196,5 +213,25 @@ export function getAuthenticator(
     }
 
     return config[key];
+  }
+}
+
+export function getPlugins(
+  unencodedPath: string,
+  config: PluginsConfig
+): Plugins {
+  if (Array.isArray(config)) {
+    return config as Plugins;
+  } else if (config != null) {
+    const keys = Object.keys(config).sort((a, b) => b.length - a.length);
+    const key = keys.find((key) => (unencodedPath || '/').startsWith(key));
+
+    if (!key) {
+      return [];
+    }
+
+    return config[key];
+  } else {
+    return [];
   }
 }

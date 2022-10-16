@@ -6,9 +6,11 @@
 import { hostname } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import type { Request } from 'express';
 import express from 'express';
 import createDebug from 'debug';
 
+import type { AuthResponse } from './packages/nephele/dist/index.js';
 import server from './packages/nephele/dist/index.js';
 import FileSystemAdapter from './packages/adapter-file-system/dist/index.js';
 import VirtualAdapter from './packages/adapter-virtual/dist/index.js';
@@ -65,6 +67,13 @@ app.use(
       : pam
       ? new PamAuthenticator()
       : new InsecureAuthenticator(),
+    plugins: [
+      {
+        async prepare(_req: Request, _res: AuthResponse) {
+          console.log('prepare');
+        },
+      },
+    ],
   })
 );
 
