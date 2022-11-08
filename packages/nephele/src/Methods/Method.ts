@@ -10,6 +10,7 @@ import vary from 'vary';
 import type {
   AuthResponse,
   Lock,
+  Plugin,
   Resource,
   User,
 } from '../Interfaces/index.js';
@@ -78,6 +79,31 @@ export class Method {
 
   constructor(opts: Options) {
     this.opts = opts;
+  }
+
+  /**
+   * You can use this to run plugins for an event. If this returns true, the
+   * response has been ended by a plugin.
+   */
+  async runPlugins(
+    request: Request,
+    response: AuthResponse,
+    event: keyof Plugin,
+    data: any = {}
+  ) {
+    let ended = false;
+    for (let plugin of response.locals.plugins) {
+      if (event in plugin) {
+        const fn = plugin[event];
+        if (fn) {
+          const result = await fn.bind(plugin)(request, response, data);
+          if (result === false) {
+            ended = true;
+          }
+        }
+      }
+    }
+    return ended;
   }
 
   /**

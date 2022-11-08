@@ -19,6 +19,7 @@ import CustomAuthenticator, {
   User as CustomUser,
 } from './packages/authenticator-custom/dist/index.js';
 import InsecureAuthenticator from './packages/authenticator-none/dist/index.js';
+import IndexPlugin from './packages/plugin-index/dist/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -68,9 +69,22 @@ app.use(
       ? new PamAuthenticator()
       : new InsecureAuthenticator(),
     plugins: [
+      new IndexPlugin(),
       {
         async prepare(_req: Request, _res: AuthResponse) {
           console.log('prepare');
+        },
+        async beforeAuth(_req: Request, _res: AuthResponse) {
+          console.log('beforeAuth');
+        },
+        async afterAuth(_req: Request, _res: AuthResponse) {
+          console.log('afterAuth');
+        },
+        async begin(_req: Request, _res: AuthResponse) {
+          console.log('begin');
+        },
+        async close(_req: Request, _res: AuthResponse) {
+          console.log('close');
         },
       },
     ],

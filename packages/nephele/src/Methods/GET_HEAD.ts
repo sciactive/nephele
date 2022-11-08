@@ -59,6 +59,16 @@ export class GET_HEAD extends Method {
 
     await this.checkConditionalHeaders(request, response);
 
+    const ended = await this.runPlugins(
+      request,
+      response,
+      request.method === 'GET' ? 'beforeGet' : 'beforeHead',
+      { method: this, resource, properties }
+    );
+    if (ended) {
+      return;
+    }
+
     const mediaType = await resource.getMediaType();
 
     if (
@@ -320,5 +330,11 @@ export class GET_HEAD extends Method {
         });
       }
     }
+
+    await this.runPlugins(
+      request,
+      response,
+      request.method === 'GET' ? 'afterGet' : 'afterHead'
+    );
   }
 }

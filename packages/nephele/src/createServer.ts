@@ -130,16 +130,18 @@ export default function createServer(
   // Run plugin prepare.
   app.use(
     async (request: Request, response: AuthResponse, next: NextFunction) => {
+      let ended = false;
       for (let plugin of response.locals.plugins) {
         if ('prepare' in plugin && plugin.prepare) {
           const result = await plugin.prepare(request, response);
           if (result === false) {
-            response.end();
-            return;
+            ended = true;
           }
         }
       }
-      next();
+      if (!ended) {
+        next();
+      }
     }
   );
 
@@ -167,6 +169,24 @@ export default function createServer(
 
   // Get the authenticator.
   app.use(loadAuthenticator);
+
+  // Run plugin beforeAuth.
+  app.use(
+    async (request: Request, response: AuthResponse, next: NextFunction) => {
+      let ended = false;
+      for (let plugin of response.locals.plugins) {
+        if ('beforeAuth' in plugin && plugin.beforeAuth) {
+          const result = await plugin.beforeAuth(request, response);
+          if (result === false) {
+            ended = true;
+          }
+        }
+      }
+      if (!ended) {
+        next();
+      }
+    }
+  );
 
   async function authenticate(
     request: Request,
@@ -208,6 +228,24 @@ export default function createServer(
 
   // Authenticate before the request.
   app.use(authenticate);
+
+  // Run plugin afterAuth.
+  app.use(
+    async (request: Request, response: AuthResponse, next: NextFunction) => {
+      let ended = false;
+      for (let plugin of response.locals.plugins) {
+        if ('afterAuth' in plugin && plugin.afterAuth) {
+          const result = await plugin.afterAuth(request, response);
+          if (result === false) {
+            ended = true;
+          }
+        }
+      }
+      if (!ended) {
+        next();
+      }
+    }
+  );
 
   async function loadAdapter(
     request: Request,
@@ -304,6 +342,38 @@ export default function createServer(
       }
     );
   };
+
+  // Run plugin begin.
+  app.use(
+    async (request: Request, response: AuthResponse, next: NextFunction) => {
+      let ended = false;
+      for (let plugin of response.locals.plugins) {
+        if ('begin' in plugin && plugin.begin) {
+          const result = await plugin.begin(request, response);
+          if (result === false) {
+            ended = true;
+          }
+        }
+      }
+      if (!ended) {
+        next();
+      }
+    }
+  );
+
+  // Run plugin close.
+  app.use(
+    async (request: Request, response: AuthResponse, next: NextFunction) => {
+      response.on('close', async () => {
+        for (let plugin of response.locals.plugins) {
+          if ('close' in plugin && plugin.close) {
+            await plugin.close(request, response);
+          }
+        }
+      });
+      next();
+    }
+  );
 
   app.options('*', runMethodCatchErrors(new OPTIONS(opts)));
   app.get('*', runMethodCatchErrors(new GET_HEAD(opts)));
