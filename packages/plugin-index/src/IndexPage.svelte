@@ -1,6 +1,11 @@
 <svelte:head>
   <script>
+    /**
+     * File Upload
+     */
     document.addEventListener('DOMContentLoaded', () => {
+      const uploadContainer = document.getElementById('uploadContainer');
+      uploadContainer.style.display = 'block';
       const uploadForm = document.getElementById('upload');
       const uploadOutput = document.getElementById('uploadOutput');
       const uploads = document.getElementById('uploads');
@@ -10,9 +15,9 @@
       uploadForm.addEventListener('submit', (event) => {
         event.preventDefault();
         files = files.concat(
-          Array.prototype.slice.call(uploadForm.file.files).map(file => ({
+          Array.prototype.slice.call(uploadForm.file.files).map((file) => ({
             done: false,
-            file
+            file,
           }))
         );
         uploadForm.reset();
@@ -49,17 +54,21 @@
             xhr.upload.addEventListener('progress', (event) => {
               if (event.lengthComputable) {
                 progress.value = (event.loaded / event.total) * 100;
-                progress.title = ((event.loaded / event.total) * 100) + '%';
+                progress.title = (event.loaded / event.total) * 100 + '%';
               }
             });
             xhr.addEventListener('progress', (event) => {
               if (event.lengthComputable) {
                 progress.value = (event.loaded / event.total) * 100;
-                progress.title = ((event.loaded / event.total) * 100) + '%';
+                progress.title = (event.loaded / event.total) * 100 + '%';
               }
             });
             xhr.addEventListener('loadend', () => {
-              if (xhr.readyState === 4 && xhr.status >= 200 && xhr.status < 300) {
+              if (
+                xhr.readyState === 4 &&
+                xhr.status >= 200 &&
+                xhr.status < 300
+              ) {
                 progress.value = 100;
                 progress.title = 'Done';
               } else {
@@ -71,7 +80,7 @@
               }
               file.done = true;
 
-              if (files.find(file => !file.done) == null) {
+              if (files.find((file) => !file.done) == null) {
                 refresh.disabled = false;
               }
             });
@@ -91,7 +100,13 @@
   <thead>
     <tr>
       <th style="text-align: left; border-bottom: 1px solid #ddd;">
-        <a href="?sort=name&amp;order={(urlParams.order === 'asc' && urlParams.sort === 'name') || (!('sort' in urlParams)) ? 'desc' : 'asc'}">
+        <a
+          href="?sort=name&amp;order={(urlParams.order === 'asc' &&
+            urlParams.sort === 'name') ||
+          !('sort' in urlParams)
+            ? 'desc'
+            : 'asc'}"
+        >
           Name
         </a>
         {#if urlParams.sort === 'name' || !('sort' in urlParams)}
@@ -101,7 +116,12 @@
         {/if}
       </th>
       <th style="text-align: left; border-bottom: 1px solid #ddd;">
-        <a href="?sort=type&amp;order={urlParams.order === 'asc' && urlParams.sort === 'type' ? 'desc' : 'asc'}">
+        <a
+          href="?sort=type&amp;order={urlParams.order === 'asc' &&
+          urlParams.sort === 'type'
+            ? 'desc'
+            : 'asc'}"
+        >
           Type
         </a>
         {#if urlParams.sort === 'type'}
@@ -111,7 +131,12 @@
         {/if}
       </th>
       <th style="text-align: left; border-bottom: 1px solid #ddd;">
-        <a href="?sort=modified&amp;order={urlParams.order === 'asc' && urlParams.sort === 'modified' ? 'desc' : 'asc'}">
+        <a
+          href="?sort=modified&amp;order={urlParams.order === 'asc' &&
+          urlParams.sort === 'modified'
+            ? 'desc'
+            : 'asc'}"
+        >
           Last Modified
         </a>
         {#if urlParams.sort === 'modified'}
@@ -121,7 +146,12 @@
         {/if}
       </th>
       <th style="text-align: left; border-bottom: 1px solid #ddd;">
-        <a href="?sort=size&amp;order={urlParams.order === 'asc' && urlParams.sort === 'size' ? 'desc' : 'asc'}">
+        <a
+          href="?sort=size&amp;order={urlParams.order === 'asc' &&
+          urlParams.sort === 'size'
+            ? 'desc'
+            : 'asc'}"
+        >
           Size
         </a>
         {#if urlParams.sort === 'size'}
@@ -135,32 +165,44 @@
   <tbody>
     {#if self.url.pathname != '/'}
       <tr>
-        <td><a href="{`${self.url.pathname}`.replace(/\/[^\/]*\/?$/, '')}/">..</a></td>
-        <td></td>
-        <td></td>
+        <td
+          ><a href="{`${self.url.pathname}`.replace(/\/[^\/]*\/?$/, '')}/">..</a
+          ></td
+        >
+        <td />
+        <td />
         <td>Parent Directory</td>
       </tr>
     {/if}
     {#each sortEntries() as entry, i (entry.name)}
-      <tr style="{(self.url.pathname != '/' ? !(i % 2) : i % 2) ? 'background-color: #ddd;' : ''}">
-        <td><a href={entry.url}>{entry.name}{entry.directory ? '/' : ''}</a></td>
+      <tr
+        style={(self.url.pathname != '/' ? !(i % 2) : i % 2)
+          ? 'background-color: #ddd;'
+          : ''}
+      >
+        <td><a href={entry.url}>{entry.name}{entry.directory ? '/' : ''}</a></td
+        >
         <td>{entry.directory ? 'Directory' : entry.type}</td>
         <td>{new Date(entry.lastModified).toLocaleString()}</td>
-        <td title={entry.directory ? '' : `${entry.size} bytes`}>{entry.directory ? '' : prettySize(entry.size)}</td>
+        <td title={entry.directory ? '' : `${entry.size} bytes`}
+          >{entry.directory ? '' : prettySize(entry.size)}</td
+        >
       </tr>
     {/each}
   </tbody>
 </table>
 
-<form name="upload" id="upload" style="margin-top: 1em;">
-  Upload: <input type="file" name="file" multiple />
-  <button>Submit</button>
-</form>
+<div id="uploadContainer" style="display: none;">
+  <form name="upload" id="upload" style="margin-top: 1em;">
+    Upload: <input type="file" name="file" multiple />
+    <button>Submit</button>
+  </form>
 
-<div id="uploadOutput" style="margin-top: 1em; display: none;">
-  <div id="uploads"></div>
+  <div id="uploadOutput" style="margin-top: 1em; display: none;">
+    <div id="uploads" />
 
-  <button id="refresh" onclick="window.location.reload()">Refresh</button>
+    <button id="refresh" onclick="window.location.reload()">Refresh</button>
+  </div>
 </div>
 
 <p>Powered by {name}</p>
@@ -204,15 +246,13 @@
               ? b.name.localeCompare(a.name)
               : a.name.localeCompare(b.name);
           }
-          return urlParams.order === 'desc'
-            ? b.size - a.size
-            : a.size - b.size;
+          return urlParams.order === 'desc' ? b.size - a.size : a.size - b.size;
       }
     });
   }
 
   function prettySize(size) {
-    return `${prettySizeDecimal(size)} (${prettySizeBinary(size)})`
+    return `${prettySizeDecimal(size)} (${prettySizeBinary(size)})`;
   }
 
   function prettySizeDecimal(size) {
@@ -222,13 +262,13 @@
     const TB = GB * 1000;
 
     if (size > TB) {
-      return `${Math.round(size / TB * 100) / 100}TB`;
+      return `${Math.round((size / TB) * 100) / 100}TB`;
     } else if (size > GB) {
-      return `${Math.round(size / GB * 100) / 100}GB`;
+      return `${Math.round((size / GB) * 100) / 100}GB`;
     } else if (size > MB) {
-      return `${Math.round(size / MB * 100) / 100}MB`;
+      return `${Math.round((size / MB) * 100) / 100}MB`;
     } else if (size > KB) {
-      return `${Math.round(size / KB * 100) / 100}KB`;
+      return `${Math.round((size / KB) * 100) / 100}KB`;
     } else {
       return `${size}B`;
     }
@@ -241,13 +281,13 @@
     const TB = GB * 1024;
 
     if (size > TB) {
-      return `${Math.round(size / TB * 100) / 100}TiB`;
+      return `${Math.round((size / TB) * 100) / 100}TiB`;
     } else if (size > GB) {
-      return `${Math.round(size / GB * 100) / 100}GiB`;
+      return `${Math.round((size / GB) * 100) / 100}GiB`;
     } else if (size > MB) {
-      return `${Math.round(size / MB * 100) / 100}MiB`;
+      return `${Math.round((size / MB) * 100) / 100}MiB`;
     } else if (size > KB) {
-      return `${Math.round(size / KB * 100) / 100}KiB`;
+      return `${Math.round((size / KB) * 100) / 100}KiB`;
     } else {
       return `${size}B`;
     }
