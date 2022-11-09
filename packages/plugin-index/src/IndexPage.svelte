@@ -1,22 +1,98 @@
 <svelte:head>
   <script>
     /**
+     * Make Directory
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      const mkdirContainer = document.getElementById('mkdirContainer');
+      mkdirContainer.style.display = '';
+      const mkdirForm = document.getElementById('mkdir');
+      const mkdirOutput = document.getElementById('mkdirOutput');
+      const mkdirs = document.getElementById('mkdirs');
+      const refresh = document.getElementById('refresh');
+      let requests = [];
+
+      mkdirForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        requests = requests.concat([
+          {
+            done: null,
+            name: mkdirForm.name.value,
+          },
+        ]);
+        mkdirForm.reset();
+
+        doMkdir();
+      });
+
+      function doMkdir() {
+        for (let i = 0; i < requests.length; i++) {
+          const dir = requests[i];
+
+          if (dir.done === null) {
+            dir.done = false;
+            mkdirOutput.style.display = '';
+            refresh.disabled = true;
+
+            const element = document.createElement('div');
+            element.style.marginBottom = '0.5em';
+
+            const progress = document.createElement('div');
+            progress.style.display = 'inline-block';
+            progress.innerText = 'Working...';
+            progress.style.border = '1px solid #000';
+            progress.style.width = '100px';
+            progress.style.marginRight = '0.5em';
+            progress.style.textAlign = 'center';
+            element.appendChild(progress);
+
+            const name = document.createElement('span');
+            name.innerText = dir.name;
+            element.appendChild(name);
+
+            mkdirs.appendChild(element);
+
+            const xhr = new XMLHttpRequest();
+            xhr.addEventListener('loadend', () => {
+              if (
+                xhr.readyState === 4 &&
+                xhr.status >= 200 &&
+                xhr.status < 300
+              ) {
+                progress.innerText = 'Success.';
+              } else {
+                progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
+              }
+              dir.done = true;
+
+              if (requests.find((dir) => !dir.done) == null) {
+                refresh.disabled = false;
+              }
+            });
+            xhr.open('MKCOL', dir.name, true);
+            xhr.send();
+          }
+        }
+      }
+    });
+
+    /**
      * File Upload
      */
     document.addEventListener('DOMContentLoaded', () => {
       const uploadContainer = document.getElementById('uploadContainer');
-      uploadContainer.style.display = 'block';
+      uploadContainer.style.display = '';
       const uploadForm = document.getElementById('upload');
       const uploadOutput = document.getElementById('uploadOutput');
       const uploads = document.getElementById('uploads');
       const refresh = document.getElementById('refresh');
-      let files = [];
+      let requests = [];
 
       uploadForm.addEventListener('submit', (event) => {
         event.preventDefault();
-        files = files.concat(
+        requests = requests.concat(
           Array.prototype.slice.call(uploadForm.file.files).map((file) => ({
-            done: false,
+            done: null,
             file,
           }))
         );
@@ -26,11 +102,12 @@
       });
 
       function doUpload() {
-        for (let i = 0; i < files.length; i++) {
-          const file = files[i];
+        for (let i = 0; i < requests.length; i++) {
+          const file = requests[i];
 
-          if (file.element == null) {
-            uploadOutput.style.display = 'block';
+          if (file.done === null) {
+            file.done = false;
+            uploadOutput.style.display = '';
             refresh.disabled = true;
 
             const element = document.createElement('label');
@@ -75,12 +152,12 @@
                 progress.value = 0;
                 progress.title = 'Error';
                 const error = document.createElement('span');
-                error.innerText = ' (error)';
+                error.innerText = ` (Error: ${xhr.status} ${xhr.statusText})`;
                 element.appendChild(error);
               }
               file.done = true;
 
-              if (files.find((file) => !file.done) == null) {
+              if (requests.find((file) => !file.done) == null) {
                 refresh.disabled = false;
               }
             });
@@ -91,12 +168,116 @@
         }
       }
     });
+
+    /**
+     * Show Actions
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      const actions = document.querySelectorAll('.action');
+
+      for (let i = 0; i < actions.length; i++) {
+        const action = actions[i];
+        action.style.display = '';
+      }
+    });
+
+    /**
+     * Delete
+     */
+    document.addEventListener('DOMContentLoaded', () => {
+      const fileTable = document.getElementById('fileTable');
+      const deleteOutput = document.getElementById('deleteOutput');
+      const deletes = document.getElementById('deletes');
+      const refresh = document.getElementById('refresh');
+      let requests = [];
+
+      fileTable.addEventListener('click', (event) => {
+        if (!event.target.classList.contains('delete')) {
+          return;
+        }
+
+        event.preventDefault();
+
+        if (
+          !confirm(
+            `Are you sure you want to delete "${
+              event.target.parentNode.dataset['name']
+            }"?${
+              event.target.parentNode.dataset['name'].match(/\/$/)
+                ? ' This will delete all of its contents too.'
+                : ''
+            }`
+          )
+        ) {
+          return;
+        }
+
+        requests = requests.concat([
+          {
+            done: null,
+            name: event.target.parentNode.dataset['name'],
+          },
+        ]);
+
+        doDelete();
+      });
+
+      function doDelete() {
+        for (let i = 0; i < requests.length; i++) {
+          const file = requests[i];
+
+          if (file.done === null) {
+            file.done = false;
+            deleteOutput.style.display = '';
+            refresh.disabled = true;
+
+            const element = document.createElement('div');
+            element.style.marginBottom = '0.5em';
+
+            const progress = document.createElement('div');
+            progress.style.display = 'inline-block';
+            progress.innerText = 'Working...';
+            progress.style.border = '1px solid #000';
+            progress.style.width = '100px';
+            progress.style.marginRight = '0.5em';
+            progress.style.textAlign = 'center';
+            element.appendChild(progress);
+
+            const name = document.createElement('span');
+            name.innerText = file.name;
+            element.appendChild(name);
+
+            deletes.appendChild(element);
+
+            const xhr = new XMLHttpRequest();
+            xhr.addEventListener('loadend', () => {
+              if (
+                xhr.readyState === 4 &&
+                xhr.status >= 200 &&
+                xhr.status < 300
+              ) {
+                progress.innerText = 'Success.';
+              } else {
+                progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
+              }
+              file.done = true;
+
+              if (requests.find((file) => !file.done) == null) {
+                refresh.disabled = false;
+              }
+            });
+            xhr.open('DELETE', file.name, true);
+            xhr.send();
+          }
+        }
+      }
+    });
   </script>
 </svelte:head>
 
-<h1>Index of {self.url.pathname}</h1>
+<h1>Index of {decodeURIComponent(self.url.pathname)}</h1>
 
-<table style="width: 100%;" cellspacing="0">
+<table id="fileTable" style="width: 100%;" cellspacing="0">
   <thead>
     <tr>
       <th style="text-align: left; border-bottom: 1px solid #ddd;">
@@ -160,6 +341,11 @@
           </span>
         {/if}
       </th>
+      <th
+        class="action"
+        style="text-align: left; border-bottom: 1px solid #ddd; display: none;"
+        >Actions</th
+      >
     </tr>
   </thead>
   <tbody>
@@ -172,6 +358,7 @@
         <td />
         <td />
         <td>Parent Directory</td>
+        <td class="action" style="display: none;" />
       </tr>
     {/if}
     {#each sortEntries() as entry, i (entry.name)}
@@ -187,10 +374,30 @@
         <td title={entry.directory ? '' : `${entry.size} bytes`}
           >{entry.directory ? '' : prettySize(entry.size)}</td
         >
+        <td
+          class="action"
+          style="display: none;"
+          data-name={`${entry.name}${entry.directory ? '/' : ''}`}
+        >
+          <button class="delete">Delete</button>
+        </td>
       </tr>
     {/each}
   </tbody>
 </table>
+
+<div id="mkdirContainer" style="display: none;">
+  <form name="mkdir" id="mkdir" style="margin-top: 1em;">
+    Make Directory: <input type="text" name="name" placeholder="Name" />
+    <button>Submit</button>
+  </form>
+
+  <div id="mkdirOutput" style="margin-top: 1em; display: none;">
+    <div id="mkdirs" />
+
+    <button id="refresh" onclick="window.location.reload()">Refresh</button>
+  </div>
+</div>
 
 <div id="uploadContainer" style="display: none;">
   <form name="upload" id="upload" style="margin-top: 1em;">
@@ -203,6 +410,14 @@
 
     <button id="refresh" onclick="window.location.reload()">Refresh</button>
   </div>
+</div>
+
+<div id="deleteOutput" style="margin-top: 1em; display: none;">
+  Delete Requests
+
+  <div id="deletes" />
+
+  <button id="refresh" onclick="window.location.reload()">Refresh</button>
 </div>
 
 <p>Powered by {name}</p>
