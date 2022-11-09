@@ -183,6 +183,98 @@
       }
 
       /**
+       * Rename
+       */
+      handleRenames: {
+        const fileTable = document.getElementById('fileTable');
+        const renameContainer = document.getElementById('renameContainer');
+        const renames = document.getElementById('renames');
+
+        fileTable.addEventListener('click', (event) => {
+          if (!event.target.classList.contains('rename')) {
+            return;
+          }
+
+          event.preventDefault();
+
+          const newName = prompt(
+            'Enter the new name.',
+            event.target.parentNode.dataset['name']
+          );
+          if (newName == null || newName == '') {
+            return;
+          }
+
+          requests = requests.concat([
+            {
+              type: 'rename',
+              done: null,
+              name: event.target.parentNode.dataset['name'],
+              newName,
+            },
+          ]);
+
+          doRename();
+        });
+
+        function doRename() {
+          for (let i = 0; i < requests.length; i++) {
+            const file = requests[i];
+
+            if (file.type === 'rename' && file.done === null) {
+              file.done = false;
+              renameContainer.style.display = '';
+              refreshContainer.style.display = '';
+              refresh.disabled = true;
+
+              const element = document.createElement('div');
+              element.style.marginBottom = '0.5em';
+
+              const progress = document.createElement('div');
+              progress.style.display = 'inline-block';
+              progress.innerText = 'Working...';
+              progress.style.border = '1px solid #000';
+              progress.style.width = '100px';
+              progress.style.marginRight = '0.5em';
+              progress.style.textAlign = 'center';
+              element.appendChild(progress);
+
+              const name = document.createElement('span');
+              name.innerText = file.name;
+              element.appendChild(name);
+
+              renames.appendChild(element);
+
+              const xhr = new XMLHttpRequest();
+              xhr.addEventListener('loadend', () => {
+                if (
+                  xhr.readyState === 4 &&
+                  xhr.status >= 200 &&
+                  xhr.status < 300
+                ) {
+                  progress.innerText = 'Success.';
+                } else {
+                  progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
+                }
+                file.done = true;
+
+                if (requests.find((request) => !request.done) == null) {
+                  refresh.disabled = false;
+                }
+              });
+              xhr.open('MOVE', file.name, true);
+              xhr.setRequestHeader(
+                'Destination',
+                `${fileTable.dataset['root']}`.replace('//?$/', '/') +
+                  encodeURIComponent(file.newName)
+              );
+              xhr.send();
+            }
+          }
+        }
+      }
+
+      /**
        * Delete
        */
       handleDeletes: {
@@ -279,7 +371,7 @@
 
 <h1>Index of {decodeURIComponent(self.url.pathname)}</h1>
 
-<table id="fileTable" style="width: 100%;" cellspacing="0">
+<table id="fileTable" style="width: 100%;" cellspacing="0" data-root={self.url}>
   <thead>
     <tr>
       <th style="text-align: left; border-bottom: 1px solid #ddd;">
@@ -381,6 +473,7 @@
           style="display: none;"
           data-name={`${entry.name}${entry.directory ? '/' : ''}`}
         >
+          <button class="rename">Rename</button>
           <button class="delete">Delete</button>
         </td>
       </tr>
@@ -404,6 +497,12 @@
   </form>
 
   <div id="uploads" style="margin-top: 1em; display: none;" />
+</div>
+
+<div id="renameContainer" style="margin-top: 1em; display: none;">
+  Rename Requests
+
+  <div id="renames" />
 </div>
 
 <div id="deleteContainer" style="margin-top: 1em; display: none;">
