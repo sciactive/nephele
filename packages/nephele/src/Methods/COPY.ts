@@ -199,8 +199,9 @@ export class COPY extends Method {
           }
 
           if (topLevel) {
-            const lockPermission = await response.locals.getLockPermission(
+            const lockPermission = await this.getLockPermission(
               request,
+              response,
               destinationResource,
               response.locals.user
             );
