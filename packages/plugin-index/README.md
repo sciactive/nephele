@@ -27,7 +27,11 @@ app.use(
   nepheleServer({
     adapter: new ExampleAdapter(),
     authenticator: new InsecureAuthenticator(),
-    plugins: [new IndexPlugin()],
+    plugins: [
+      new IndexPlugin({
+        name: 'My Example Nephele Server',
+      }),
+    ],
   })
 );
 
@@ -37,6 +41,16 @@ app.listen(port, () => {
 ```
 
 The plugin, by default, will server the "index.html" or "index.htm" file (if it exists) when a request for the directory is made. If no such file exists, by default the plugin will serve a directory listing with an upload form.
+
+# Options / Defaults
+
+- `name` = `'Nephele Server'`: The name of the server reported on the directory listing pages.
+- `serveIndices` = `true`: Whether to serve "index.html" and "index.htm" files when a GET request for a directory is made.
+- `serveListings` = `true`: Whether to serve directory listings when a request to a directory is made.
+
+## serveListings
+
+If the user has access to create/modify/delete files in the directory, the listing page will include forms to do those tasks.
 
 # License
 

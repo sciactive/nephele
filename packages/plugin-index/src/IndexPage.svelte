@@ -4,6 +4,8 @@
       const currentPath = `${fileTable.dataset['root']}`.replace('//?$/', '/');
       const refreshContainer = document.getElementById('refreshContainer');
       const refresh = document.getElementById('refresh');
+      const tasksContainer = document.getElementById('tasksContainer');
+      const tasks = document.getElementById('tasks');
       let requests = [];
 
       /**
@@ -13,7 +15,6 @@
         const mkdirContainer = document.getElementById('mkdirContainer');
         mkdirContainer.style.display = '';
         const mkdirForm = document.getElementById('mkdir');
-        const mkdirs = document.getElementById('mkdirs');
 
         mkdirForm.addEventListener('submit', (event) => {
           event.preventDefault();
@@ -35,7 +36,7 @@
 
             if (dir.type === 'mkdir' && dir.done === null) {
               dir.done = false;
-              mkdirs.style.display = '';
+              tasksContainer.style.display = '';
               refreshContainer.style.display = '';
               refresh.disabled = true;
 
@@ -52,10 +53,10 @@
               element.appendChild(progress);
 
               const name = document.createElement('span');
-              name.innerText = dir.name;
+              name.innerText = `Make directory ${dir.name}`;
               element.appendChild(name);
 
-              mkdirs.appendChild(element);
+              tasks.appendChild(element);
 
               const xhr = new XMLHttpRequest();
               xhr.addEventListener('loadend', () => {
@@ -88,7 +89,6 @@
         const uploadContainer = document.getElementById('uploadContainer');
         uploadContainer.style.display = '';
         const uploadForm = document.getElementById('upload');
-        const uploads = document.getElementById('uploads');
 
         uploadForm.addEventListener('submit', (event) => {
           event.preventDefault();
@@ -110,7 +110,7 @@
 
             if (file.type === 'upload' && file.done === null) {
               file.done = false;
-              uploads.style.display = '';
+              tasksContainer.style.display = '';
               refreshContainer.style.display = '';
               refresh.disabled = true;
 
@@ -126,10 +126,10 @@
               element.appendChild(progress);
 
               const name = document.createElement('span');
-              name.innerText = file.file.name;
+              name.innerText = `Upload ${file.file.name}`;
               element.appendChild(name);
 
-              uploads.appendChild(element);
+              tasks.appendChild(element);
 
               const xhr = new XMLHttpRequest();
               xhr.upload.addEventListener('progress', (event) => {
@@ -197,10 +197,6 @@
         const copyButton = document.getElementById('copyButton');
         const moveButton = document.getElementById('moveButton');
         const unselectButton = document.getElementById('unselectButton');
-        const copyContainer = document.getElementById('copyContainer');
-        const copies = document.getElementById('copies');
-        const moveContainer = document.getElementById('moveContainer');
-        const moves = document.getElementById('moves');
 
         function getCookie(cname) {
           let name = cname + '=';
@@ -382,7 +378,7 @@
 
             if (file.type === 'copy' && file.done === null) {
               file.done = false;
-              copyContainer.style.display = '';
+              tasksContainer.style.display = '';
               refreshContainer.style.display = '';
               refresh.disabled = true;
 
@@ -399,10 +395,10 @@
               element.appendChild(progress);
 
               const name = document.createElement('span');
-              name.innerText = file.name;
+              name.innerText = `Copy ${file.name}`;
               element.appendChild(name);
 
-              copies.appendChild(element);
+              tasks.appendChild(element);
 
               const xhr = new XMLHttpRequest();
               xhr.addEventListener('loadend', () => {
@@ -434,7 +430,7 @@
 
             if (file.type === 'move' && file.done === null) {
               file.done = false;
-              moveContainer.style.display = '';
+              tasksContainer.style.display = '';
               refreshContainer.style.display = '';
               refresh.disabled = true;
 
@@ -451,10 +447,10 @@
               element.appendChild(progress);
 
               const name = document.createElement('span');
-              name.innerText = file.name;
+              name.innerText = `Move ${file.name}`;
               element.appendChild(name);
 
-              moves.appendChild(element);
+              tasks.appendChild(element);
 
               const xhr = new XMLHttpRequest();
               xhr.addEventListener('loadend', () => {
@@ -486,8 +482,6 @@
        */
       handleRenames: {
         const fileTable = document.getElementById('fileTable');
-        const renameContainer = document.getElementById('renameContainer');
-        const renames = document.getElementById('renames');
 
         fileTable.addEventListener('click', (event) => {
           if (!event.target.classList.contains('rename')) {
@@ -522,7 +516,7 @@
 
             if (file.type === 'rename' && file.done === null) {
               file.done = false;
-              renameContainer.style.display = '';
+              tasksContainer.style.display = '';
               refreshContainer.style.display = '';
               refresh.disabled = true;
 
@@ -539,10 +533,10 @@
               element.appendChild(progress);
 
               const name = document.createElement('span');
-              name.innerText = file.name;
+              name.innerText = `Rename ${file.name}`;
               element.appendChild(name);
 
-              renames.appendChild(element);
+              tasks.appendChild(element);
 
               const xhr = new XMLHttpRequest();
               xhr.addEventListener('loadend', () => {
@@ -577,8 +571,6 @@
        */
       handleDeletes: {
         const fileTable = document.getElementById('fileTable');
-        const deleteContainer = document.getElementById('deleteContainer');
-        const deletes = document.getElementById('deletes');
 
         fileTable.addEventListener('click', (event) => {
           if (!event.target.classList.contains('delete')) {
@@ -618,7 +610,7 @@
 
             if (file.type === 'delete' && file.done === null) {
               file.done = false;
-              deleteContainer.style.display = '';
+              tasksContainer.style.display = '';
               refreshContainer.style.display = '';
               refresh.disabled = true;
 
@@ -635,10 +627,10 @@
               element.appendChild(progress);
 
               const name = document.createElement('span');
-              name.innerText = file.name;
+              name.innerText = `Delete ${file.name}`;
               element.appendChild(name);
 
-              deletes.appendChild(element);
+              tasks.appendChild(element);
 
               const xhr = new XMLHttpRequest();
               xhr.addEventListener('loadend', () => {
@@ -800,8 +792,6 @@
     New Directory: <input type="text" name="name" placeholder="Name" />
     <button>Submit</button>
   </form>
-
-  <div id="mkdirs" style="margin-top: 1em; display: none;" />
 </div>
 
 <div id="uploadContainer" style="margin-top: 1em; display: none;">
@@ -809,39 +799,20 @@
     Upload: <input type="file" name="file" multiple />
     <button>Submit</button>
   </form>
-
-  <div id="uploads" style="margin-top: 1em; display: none;" />
 </div>
 
-<div id="copyContainer" style="margin-top: 1em; display: none;">
-  Copy Requests
+<div id="tasksContainer" style="margin-top: 1em; display: none;">
+  Tasks
 
-  <div id="copies" />
-</div>
-
-<div id="moveContainer" style="margin-top: 1em; display: none;">
-  Move Requests
-
-  <div id="moves" />
-</div>
-
-<div id="renameContainer" style="margin-top: 1em; display: none;">
-  Rename Requests
-
-  <div id="renames" />
-</div>
-
-<div id="deleteContainer" style="margin-top: 1em; display: none;">
-  Delete Requests
-
-  <div id="deletes" />
+  <div id="tasks" />
 </div>
 
 <div id="refreshContainer" style="margin-top: 1em; display: none;">
   <button id="refresh" onclick="window.location.reload()">Refresh</button>
 </div>
 
-<p style="font-size: smaller;">Powered by {name}</p>
+<hr />
+<p style="font-size: smaller; text-align: right;">Served by {name}</p>
 
 <script>
   export let entries = [];

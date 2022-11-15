@@ -10,6 +10,25 @@ import { ResourceNotFoundError } from 'nephele';
 // @ts-ignore
 import IndexPage from './IndexPage.cjs';
 
+export type PluginConfig = {
+  /**
+   * The name of the server reported on the directory listing pages.
+   */
+  name?: string;
+  /**
+   * Whether to serve "index.html" and "index.htm" files when a GET request for
+   * a directory is made.
+   */
+  serveIndices?: boolean;
+  /**
+   * Whether to serve directory listings when a request to a directory is made.
+   *
+   * If the user has access to create/modify/delete files in the directory, the
+   * listing page will include forms to do those tasks.
+   */
+  serveListings?: boolean;
+};
+
 /**
  * Nephele index plugin.
  *
@@ -17,10 +36,18 @@ import IndexPage from './IndexPage.cjs';
  */
 export default class Plugin implements PluginInterface {
   name = 'Nephele Server';
+  serveIndices = true;
+  serveListings = true;
 
-  constructor({ name }: { name?: string } = {}) {
+  constructor({ name, serveIndices, serveListings }: PluginConfig = {}) {
     if (name != null) {
       this.name = name;
+    }
+    if (serveIndices != null) {
+      this.serveIndices = serveIndices;
+    }
+    if (serveListings != null) {
+      this.serveListings = serveListings;
     }
   }
 
@@ -40,7 +67,7 @@ export default class Plugin implements PluginInterface {
         resource
       );
 
-      if (indexFile != null) {
+      if (indexFile != null && this.serveIndices) {
         const originalUrl = request.url;
 
         request.url = (await indexFile.getCanonicalUrl()).pathname;
@@ -50,7 +77,7 @@ export default class Plugin implements PluginInterface {
 
         request.url = originalUrl;
         return false;
-      } else {
+      } else if (this.serveListings) {
         const listing = await resource.getInternalMembers(response.locals.user);
         const entries = await Promise.all(
           listing.map(async (resource: Resource) => {

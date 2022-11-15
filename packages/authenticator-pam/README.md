@@ -25,7 +25,9 @@ app.use(
   '/',
   nepheleServer({
     adapter: new ExampleAdapter(),
-    authenticator: new PamAuthenticator({ realm: 'My WebDAV Server' }),
+    authenticator: new PamAuthenticator({
+      realm: 'My WebDAV Server',
+    }),
   })
 );
 
