@@ -19,7 +19,7 @@ export type PluginConfig = {
    * Whether to serve "index.html" and "index.htm" files when a GET request for
    * a directory is made.
    */
-  serveIndices?: boolean;
+  serveIndexes?: boolean;
   /**
    * Whether to serve directory listings when a request to a directory is made.
    *
@@ -36,15 +36,15 @@ export type PluginConfig = {
  */
 export default class Plugin implements PluginInterface {
   name = 'Nephele Server';
-  serveIndices = true;
+  serveIndexes = true;
   serveListings = true;
 
-  constructor({ name, serveIndices, serveListings }: PluginConfig = {}) {
+  constructor({ name, serveIndexes, serveListings }: PluginConfig = {}) {
     if (name != null) {
       this.name = name;
     }
-    if (serveIndices != null) {
-      this.serveIndices = serveIndices;
+    if (serveIndexes != null) {
+      this.serveIndexes = serveIndexes;
     }
     if (serveListings != null) {
       this.serveListings = serveListings;
@@ -67,7 +67,7 @@ export default class Plugin implements PluginInterface {
         resource
       );
 
-      if (indexFile != null && this.serveIndices) {
+      if (indexFile != null && this.serveIndexes) {
         const originalUrl = request.url;
 
         request.url = (await indexFile.getCanonicalUrl()).pathname;

@@ -40,12 +40,12 @@ app.listen(port, () => {
 });
 ```
 
-The plugin, by default, will server the "index.html" or "index.htm" file (if it exists) when a request for the directory is made. If no such file exists, by default the plugin will serve a directory listing with an upload form.
+The plugin, by default, will server the "index.html" or "index.htm" file (if it exists) when a request for the directory is made. If no such file exists, by default the plugin will serve a directory listing page with upload/file management forms.
 
 # Options / Defaults
 
 - `name` = `'Nephele Server'`: The name of the server reported on the directory listing pages.
-- `serveIndices` = `true`: Whether to serve "index.html" and "index.htm" files when a GET request for a directory is made.
+- `serveIndexes` = `true`: Whether to serve "index.html" and "index.htm" files when a GET request for a directory is made.
 - `serveListings` = `true`: Whether to serve directory listings when a request to a directory is made.
 
 ## serveListings
