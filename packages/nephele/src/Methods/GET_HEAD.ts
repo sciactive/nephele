@@ -57,15 +57,27 @@ export class GET_HEAD extends Method {
       throw new Error('Content language property is not a string.');
     }
 
+    if (
+      await this.runPlugins(
+        request,
+        response,
+        request.method === 'GET' ? 'preGet' : 'preHead',
+        { method: this, resource, properties }
+      )
+    ) {
+      return;
+    }
+
     await this.checkConditionalHeaders(request, response);
 
-    const ended = await this.runPlugins(
-      request,
-      response,
-      request.method === 'GET' ? 'beforeGet' : 'beforeHead',
-      { method: this, resource, properties }
-    );
-    if (ended) {
+    if (
+      await this.runPlugins(
+        request,
+        response,
+        request.method === 'GET' ? 'beforeGet' : 'beforeHead',
+        { method: this, resource, properties }
+      )
+    ) {
       return;
     }
 
@@ -334,7 +346,8 @@ export class GET_HEAD extends Method {
     await this.runPlugins(
       request,
       response,
-      request.method === 'GET' ? 'afterGet' : 'afterHead'
+      request.method === 'GET' ? 'afterGet' : 'afterHead',
+      { method: this, resource, properties }
     );
   }
 }

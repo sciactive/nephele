@@ -47,6 +47,18 @@ export class COPY extends Method {
       });
     }
 
+    if (
+      await this.runPlugins(request, response, 'preCopy', {
+        method: this,
+        resource,
+        destination,
+        depth,
+        overwrite,
+      })
+    ) {
+      return;
+    }
+
     if (!destination) {
       throw new BadRequestError('Destination header is required.');
     }
@@ -104,6 +116,18 @@ export class COPY extends Method {
     }
 
     await this.checkConditionalHeaders(request, response);
+
+    if (
+      await this.runPlugins(request, response, 'beforeCopy', {
+        method: this,
+        resource,
+        destination,
+        depth,
+        overwrite,
+      })
+    ) {
+      return;
+    }
 
     response.set({
       'Cache-Control': 'private, no-cache',
@@ -306,5 +330,13 @@ export class COPY extends Method {
       });
       this.sendBodyContent(response, responseXml, encoding);
     }
+
+    await this.runPlugins(request, response, 'afterCopy', {
+      method: this,
+      resource,
+      destination,
+      depth,
+      overwrite,
+    });
   }
 }

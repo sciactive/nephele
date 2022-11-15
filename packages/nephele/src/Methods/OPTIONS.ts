@@ -45,6 +45,18 @@ export class OPTIONS extends Method {
         response
       );
 
+    if (
+      await this.runPlugins(request, response, 'preOptions', {
+        method: this,
+        url,
+        complianceClasses,
+        allowedMethods,
+        cacheControl,
+      })
+    ) {
+      return;
+    }
+
     let stream = await this.getBodyStream(request, response);
     let providedBody = false;
     stream.on('data', (data: Buffer) => {
@@ -64,6 +76,18 @@ export class OPTIONS extends Method {
       );
     }
 
+    if (
+      await this.runPlugins(request, response, 'beforeOptions', {
+        method: this,
+        url,
+        complianceClasses,
+        allowedMethods,
+        cacheControl,
+      })
+    ) {
+      return;
+    }
+
     response.status(204); // No Content
     response.set({
       'Cache-Control': cacheControl,
@@ -72,5 +96,17 @@ export class OPTIONS extends Method {
       DAV: complianceClasses.join(', '),
     });
     response.end();
+
+    if (
+      await this.runPlugins(request, response, 'afterOptions', {
+        method: this,
+        url,
+        complianceClasses,
+        allowedMethods,
+        cacheControl,
+      })
+    ) {
+      return;
+    }
   }
 }

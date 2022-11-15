@@ -35,6 +35,15 @@ export class DELETE extends Method {
       response.locals.baseUrl
     );
 
+    if (
+      await this.runPlugins(request, response, 'preDelete', {
+        method: this,
+        resource,
+      })
+    ) {
+      return;
+    }
+
     let stream = await this.getBodyStream(request, response);
     let providedBody = false;
     stream.on('data', (data: Buffer) => {
@@ -75,6 +84,15 @@ export class DELETE extends Method {
     }
 
     await this.checkConditionalHeaders(request, response);
+
+    if (
+      await this.runPlugins(request, response, 'beforeDelete', {
+        method: this,
+        resource,
+      })
+    ) {
+      return;
+    }
 
     response.set({
       'Cache-Control': 'private, no-cache',
@@ -119,6 +137,11 @@ export class DELETE extends Method {
       response.status(204); // No Content
       response.end();
     }
+
+    await this.runPlugins(request, response, 'afterDelete', {
+      method: this,
+      resource,
+    });
   }
 
   async recursivelyDelete(

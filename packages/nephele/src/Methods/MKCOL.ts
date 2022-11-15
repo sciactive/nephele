@@ -29,6 +29,15 @@ export class MKCOL extends Method {
       });
     }
 
+    if (
+      await this.runPlugins(request, response, 'preMkcol', {
+        method: this,
+        resource,
+      })
+    ) {
+      return;
+    }
+
     try {
       const parent = await this.getParentResource(request, response, resource);
       if (!(await parent?.isCollection())) {
@@ -86,6 +95,15 @@ export class MKCOL extends Method {
 
     await this.checkConditionalHeaders(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beforeMkcol', {
+        method: this,
+        resource,
+      })
+    ) {
+      return;
+    }
+
     response.set({
       'Cache-Control': 'private, no-cache',
       Date: new Date().toUTCString(),
@@ -105,5 +123,10 @@ export class MKCOL extends Method {
       Location: (await resource.getCanonicalUrl()).toString(),
     });
     response.end();
+
+    await this.runPlugins(request, response, 'afterMkcol', {
+      method: this,
+      resource,
+    });
   }
 }

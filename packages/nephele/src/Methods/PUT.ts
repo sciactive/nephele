@@ -41,6 +41,16 @@ export class PUT extends Method {
       });
     }
 
+    if (
+      await this.runPlugins(request, response, 'prePut', {
+        method: this,
+        resource,
+        newResource,
+      })
+    ) {
+      return;
+    }
+
     try {
       const parent = await this.getParentResource(request, response, resource);
       if (!(await parent?.isCollection())) {
@@ -81,6 +91,16 @@ export class PUT extends Method {
 
     await this.checkConditionalHeaders(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beforePut', {
+        method: this,
+        resource,
+        newResource,
+      })
+    ) {
+      return;
+    }
+
     response.set({
       'Cache-Control': 'private, no-cache',
       Date: new Date().toUTCString(),
@@ -106,5 +126,11 @@ export class PUT extends Method {
         // Ignore errors here.
       }
     }
+
+    await this.runPlugins(request, response, 'afterPut', {
+      method: this,
+      resource,
+      newResource,
+    });
   }
 }

@@ -402,11 +402,37 @@ export default function createServer(
       default:
         const run = catchErrors(
           async () => {
+            if (
+              await new Method(opts).runPlugins(
+                request,
+                response,
+                'preMethod',
+                {
+                  method: request.method,
+                }
+              )
+            ) {
+              return;
+            }
+
             const MethodClass = response.locals.adapter.getMethod(
               request.method
             );
             const method = new MethodClass(opts);
+
+            if (
+              await method.runPlugins(request, response, 'beforeMethod', {
+                method,
+              })
+            ) {
+              return;
+            }
+
             await method.run(request, response);
+
+            await method.runPlugins(request, response, 'afterMethod', {
+              method,
+            });
           },
           async (code, message, error) => {
             await opts.errorHandler(code, message, request, response, error);

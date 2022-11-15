@@ -35,6 +35,16 @@ export class PROPFIND extends Method {
       });
     }
 
+    if (
+      await this.runPlugins(request, response, 'prePropfind', {
+        method: this,
+        resource,
+        depth,
+      })
+    ) {
+      return;
+    }
+
     if (!['0', '1', 'infinity'].includes(depth)) {
       throw new BadRequestError(
         'Depth header must be one of "0", "1", or "infinity".'
@@ -83,6 +93,16 @@ export class PROPFIND extends Method {
     }
 
     await this.checkConditionalHeaders(request, response);
+
+    if (
+      await this.runPlugins(request, response, 'beforePropfind', {
+        method: this,
+        resource,
+        depth,
+      })
+    ) {
+      return;
+    }
 
     const multiStatus = new MultiStatus();
 
@@ -322,5 +342,11 @@ export class PROPFIND extends Method {
       'Content-Type': `${contentType}; charset=utf-8`,
     });
     this.sendBodyContent(response, responseXml, encoding);
+
+    await this.runPlugins(request, response, 'afterPropfind', {
+      method: this,
+      resource,
+      depth,
+    });
   }
 }

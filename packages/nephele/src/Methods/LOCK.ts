@@ -54,6 +54,15 @@ export class LOCK extends Method {
       });
     }
 
+    if (
+      await this.runPlugins(request, response, 'preLock', {
+        method: this,
+        resource,
+      })
+    ) {
+      return;
+    }
+
     const timeoutRequests = timeoutHeader.split(/,\s+/);
     let timeout = Infinity;
     for (let curTreq of timeoutRequests) {
@@ -92,6 +101,15 @@ export class LOCK extends Method {
     if (xmlBody == null) {
       // If the body is empty, it means the user is trying to refresh a lock.
 
+      if (
+        await this.runPlugins(request, response, 'preLockRefresh', {
+          method: this,
+          resource,
+        })
+      ) {
+        return;
+      }
+
       const lockTokens = this.getRequestLockTockens(request);
       if (lockTokens.length !== 1) {
         throw new BadRequestError(
@@ -129,6 +147,16 @@ export class LOCK extends Method {
 
       await this.checkConditionalHeaders(request, response);
 
+      if (
+        await this.runPlugins(request, response, 'beforeLockRefresh', {
+          method: this,
+          resource,
+          lock,
+        })
+      ) {
+        return;
+      }
+
       lock.date = new Date();
       lock.timeout = timeout;
 
@@ -147,6 +175,13 @@ export class LOCK extends Method {
         'Content-Type': `${contentType}; charset=utf-8`,
       });
       this.sendBodyContent(response, responseXml, encoding);
+
+      await this.runPlugins(request, response, 'afterLock', {
+        method: this,
+        resource,
+        lock,
+      });
+
       return;
     }
 
@@ -278,6 +313,15 @@ export class LOCK extends Method {
     });
 
     await this.checkConditionalHeaders(request, response);
+
+    if (
+      await this.runPlugins(request, response, 'beforeLockProvisional', {
+        method: this,
+        resource,
+      })
+    ) {
+      return;
+    }
 
     const multiStatus = new MultiStatus();
 
@@ -455,6 +499,16 @@ export class LOCK extends Method {
       }
     }
 
+    if (
+      await this.runPlugins(request, response, 'beforeLock', {
+        method: this,
+        resource,
+        lock,
+      })
+    ) {
+      return;
+    }
+
     // Set provisional lock to real lock.
     lock.date = new Date();
     lock.timeout = timeout;
@@ -475,5 +529,11 @@ export class LOCK extends Method {
       'Content-Type': `${contentType}; charset=utf-8`,
     });
     this.sendBodyContent(response, responseXml, encoding);
+
+    await this.runPlugins(request, response, 'afterLock', {
+      method: this,
+      resource,
+      lock,
+    });
   }
 }

@@ -50,6 +50,17 @@ export class MOVE extends Method {
       });
     }
 
+    if (
+      await this.runPlugins(request, response, 'preMove', {
+        method: this,
+        resource,
+        destination,
+        overwrite,
+      })
+    ) {
+      return;
+    }
+
     if (!destination) {
       throw new BadRequestError('Destination header is required.');
     }
@@ -97,6 +108,17 @@ export class MOVE extends Method {
     }
 
     await this.checkConditionalHeaders(request, response);
+
+    if (
+      await this.runPlugins(request, response, 'beforeMove', {
+        method: this,
+        resource,
+        destination,
+        overwrite,
+      })
+    ) {
+      return;
+    }
 
     const multiStatus = new MultiStatus();
 
@@ -338,6 +360,17 @@ export class MOVE extends Method {
         'Content-Type': `${contentType}; charset=utf-8`,
       });
       this.sendBodyContent(response, responseXml, encoding);
+    }
+
+    if (
+      await this.runPlugins(request, response, 'afterMove', {
+        method: this,
+        resource,
+        destination,
+        overwrite,
+      })
+    ) {
+      return;
     }
   }
 }

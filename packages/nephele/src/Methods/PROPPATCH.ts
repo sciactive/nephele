@@ -42,6 +42,15 @@ export class PROPPATCH extends Method {
       });
     }
 
+    if (
+      await this.runPlugins(request, response, 'preProppatch', {
+        method: this,
+        resource,
+      })
+    ) {
+      return;
+    }
+
     const props = await resource.getProperties();
 
     const xmlBody = await this.getBodyXML(request, response);
@@ -138,6 +147,15 @@ export class PROPPATCH extends Method {
 
     await this.checkConditionalHeaders(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beforeProppatch', {
+        method: this,
+        resource,
+      })
+    ) {
+      return;
+    }
+
     const multiStatus = new MultiStatus();
     const status = new Status(url, 207);
 
@@ -200,6 +218,11 @@ export class PROPPATCH extends Method {
       'Content-Type': `${contentType}; charset=utf-8`,
     });
     this.sendBodyContent(response, responseXml, encoding);
+
+    await this.runPlugins(request, response, 'afterProppatch', {
+      method: this,
+      resource,
+    });
   }
 
   async getPropPatchOrder(xmlBody: string) {

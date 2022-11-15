@@ -18,9 +18,6 @@ export class UNLOCK extends Method {
 
     const lockTokenHeader = request.get('Lock-Token');
     const contentType = request.accepts('application/xml', 'text/xml');
-    if (!contentType) {
-      throw new NotAcceptableError('Requested content type is not supported.');
-    }
     let resource = await response.locals.adapter.getResource(
       url,
       response.locals.baseUrl
@@ -30,6 +27,20 @@ export class UNLOCK extends Method {
       response.set({
         'Content-Location': `${url}/`,
       });
+    }
+
+    if (
+      await this.runPlugins(request, response, 'preUnlock', {
+        method: this,
+        resource,
+        lockTokenHeader,
+      })
+    ) {
+      return;
+    }
+
+    if (!contentType) {
+      throw new NotAcceptableError('Requested content type is not supported.');
     }
 
     if (lockTokenHeader == null || lockTokenHeader.trim() === '') {
@@ -66,6 +77,17 @@ export class UNLOCK extends Method {
 
       await this.checkConditionalHeaders(request, response);
 
+      if (
+        await this.runPlugins(request, response, 'beforeUnlock', {
+          method: this,
+          resource,
+          token,
+          lock,
+        })
+      ) {
+        return;
+      }
+
       const multiStatus = new MultiStatus();
 
       let status = new Status(url, 412); // Precondition Failed
@@ -78,14 +100,40 @@ export class UNLOCK extends Method {
         'Content-Type': `${contentType}; charset=utf-8`,
       });
       this.sendBodyContent(response, responseXml, encoding);
+
+      await this.runPlugins(request, response, 'afterUnlock', {
+        method: this,
+        resource,
+        token,
+        lock,
+      });
+
       return;
     }
 
     await this.checkConditionalHeaders(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beforeUnlock', {
+        method: this,
+        resource,
+        token,
+        lock,
+      })
+    ) {
+      return;
+    }
+
     await lock.delete();
 
     response.status(204); // No Content
     response.end();
+
+    await this.runPlugins(request, response, 'afterUnlock', {
+      method: this,
+      resource,
+      token,
+      lock,
+    });
   }
 }
