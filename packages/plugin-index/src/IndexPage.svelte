@@ -1,6 +1,7 @@
 <svelte:head>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      const currentPath = `${fileTable.dataset['root']}`.replace('//?$/', '/');
       const refreshContainer = document.getElementById('refreshContainer');
       const refresh = document.getElementById('refresh');
       let requests = [];
@@ -185,6 +186,304 @@
       /**
        * Rename
        */
+      handleCopyMoves: {
+        const fileTable = document.getElementById('fileTable');
+        const filenames = Array.prototype.slice
+          .call(fileTable.querySelectorAll('.filename'))
+          .map((el) => el.innerText);
+        const copymoveContainer = document.getElementById('copymoveContainer');
+        const copymoveSelected = document.getElementById('copymoveSelected');
+        const copymoveActions = document.getElementById('copymoveActions');
+        const copyButton = document.getElementById('copyButton');
+        const moveButton = document.getElementById('moveButton');
+        const unselectButton = document.getElementById('unselectButton');
+        const copyContainer = document.getElementById('copyContainer');
+        const copies = document.getElementById('copies');
+        const moveContainer = document.getElementById('moveContainer');
+        const moves = document.getElementById('moves');
+
+        function getCookie(cname) {
+          let name = cname + '=';
+          let decodedCookie = decodeURIComponent(document.cookie);
+          let ca = decodedCookie.split(';');
+          for (let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) == ' ') {
+              c = c.substring(1);
+            }
+            if (c.indexOf(name) == 0) {
+              return c.substring(name.length, c.length);
+            }
+          }
+          return '';
+        }
+
+        function checkCopyMoveCookie() {
+          const selectedPath = getCookie('nephele-selected-path');
+          const selectedFile = getCookie('nephele-selected-file');
+
+          if (selectedPath != '' && selectedFile != '') {
+            copymoveContainer.style.display = '';
+            copymoveSelected.innerText = selectedFile;
+
+            if (selectedPath === currentPath) {
+              copyButton.innerText = 'Duplicate Here';
+              moveButton.disabled = true;
+            } else {
+              copyButton.innerText = 'Copy Here';
+              moveButton.disabled = false;
+            }
+          } else {
+            copymoveContainer.style.display = 'none';
+          }
+        }
+        checkCopyMoveCookie();
+
+        function clearCookies() {
+          document.cookie = `nephele-selected-path=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+          document.cookie = `nephele-selected-file=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/`;
+        }
+
+        function fileExists(filename) {
+          return (
+            filenames.indexOf(filename.replace(/\/?$/, '')) !== -1 ||
+            filenames.indexOf(filename.replace(/\/?$/, '/')) !== -1
+          );
+        }
+
+        function getDuplicateFilename(filename) {
+          let i = 0;
+          let newFilename = '';
+          do {
+            i++;
+            const ext = (filename.match(/(\/|\..*)$/) || [''])[0];
+            newFilename = `${filename.substring(
+              0,
+              filename.length - ext.length
+            )} (${i})${ext}`;
+          } while (fileExists(newFilename));
+          return newFilename;
+        }
+
+        fileTable.addEventListener('click', (event) => {
+          if (!event.target.classList.contains('copymove')) {
+            return;
+          }
+
+          event.preventDefault();
+
+          document.cookie = `nephele-selected-path=${escape(
+            currentPath
+          )}; path=/`;
+          document.cookie = `nephele-selected-file=${escape(
+            event.target.parentNode.dataset['name']
+          )}; path=/`;
+          checkCopyMoveCookie();
+        });
+
+        copyButton.addEventListener('click', (event) => {
+          const selectedPath = getCookie('nephele-selected-path');
+          const selectedFile = getCookie('nephele-selected-file');
+          const destinationPath = currentPath;
+          let destinationFile = selectedFile;
+
+          event.preventDefault();
+
+          if (selectedPath === '' || selectedFile === '') {
+            return;
+          }
+
+          if (selectedPath === destinationPath) {
+            destinationFile = getDuplicateFilename(destinationFile);
+          }
+
+          if (
+            fileExists(destinationFile) &&
+            !confirm('The destination exists. Would you like to overwrite it?')
+          ) {
+            return;
+          }
+
+          requests = requests.concat([
+            {
+              type: 'copy',
+              done: null,
+              name: selectedFile,
+              source: `${selectedPath.replace(/\/?$/, '/')}${encodeURIComponent(
+                selectedFile
+              )}`,
+              destination: `${destinationPath.replace(
+                /\/?$/,
+                '/'
+              )}${encodeURIComponent(destinationFile)}`,
+            },
+          ]);
+
+          doCopy();
+
+          clearCookies();
+          checkCopyMoveCookie();
+        });
+
+        moveButton.addEventListener('click', (event) => {
+          const selectedPath = getCookie('nephele-selected-path');
+          const selectedFile = getCookie('nephele-selected-file');
+          const destinationPath = currentPath;
+          let destinationFile = selectedFile;
+
+          event.preventDefault();
+
+          if (selectedPath === '' || selectedFile === '') {
+            return;
+          }
+
+          if (selectedPath === destinationPath) {
+            return;
+          }
+
+          if (
+            fileExists(destinationFile) &&
+            !confirm('The destination exists. Would you like to overwrite it?')
+          ) {
+            return;
+          }
+
+          requests = requests.concat([
+            {
+              type: 'move',
+              done: null,
+              name: selectedFile,
+              source: `${selectedPath.replace(/\/?$/, '/')}${encodeURIComponent(
+                selectedFile
+              )}`,
+              destination: `${destinationPath.replace(
+                /\/?$/,
+                '/'
+              )}${encodeURIComponent(destinationFile)}`,
+            },
+          ]);
+
+          doMove();
+
+          clearCookies();
+          checkCopyMoveCookie();
+        });
+
+        unselectButton.addEventListener('click', (event) => {
+          event.preventDefault();
+
+          clearCookies();
+          checkCopyMoveCookie();
+        });
+
+        function doCopy() {
+          for (let i = 0; i < requests.length; i++) {
+            const file = requests[i];
+
+            if (file.type === 'copy' && file.done === null) {
+              file.done = false;
+              copyContainer.style.display = '';
+              refreshContainer.style.display = '';
+              refresh.disabled = true;
+
+              const element = document.createElement('div');
+              element.style.marginBottom = '0.5em';
+
+              const progress = document.createElement('div');
+              progress.style.display = 'inline-block';
+              progress.innerText = 'Working...';
+              progress.style.border = '1px solid #000';
+              progress.style.width = '100px';
+              progress.style.marginRight = '0.5em';
+              progress.style.textAlign = 'center';
+              element.appendChild(progress);
+
+              const name = document.createElement('span');
+              name.innerText = file.name;
+              element.appendChild(name);
+
+              copies.appendChild(element);
+
+              const xhr = new XMLHttpRequest();
+              xhr.addEventListener('loadend', () => {
+                if (
+                  xhr.readyState === 4 &&
+                  xhr.status >= 200 &&
+                  xhr.status < 300
+                ) {
+                  progress.innerText = 'Success.';
+                } else {
+                  progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
+                }
+                file.done = true;
+
+                if (requests.find((request) => !request.done) == null) {
+                  refresh.disabled = false;
+                }
+              });
+              xhr.open('COPY', file.source, true);
+              xhr.setRequestHeader('Destination', file.destination);
+              xhr.send();
+            }
+          }
+        }
+
+        function doMove() {
+          for (let i = 0; i < requests.length; i++) {
+            const file = requests[i];
+
+            if (file.type === 'move' && file.done === null) {
+              file.done = false;
+              moveContainer.style.display = '';
+              refreshContainer.style.display = '';
+              refresh.disabled = true;
+
+              const element = document.createElement('div');
+              element.style.marginBottom = '0.5em';
+
+              const progress = document.createElement('div');
+              progress.style.display = 'inline-block';
+              progress.innerText = 'Working...';
+              progress.style.border = '1px solid #000';
+              progress.style.width = '100px';
+              progress.style.marginRight = '0.5em';
+              progress.style.textAlign = 'center';
+              element.appendChild(progress);
+
+              const name = document.createElement('span');
+              name.innerText = file.name;
+              element.appendChild(name);
+
+              moves.appendChild(element);
+
+              const xhr = new XMLHttpRequest();
+              xhr.addEventListener('loadend', () => {
+                if (
+                  xhr.readyState === 4 &&
+                  xhr.status >= 200 &&
+                  xhr.status < 300
+                ) {
+                  progress.innerText = 'Success.';
+                } else {
+                  progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
+                }
+                file.done = true;
+
+                if (requests.find((request) => !request.done) == null) {
+                  refresh.disabled = false;
+                }
+              });
+              xhr.open('MOVE', file.source, true);
+              xhr.setRequestHeader('Destination', file.destination);
+              xhr.send();
+            }
+          }
+        }
+      }
+
+      /**
+       * Rename
+       */
       handleRenames: {
         const fileTable = document.getElementById('fileTable');
         const renameContainer = document.getElementById('renameContainer');
@@ -265,8 +564,7 @@
               xhr.open('MOVE', file.name, true);
               xhr.setRequestHeader(
                 'Destination',
-                `${fileTable.dataset['root']}`.replace('//?$/', '/') +
-                  encodeURIComponent(file.newName)
+                currentPath + encodeURIComponent(file.newName)
               );
               xhr.send();
             }
@@ -369,7 +667,9 @@
   </script>
 </svelte:head>
 
-<h1>Index of {decodeURIComponent(self.url.pathname)}</h1>
+<h1>
+  Index of {decodeURIComponent(self.url.pathname)}
+</h1>
 
 <table id="fileTable" style="width: 100%;" cellspacing="0" data-root={self.url}>
   <thead>
@@ -461,7 +761,10 @@
           ? 'background-color: #ddd;'
           : ''}
       >
-        <td><a href={entry.url}>{entry.name}{entry.directory ? '/' : ''}</a></td
+        <td
+          ><a class="filename" href={entry.url}
+            >{entry.name}{entry.directory ? '/' : ''}</a
+          ></td
         >
         <td>{entry.directory ? 'Directory' : entry.type}</td>
         <td>{new Date(entry.lastModified).toLocaleString()}</td>
@@ -470,9 +773,10 @@
         >
         <td
           class="action"
-          style="display: none;"
+          style="width: 1px; white-space: nowrap; display: none;"
           data-name={`${entry.name}${entry.directory ? '/' : ''}`}
         >
+          <button class="copymove">Copy/Move</button>
           <button class="rename">Rename</button>
           <button class="delete">Delete</button>
         </td>
@@ -481,8 +785,18 @@
   </tbody>
 </table>
 
-<div id="mkdirContainer" style="display: none;">
-  <form name="mkdir" id="mkdir" style="margin-top: 1em;">
+<div id="copymoveContainer" style="margin-top: 1em; display: none;">
+  Selected: <code id="copymoveSelected" />
+
+  <div>
+    <button id="copyButton" class="copy">Copy Here</button>
+    <button id="moveButton" class="move">Move Here</button>
+    <button id="unselectButton" class="unselect">Unselect</button>
+  </div>
+</div>
+
+<div id="mkdirContainer" style="margin-top: 1em; display: none;">
+  <form name="mkdir" id="mkdir">
     Make Directory: <input type="text" name="name" placeholder="Name" />
     <button>Submit</button>
   </form>
@@ -490,13 +804,25 @@
   <div id="mkdirs" style="margin-top: 1em; display: none;" />
 </div>
 
-<div id="uploadContainer" style="display: none;">
-  <form name="upload" id="upload" style="margin-top: 1em;">
+<div id="uploadContainer" style="margin-top: 1em; display: none;">
+  <form name="upload" id="upload">
     Upload: <input type="file" name="file" multiple />
     <button>Submit</button>
   </form>
 
   <div id="uploads" style="margin-top: 1em; display: none;" />
+</div>
+
+<div id="copyContainer" style="margin-top: 1em; display: none;">
+  Copy Requests
+
+  <div id="copies" />
+</div>
+
+<div id="moveContainer" style="margin-top: 1em; display: none;">
+  Move Requests
+
+  <div id="moves" />
 </div>
 
 <div id="renameContainer" style="margin-top: 1em; display: none;">
