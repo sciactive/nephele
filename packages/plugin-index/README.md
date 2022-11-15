@@ -29,7 +29,7 @@ app.use(
     authenticator: new InsecureAuthenticator(),
     plugins: [
       new IndexPlugin({
-        name: 'My Example Nephele Server',
+        name: 'Nephele Server',
       }),
     ],
   })
@@ -40,7 +40,7 @@ app.listen(port, () => {
 });
 ```
 
-The plugin, by default, will server the "index.html" or "index.htm" file (if it exists) when a request for the directory is made. If no such file exists, by default the plugin will serve a directory listing page with upload/file management forms.
+The plugin, by default, will serve the "index.html" or "index.htm" file (if it exists) when a request for the directory is made. If no such file exists, by default, the plugin will serve a directory listing page with upload/file management forms.
 
 # Options / Defaults
 

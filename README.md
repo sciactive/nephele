@@ -57,6 +57,12 @@ If you want to run it without PAM authentication (allow unrestricted access to a
 env NOPAM=true DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts testroot
 ```
 
+You can also run the `nephele-serve` script like this.
+
+```
+./packages/nephele-serve/nephele-serve.cjs --no-auth -p 8080 ./testroot/
+```
+
 # License
 
 Copyright 2022 SciActive Inc
