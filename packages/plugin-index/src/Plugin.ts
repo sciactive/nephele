@@ -71,11 +71,9 @@ export default class Plugin implements PluginInterface {
         const originalUrl = request.url;
 
         request.url = (await indexFile.getCanonicalUrl()).pathname;
-
-        console.log(request.url);
         await method.run(request, response);
-
         request.url = originalUrl;
+
         return false;
       } else if (this.serveListings) {
         const listing = await resource.getInternalMembers(response.locals.user);
@@ -152,7 +150,6 @@ export default class Plugin implements PluginInterface {
             )
           );
         } catch (e: any) {
-          console.log(e);
           canMkdir = false;
         }
 

@@ -14,6 +14,7 @@ import FileSystemAdapter from '@nephele/adapter-file-system';
 import VirtualAdapter from '@nephele/adapter-virtual';
 import PamAuthenticator from '@nephele/authenticator-pam';
 import InsecureAuthenticator from '@nephele/authenticator-none';
+import IndexPlugin from '@nephele/plugin-index';
 
 type Hosts = {
   name: string;
@@ -38,6 +39,8 @@ type Conf = {
   redirectPort?: number;
   homeDirectories: boolean;
   userDirectories: boolean;
+  serveIndexes: boolean;
+  serveListings: boolean;
   auth: boolean;
   directory?: string;
 };
@@ -86,6 +89,14 @@ program
     'Serve users their own directory under the server root when they log in.'
   )
   .option(
+    '--serve-indexes',
+    'Serve index.html and index.htm files when the user requests a directory.'
+  )
+  .option(
+    '--serve-listings',
+    'Serve directory listings with file management forms when the user requests a directory.'
+  )
+  .option(
     '--no-auth',
     "Don't require authorization. (Not compatible with serving home directories or user directories.)"
   )
@@ -108,6 +119,8 @@ Environment Variables:
   KEY                  Text of a key in PEM format.
   HOME_DIRECTORIES     Same as --home-directories when set to "true", "on" or "1".
   USER_DIRECTORIES     Same as --user-directories when set to "true", "on" or "1".
+  SERVE_INDEXES        Same as --serve-indexes when set to "true", "on" or "1".
+  SERVE_LISTINGS       Same as --serve-listings when set to "true", "on" or "1".
   AUTH                 Same as --no-auth when set to "false", "off" or "0".
   SERVER_ROOT          Same as [directory].
 
@@ -135,6 +148,8 @@ try {
     redirectPort,
     homeDirectories,
     userDirectories,
+    serveIndexes,
+    serveListings,
     auth,
     directory,
   } = {
@@ -147,6 +162,12 @@ try {
     ),
     userDirectories: ['true', 'on', '1'].includes(
       (process.env.USER_DIRECTORIES || '').toLowerCase()
+    ),
+    serveIndexes: ['true', 'on', '1'].includes(
+      (process.env.SERVE_INDEXES || '').toLowerCase()
+    ),
+    serveListings: ['true', 'on', '1'].includes(
+      (process.env.SERVE_LISTINGS || '').toLowerCase()
     ),
     auth: !['false', 'off', '0'].includes(
       (process.env.AUTH || '').toLowerCase()
@@ -298,6 +319,11 @@ try {
       authenticator: auth
         ? new PamAuthenticator({ realm })
         : new InsecureAuthenticator(),
+      plugins: [
+        ...(!serveIndexes && !serveListings
+          ? []
+          : [new IndexPlugin({ serveIndexes, serveListings })]),
+      ],
     })
   );
 

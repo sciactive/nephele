@@ -44,7 +44,7 @@ If you want to run it without root, you can do that too, but you must set the po
 nephele-serve -p 8080 .
 ```
 
-Only regular users (UIDs 1000-59999) are allowed to log in.
+Only regular users (UIDs 500-59999) are allowed to log in.
 
 # Cluster with PM2
 
@@ -110,6 +110,8 @@ Options:
   --redirect-port <redirect_port>  The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
   --home-directories               Serve users' home directories to them when they log in.
   --user-directories               Serve users their own directory under the server root when they log in.
+  --serve-indexes                  Serve index.html and index.htm files when the user requests a directory.
+  --serve-listings                 Serve directory listings with file management forms when the user requests a directory.
   --no-auth                        Don't require authorization. (Not compatible with serving home directories or user directories.)
   --help                           display help for command
 
@@ -124,6 +126,8 @@ Environment Variables:
   KEY                  Text of a key in PEM format.
   HOME_DIRECTORIES     Same as --home-directories when set to "true", "on" or "1".
   USER_DIRECTORIES     Same as --user-directories when set to "true", "on" or "1".
+  SERVE_INDEXES        Same as --serve-indexes when set to "true", "on" or "1".
+  SERVE_LISTINGS       Same as --serve-listings when set to "true", "on" or "1".
   AUTH                 Same as --no-auth when set to "false", "off" or "0".
   SERVER_ROOT          Same as [directory].
 
