@@ -797,7 +797,7 @@
 
 <div id="mkdirContainer" style="margin-top: 1em; display: none;">
   <form name="mkdir" id="mkdir">
-    Make Directory: <input type="text" name="name" placeholder="Name" />
+    New Directory: <input type="text" name="name" placeholder="Name" />
     <button>Submit</button>
   </form>
 

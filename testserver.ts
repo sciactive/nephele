@@ -68,26 +68,7 @@ app.use(
       : pam
       ? new PamAuthenticator()
       : new InsecureAuthenticator(),
-    plugins: [
-      new IndexPlugin(),
-      {
-        async prepare(_req: Request, _res: AuthResponse) {
-          console.log('prepare');
-        },
-        async beforeAuth(_req: Request, _res: AuthResponse) {
-          console.log('beforeAuth');
-        },
-        async afterAuth(_req: Request, _res: AuthResponse) {
-          console.log('afterAuth');
-        },
-        async begin(_req: Request, _res: AuthResponse) {
-          console.log('begin');
-        },
-        async close(_req: Request, _res: AuthResponse) {
-          console.log('close');
-        },
-      },
-    ],
+    plugins: [new IndexPlugin(), simpleLogPlugin()],
   })
 );
 
@@ -96,3 +77,188 @@ app.listen(port, () => {
   debug(`Serving files from ${virtual ? 'RAM' : `"${root}"`}.`);
   console.log(`Example Nephele WebDAV server listening on port ${port}`);
 });
+
+function simpleLogPlugin() {
+  return {
+    async prepare(request: Request, _res: AuthResponse) {
+      console.log('prepare', request.url);
+    },
+    async beforeAuth(request: Request, _res: AuthResponse) {
+      console.log('beforeAuth', request.url);
+    },
+    async afterAuth(request: Request, _res: AuthResponse) {
+      console.log('afterAuth', request.url);
+    },
+    async begin(request: Request, _res: AuthResponse) {
+      console.log('begin', request.url);
+    },
+    async close(request: Request, _res: AuthResponse) {
+      console.log('close', request.url);
+    },
+    async beginGet(request: Request, _res: AuthResponse) {
+      console.log('beginGet', request.url);
+    },
+    async preGet(request: Request, _res: AuthResponse) {
+      console.log('preGet', request.url);
+    },
+    async beforeGet(request: Request, _res: AuthResponse) {
+      console.log('beforeGet', request.url);
+    },
+    async afterGet(request: Request, _res: AuthResponse) {
+      console.log('afterGet', request.url);
+    },
+    async beginHead(request: Request, _res: AuthResponse) {
+      console.log('beginHead', request.url);
+    },
+    async preHead(request: Request, _res: AuthResponse) {
+      console.log('preHead', request.url);
+    },
+    async beforeHead(request: Request, _res: AuthResponse) {
+      console.log('beforeHead', request.url);
+    },
+    async afterHead(request: Request, _res: AuthResponse) {
+      console.log('afterHead', request.url);
+    },
+    async beginCopy(request: Request, _res: AuthResponse) {
+      console.log('beginCopy', request.url);
+    },
+    async preCopy(request: Request, _res: AuthResponse) {
+      console.log('preCopy', request.url);
+    },
+    async beforeCopy(request: Request, _res: AuthResponse) {
+      console.log('beforeCopy', request.url);
+    },
+    async afterCopy(request: Request, _res: AuthResponse) {
+      console.log('afterCopy', request.url);
+    },
+    async beginDelete(request: Request, _res: AuthResponse) {
+      console.log('beginDelete', request.url);
+    },
+    async preDelete(request: Request, _res: AuthResponse) {
+      console.log('preDelete', request.url);
+    },
+    async beforeDelete(request: Request, _res: AuthResponse) {
+      console.log('beforeDelete', request.url);
+    },
+    async afterDelete(request: Request, _res: AuthResponse) {
+      console.log('afterDelete', request.url);
+    },
+    async beginLock(request: Request, _res: AuthResponse) {
+      console.log('beginLock', request.url);
+    },
+    async preLock(request: Request, _res: AuthResponse) {
+      console.log('preLock', request.url);
+    },
+    async preLockRefresh(request: Request, _res: AuthResponse) {
+      console.log('preLockRefresh', request.url);
+    },
+    async beforeLockRefresh(request: Request, _res: AuthResponse) {
+      console.log('beforeLockRefresh', request.url);
+    },
+    async beforeLockProvisional(request: Request, _res: AuthResponse) {
+      console.log('beforeLockProvisional', request.url);
+    },
+    async beforeLock(request: Request, _res: AuthResponse) {
+      console.log('beforeLock', request.url);
+    },
+    async afterLock(request: Request, _res: AuthResponse) {
+      console.log('afterLock', request.url);
+    },
+    async beginMkcol(request: Request, _res: AuthResponse) {
+      console.log('beginMkcol', request.url);
+    },
+    async preMkcol(request: Request, _res: AuthResponse) {
+      console.log('preMkcol', request.url);
+    },
+    async beforeMkcol(request: Request, _res: AuthResponse) {
+      console.log('beforeMkcol', request.url);
+    },
+    async afterMkcol(request: Request, _res: AuthResponse) {
+      console.log('afterMkcol', request.url);
+    },
+    async beginMove(request: Request, _res: AuthResponse) {
+      console.log('beginMove', request.url);
+    },
+    async preMove(request: Request, _res: AuthResponse) {
+      console.log('preMove', request.url);
+    },
+    async beforeMove(request: Request, _res: AuthResponse) {
+      console.log('beforeMove', request.url);
+    },
+    async afterMove(request: Request, _res: AuthResponse) {
+      console.log('afterMove', request.url);
+    },
+    async beginOptions(request: Request, _res: AuthResponse) {
+      console.log('beginOptions', request.url);
+    },
+    async preOptions(request: Request, _res: AuthResponse) {
+      console.log('preOptions', request.url);
+    },
+    async beforeOptions(request: Request, _res: AuthResponse) {
+      console.log('beforeOptions', request.url);
+    },
+    async afterOptions(request: Request, _res: AuthResponse) {
+      console.log('afterOptions', request.url);
+    },
+    async beginPropfind(request: Request, _res: AuthResponse) {
+      console.log('beginPropfind', request.url);
+    },
+    async prePropfind(request: Request, _res: AuthResponse) {
+      console.log('prePropfind', request.url);
+    },
+    async beforePropfind(request: Request, _res: AuthResponse) {
+      console.log('beforePropfind', request.url);
+    },
+    async afterPropfind(request: Request, _res: AuthResponse) {
+      console.log('afterPropfind', request.url);
+    },
+    async beginProppatch(request: Request, _res: AuthResponse) {
+      console.log('beginProppatch', request.url);
+    },
+    async preProppatch(request: Request, _res: AuthResponse) {
+      console.log('preProppatch', request.url);
+    },
+    async beforeProppatch(request: Request, _res: AuthResponse) {
+      console.log('beforeProppatch', request.url);
+    },
+    async afterProppatch(request: Request, _res: AuthResponse) {
+      console.log('afterProppatch', request.url);
+    },
+    async beginPut(request: Request, _res: AuthResponse) {
+      console.log('beginPut', request.url);
+    },
+    async prePut(request: Request, _res: AuthResponse) {
+      console.log('prePut', request.url);
+    },
+    async beforePut(request: Request, _res: AuthResponse) {
+      console.log('beforePut', request.url);
+    },
+    async afterPut(request: Request, _res: AuthResponse) {
+      console.log('afterPut', request.url);
+    },
+    async beginUnlock(request: Request, _res: AuthResponse) {
+      console.log('beginUnlock', request.url);
+    },
+    async preUnlock(request: Request, _res: AuthResponse) {
+      console.log('preUnlock', request.url);
+    },
+    async beforeUnlock(request: Request, _res: AuthResponse) {
+      console.log('beforeUnlock', request.url);
+    },
+    async afterUnlock(request: Request, _res: AuthResponse) {
+      console.log('afterUnlock', request.url);
+    },
+    async beginMethod(request: Request, _res: AuthResponse) {
+      console.log('beginMethod', request.url);
+    },
+    async preMethod(request: Request, _res: AuthResponse) {
+      console.log('preMethod', request.url);
+    },
+    async beforeMethod(request: Request, _res: AuthResponse) {
+      console.log('beforeMethod', request.url);
+    },
+    async afterMethod(request: Request, _res: AuthResponse) {
+      console.log('afterMethod', request.url);
+    },
+  };
+}

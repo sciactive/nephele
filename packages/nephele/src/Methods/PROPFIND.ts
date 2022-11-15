@@ -16,6 +16,15 @@ export class PROPFIND extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url, encoding } = this.getRequestData(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beginPropfind', {
+        method: this,
+        url,
+      })
+    ) {
+      return;
+    }
+
     await this.checkAuthorization(request, response, 'PROPFIND');
 
     const contentType = request.accepts('application/xml', 'text/xml');

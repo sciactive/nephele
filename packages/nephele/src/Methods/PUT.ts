@@ -14,6 +14,15 @@ export class PUT extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url } = this.getRequestData(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beginPut', {
+        method: this,
+        url,
+      })
+    ) {
+      return;
+    }
+
     await this.checkAuthorization(request, response, 'PUT');
 
     let resource: Resource;

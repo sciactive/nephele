@@ -104,6 +104,7 @@ export default class Plugin implements PluginInterface {
   </body>
 </html>
 `);
+        return false;
       }
     }
   }

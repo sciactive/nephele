@@ -21,6 +21,15 @@ export class COPY extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url, encoding } = this.getRequestData(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beginCopy', {
+        method: this,
+        url,
+      })
+    ) {
+      return;
+    }
+
     if (await this.isAdapterRoot(request, response, url)) {
       // Can't copy the root of an adapter.
       throw new ForbiddenError('This collection cannot be copied.');

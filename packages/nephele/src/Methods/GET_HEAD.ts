@@ -19,6 +19,17 @@ export class GET_HEAD extends Method {
   async run(request: Request, response: AuthResponse) {
     let { url, encoding } = this.getRequestData(request, response);
 
+    if (
+      await this.runPlugins(
+        request,
+        response,
+        request.method === 'GET' ? 'beginGet' : 'beginHead',
+        { method: this, url }
+      )
+    ) {
+      return;
+    }
+
     await this.checkAuthorization(request, response, request.method);
 
     const resource = await response.locals.adapter.getResource(

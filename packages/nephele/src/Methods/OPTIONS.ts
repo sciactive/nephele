@@ -9,6 +9,15 @@ export class OPTIONS extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url } = this.getRequestData(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beginOptions', {
+        method: this,
+        url,
+      })
+    ) {
+      return;
+    }
+
     const complianceClasses = [
       '1',
       '3',

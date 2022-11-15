@@ -14,6 +14,15 @@ export class UNLOCK extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url, encoding } = this.getRequestData(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beginUnlock', {
+        method: this,
+        url,
+      })
+    ) {
+      return;
+    }
+
     await this.checkAuthorization(request, response, 'UNLOCK');
 
     const lockTokenHeader = request.get('Lock-Token');

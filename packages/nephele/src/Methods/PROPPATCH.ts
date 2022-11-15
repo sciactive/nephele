@@ -24,6 +24,15 @@ export class PROPPATCH extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url, encoding } = this.getRequestData(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beginProppatch', {
+        method: this,
+        url,
+      })
+    ) {
+      return;
+    }
+
     await this.checkAuthorization(request, response, 'PROPPATCH');
 
     const contentType = request.accepts('application/xml', 'text/xml');

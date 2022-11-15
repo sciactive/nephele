@@ -19,6 +19,15 @@ export class LOCK extends Method {
   async run(request: Request, response: AuthResponse) {
     const { url, encoding } = this.getRequestData(request, response);
 
+    if (
+      await this.runPlugins(request, response, 'beginLock', {
+        method: this,
+        url,
+      })
+    ) {
+      return;
+    }
+
     await this.checkAuthorization(request, response, 'LOCK');
 
     const depth: '0' | 'infinity' = (request.get('Depth') || 'infinity') as

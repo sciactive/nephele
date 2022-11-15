@@ -402,15 +402,22 @@ export default function createServer(
       default:
         const run = catchErrors(
           async () => {
+            const pluginMethod = new Method(opts);
+            let { url } = pluginMethod.getRequestData(request, response);
+
             if (
-              await new Method(opts).runPlugins(
-                request,
-                response,
-                'preMethod',
-                {
-                  method: request.method,
-                }
-              )
+              await pluginMethod.runPlugins(request, response, 'beginMethod', {
+                method: request.method,
+                url,
+              })
+            ) {
+              return;
+            }
+            if (
+              await pluginMethod.runPlugins(request, response, 'preMethod', {
+                method: request.method,
+                url,
+              })
             ) {
               return;
             }
@@ -423,6 +430,7 @@ export default function createServer(
             if (
               await method.runPlugins(request, response, 'beforeMethod', {
                 method,
+                url,
               })
             ) {
               return;
@@ -432,6 +440,7 @@ export default function createServer(
 
             await method.runPlugins(request, response, 'afterMethod', {
               method,
+              url,
             });
           },
           async (code, message, error) => {

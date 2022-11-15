@@ -69,6 +69,23 @@ export interface Plugin {
   //
 
   /**
+   * Run when a GET request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginGet?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
+  /**
    * Run before a GET request has been checked and processed.
    *
    * Return false if and only if you have provided a response and wish to stop
@@ -112,6 +129,23 @@ export interface Plugin {
   ) => Promise<void>;
 
   /**
+   * Run when a HEAD request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginHead?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
+  /**
    * Run before a HEAD request has been checked and processed.
    *
    * Return false if and only if you have provided a response and wish to stop
@@ -154,6 +188,23 @@ export interface Plugin {
     }
   ) => Promise<void>;
 
+  /**
+   * Run when a COPY request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginCopy?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
   /**
    * Run before a COPY request has been checked and processed.
    *
@@ -204,6 +255,23 @@ export interface Plugin {
   ) => Promise<void>;
 
   /**
+   * Run when a DELETE request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginDelete?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
+  /**
    * Run before a DELETE request has been checked and processed.
    *
    * Return false if and only if you have provided a response and wish to stop
@@ -243,6 +311,23 @@ export interface Plugin {
     }
   ) => Promise<void>;
 
+  /**
+   * Run when a LOCK request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginLock?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
   /**
    * Run before a LOCK request has been checked and processed.
    *
@@ -330,6 +415,23 @@ export interface Plugin {
   ) => Promise<void>;
 
   /**
+   * Run when a MKCOL request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginMkcol?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
+  /**
    * Run before a MKCOL request has been checked and processed.
    *
    * Return false if and only if you have provided a response and wish to stop
@@ -369,6 +471,23 @@ export interface Plugin {
     }
   ) => Promise<void>;
 
+  /**
+   * Run when a MOVE request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginMove?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
   /**
    * Run before a MOVE request has been checked and processed.
    *
@@ -415,6 +534,23 @@ export interface Plugin {
     }
   ) => Promise<void>;
 
+  /**
+   * Run when an OPTIONS request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginOptions?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
   /**
    * Run before an OPTIONS request has been checked and processed.
    *
@@ -465,6 +601,23 @@ export interface Plugin {
   ) => Promise<void>;
 
   /**
+   * Run when a PROPFIND request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginPropfind?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
+  /**
    * Run before a PROPFIND request has been checked and processed.
    *
    * Return false if and only if you have provided a response and wish to stop
@@ -507,6 +660,23 @@ export interface Plugin {
     }
   ) => Promise<void>;
 
+  /**
+   * Run when a PROPPATCH request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginProppatch?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
   /**
    * Run before a PROPPATCH request has been checked and processed.
    *
@@ -551,6 +721,23 @@ export interface Plugin {
   ) => Promise<void>;
 
   /**
+   * Run when a PUT request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginPut?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
+  /**
    * Run before a PUT request has been checked and processed.
    *
    * Return false if and only if you have provided a response and wish to stop
@@ -593,6 +780,23 @@ export interface Plugin {
     }
   ) => Promise<void>;
 
+  /**
+   * Run when an UNLOCK request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginUnlock?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
   /**
    * Run before an UNLOCK request has been checked and processed.
    *
@@ -639,6 +843,23 @@ export interface Plugin {
   ) => Promise<void>;
 
   /**
+   * Run when an unknown method request is starting.
+   *
+   * Note that this is run before even authorization to run the method has been
+   * checked.
+   *
+   * Return false if and only if you have provided a response and wish to stop
+   * processing.
+   */
+  beginMethod?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      url: URL;
+    }
+  ) => Promise<false | void>;
+  /**
    * Run before an unknown method request has been checked and processed.
    *
    * Return false if and only if you have provided a response and wish to stop
@@ -649,6 +870,7 @@ export interface Plugin {
     response: AuthResponse,
     data: {
       method: string;
+      url: URL;
     }
   ) => Promise<false | void>;
   /**
@@ -662,6 +884,7 @@ export interface Plugin {
     response: AuthResponse,
     data: {
       method: Method;
+      url: URL;
     }
   ) => Promise<false | void>;
   /**
@@ -672,6 +895,7 @@ export interface Plugin {
     response: AuthResponse,
     data: {
       method: Method;
+      url: URL;
     }
   ) => Promise<void>;
 }
