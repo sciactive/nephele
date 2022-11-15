@@ -84,19 +84,77 @@ export default class Plugin implements PluginInterface {
             const lastModified = await (
               await resource.getProperties()
             ).get('getlastmodified');
+            const url = await resource.getCanonicalUrl();
+
+            let canRead = true;
+            try {
+              await method.checkAuthorization(request, response, 'GET', url);
+            } catch (e: any) {
+              canRead = false;
+            }
+
+            let canMove = true;
+            try {
+              await method.checkAuthorization(request, response, 'MOVE', url);
+            } catch (e: any) {
+              canMove = false;
+            }
+
+            let canDelete = true;
+            try {
+              await method.checkAuthorization(request, response, 'DELETE', url);
+            } catch (e: any) {
+              canDelete = false;
+            }
 
             return {
               name: await resource.getCanonicalName(),
-              url: await resource.getCanonicalUrl(),
+              url,
               size: await resource.getLength(),
               lastModified: new Date(
                 typeof lastModified === 'string' ? lastModified : 0
               ).getTime(),
               type: await resource.getMediaType(),
               directory: await resource.isCollection(),
+              canRead,
+              canMove,
+              canDelete,
             };
           })
         );
+
+        let canUpload = true;
+        try {
+          await method.checkAuthorization(
+            request,
+            response,
+            'PUT',
+            new URL(
+              `${request.url}`.replace(/\/?$/, '/') +
+                '--nephele-new-file-name--',
+              `${request.protocol}://${request.headers.host}`
+            )
+          );
+        } catch (e: any) {
+          canUpload = false;
+        }
+
+        let canMkdir = true;
+        try {
+          await method.checkAuthorization(
+            request,
+            response,
+            'MKCOL',
+            new URL(
+              `${request.url}`.replace(/\/?$/, '/') +
+                '--nephele-new-directory-name--',
+              `${request.protocol}://${request.headers.host}`
+            )
+          );
+        } catch (e: any) {
+          console.log(e);
+          canMkdir = false;
+        }
 
         const { head, html, css } = IndexPage.default.render({
           entries,
@@ -106,6 +164,8 @@ export default class Plugin implements PluginInterface {
           },
           urlParams: request.query,
           name: this.name,
+          canUpload,
+          canMkdir,
         });
 
         response.set({

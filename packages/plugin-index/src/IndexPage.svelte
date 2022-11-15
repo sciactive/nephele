@@ -13,70 +13,72 @@
        */
       handleMkdirs: {
         const mkdirContainer = document.getElementById('mkdirContainer');
-        mkdirContainer.style.display = '';
-        const mkdirForm = document.getElementById('mkdir');
+        if (mkdirContainer != null) {
+          mkdirContainer.style.display = '';
+          const mkdirForm = document.getElementById('mkdir');
 
-        mkdirForm.addEventListener('submit', (event) => {
-          event.preventDefault();
-          requests = requests.concat([
-            {
-              type: 'mkdir',
-              done: null,
-              name: mkdirForm.name.value,
-            },
-          ]);
-          mkdirForm.reset();
+          mkdirForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            requests = requests.concat([
+              {
+                type: 'mkdir',
+                done: null,
+                name: mkdirForm.name.value,
+              },
+            ]);
+            mkdirForm.reset();
 
-          doMkdir();
-        });
+            doMkdir();
+          });
 
-        function doMkdir() {
-          for (let i = 0; i < requests.length; i++) {
-            const dir = requests[i];
+          function doMkdir() {
+            for (let i = 0; i < requests.length; i++) {
+              const dir = requests[i];
 
-            if (dir.type === 'mkdir' && dir.done === null) {
-              dir.done = false;
-              tasksContainer.style.display = '';
-              refreshContainer.style.display = '';
-              refresh.disabled = true;
+              if (dir.type === 'mkdir' && dir.done === null) {
+                dir.done = false;
+                tasksContainer.style.display = '';
+                refreshContainer.style.display = '';
+                refresh.disabled = true;
 
-              const element = document.createElement('div');
-              element.style.marginBottom = '0.5em';
+                const element = document.createElement('div');
+                element.style.marginBottom = '0.5em';
 
-              const progress = document.createElement('div');
-              progress.style.display = 'inline-block';
-              progress.innerText = 'Working...';
-              progress.style.border = '1px solid #000';
-              progress.style.width = '100px';
-              progress.style.marginRight = '0.5em';
-              progress.style.textAlign = 'center';
-              element.appendChild(progress);
+                const progress = document.createElement('div');
+                progress.style.display = 'inline-block';
+                progress.innerText = 'Working...';
+                progress.style.border = '1px solid #000';
+                progress.style.width = '100px';
+                progress.style.marginRight = '0.5em';
+                progress.style.textAlign = 'center';
+                element.appendChild(progress);
 
-              const name = document.createElement('span');
-              name.innerText = `Make directory ${dir.name}`;
-              element.appendChild(name);
+                const name = document.createElement('span');
+                name.innerText = `Make directory ${dir.name}`;
+                element.appendChild(name);
 
-              tasks.appendChild(element);
+                tasks.appendChild(element);
 
-              const xhr = new XMLHttpRequest();
-              xhr.addEventListener('loadend', () => {
-                if (
-                  xhr.readyState === 4 &&
-                  xhr.status >= 200 &&
-                  xhr.status < 300
-                ) {
-                  progress.innerText = 'Success.';
-                } else {
-                  progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
-                }
-                dir.done = true;
+                const xhr = new XMLHttpRequest();
+                xhr.addEventListener('loadend', () => {
+                  if (
+                    xhr.readyState === 4 &&
+                    xhr.status >= 200 &&
+                    xhr.status < 300
+                  ) {
+                    progress.innerText = 'Success.';
+                  } else {
+                    progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
+                  }
+                  dir.done = true;
 
-                if (requests.find((request) => !request.done) == null) {
-                  refresh.disabled = false;
-                }
-              });
-              xhr.open('MKCOL', dir.name, true);
-              xhr.send();
+                  if (requests.find((request) => !request.done) == null) {
+                    refresh.disabled = false;
+                  }
+                });
+                xhr.open('MKCOL', dir.name, true);
+                xhr.send();
+              }
             }
           }
         }
@@ -87,87 +89,89 @@
        */
       handleUploads: {
         const uploadContainer = document.getElementById('uploadContainer');
-        uploadContainer.style.display = '';
-        const uploadForm = document.getElementById('upload');
+        if (uploadContainer != null) {
+          uploadContainer.style.display = '';
+          const uploadForm = document.getElementById('upload');
 
-        uploadForm.addEventListener('submit', (event) => {
-          event.preventDefault();
-          requests = requests.concat(
-            Array.prototype.slice.call(uploadForm.file.files).map((file) => ({
-              type: 'upload',
-              done: null,
-              file,
-            }))
-          );
-          uploadForm.reset();
+          uploadForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            requests = requests.concat(
+              Array.prototype.slice.call(uploadForm.file.files).map((file) => ({
+                type: 'upload',
+                done: null,
+                file,
+              }))
+            );
+            uploadForm.reset();
 
-          doUpload();
-        });
+            doUpload();
+          });
 
-        function doUpload() {
-          for (let i = 0; i < requests.length; i++) {
-            const file = requests[i];
+          function doUpload() {
+            for (let i = 0; i < requests.length; i++) {
+              const file = requests[i];
 
-            if (file.type === 'upload' && file.done === null) {
-              file.done = false;
-              tasksContainer.style.display = '';
-              refreshContainer.style.display = '';
-              refresh.disabled = true;
+              if (file.type === 'upload' && file.done === null) {
+                file.done = false;
+                tasksContainer.style.display = '';
+                refreshContainer.style.display = '';
+                refresh.disabled = true;
 
-              const element = document.createElement('label');
-              element.style.display = 'block';
-              element.style.marginBottom = '0.5em';
+                const element = document.createElement('label');
+                element.style.display = 'block';
+                element.style.marginBottom = '0.5em';
 
-              const progress = document.createElement('progress');
-              progress.value = 0;
-              progress.max = 100;
-              progress.style.width = '100px';
-              progress.style.marginRight = '0.5em';
-              element.appendChild(progress);
+                const progress = document.createElement('progress');
+                progress.value = 0;
+                progress.max = 100;
+                progress.style.width = '100px';
+                progress.style.marginRight = '0.5em';
+                element.appendChild(progress);
 
-              const name = document.createElement('span');
-              name.innerText = `Upload ${file.file.name}`;
-              element.appendChild(name);
+                const name = document.createElement('span');
+                name.innerText = `Upload ${file.file.name}`;
+                element.appendChild(name);
 
-              tasks.appendChild(element);
+                tasks.appendChild(element);
 
-              const xhr = new XMLHttpRequest();
-              xhr.upload.addEventListener('progress', (event) => {
-                if (event.lengthComputable) {
-                  progress.value = (event.loaded / event.total) * 100;
-                  progress.title = (event.loaded / event.total) * 100 + '%';
-                }
-              });
-              xhr.addEventListener('progress', (event) => {
-                if (event.lengthComputable) {
-                  progress.value = (event.loaded / event.total) * 100;
-                  progress.title = (event.loaded / event.total) * 100 + '%';
-                }
-              });
-              xhr.addEventListener('loadend', () => {
-                if (
-                  xhr.readyState === 4 &&
-                  xhr.status >= 200 &&
-                  xhr.status < 300
-                ) {
-                  progress.value = 100;
-                  progress.title = 'Done';
-                } else {
-                  progress.value = 0;
-                  progress.title = 'Error';
-                  const error = document.createElement('span');
-                  error.innerText = ` (Error: ${xhr.status} ${xhr.statusText})`;
-                  element.appendChild(error);
-                }
-                file.done = true;
+                const xhr = new XMLHttpRequest();
+                xhr.upload.addEventListener('progress', (event) => {
+                  if (event.lengthComputable) {
+                    progress.value = (event.loaded / event.total) * 100;
+                    progress.title = (event.loaded / event.total) * 100 + '%';
+                  }
+                });
+                xhr.addEventListener('progress', (event) => {
+                  if (event.lengthComputable) {
+                    progress.value = (event.loaded / event.total) * 100;
+                    progress.title = (event.loaded / event.total) * 100 + '%';
+                  }
+                });
+                xhr.addEventListener('loadend', () => {
+                  if (
+                    xhr.readyState === 4 &&
+                    xhr.status >= 200 &&
+                    xhr.status < 300
+                  ) {
+                    progress.value = 100;
+                    progress.title = 'Done';
+                  } else {
+                    progress.value = 0;
+                    progress.title = 'Error';
+                    const error = document.createElement('span');
+                    error.innerText = ` (Error: ${xhr.status} ${xhr.statusText})`;
+                    element.appendChild(error);
+                  }
+                  file.done = true;
 
-                if (requests.find((request) => !request.done) == null) {
-                  refresh.disabled = false;
-                }
-              });
-              xhr.open('PUT', file.file.name, true);
-              xhr.setRequestHeader('Content-Type', file.file.type);
-              xhr.send(file.file);
+                  if (requests.find((request) => !request.done) == null) {
+                    refresh.disabled = false;
+                  }
+                });
+                xhr.open('PUT', file.file.name, true);
+                xhr.setRequestHeader('Content-Type', file.file.type);
+                xhr.send(file.file);
+              }
             }
           }
         }
@@ -737,10 +741,9 @@
   <tbody>
     {#if self.url.pathname != '/'}
       <tr>
-        <td
-          ><a href="{`${self.url.pathname}`.replace(/\/[^\/]*\/?$/, '')}/">..</a
-          ></td
-        >
+        <td>
+          <a href="{`${self.url.pathname}`.replace(/\/[^\/]*\/?$/, '')}/">..</a>
+        </td>
         <td />
         <td />
         <td>Parent Directory</td>
@@ -753,11 +756,11 @@
           ? 'background-color: #ddd;'
           : ''}
       >
-        <td
-          ><a class="filename" href={entry.url}
+        <td>
+          <a class="filename" href={entry.url}
             >{entry.name}{entry.directory ? '/' : ''}</a
-          ></td
-        >
+          >
+        </td>
         <td>{entry.directory ? 'Directory' : entry.type}</td>
         <td>{new Date(entry.lastModified).toLocaleString()}</td>
         <td title={entry.directory ? '' : `${entry.size} bytes`}
@@ -768,9 +771,19 @@
           style="width: 1px; white-space: nowrap; display: none;"
           data-name={`${entry.name}${entry.directory ? '/' : ''}`}
         >
-          <button class="copymove">Copy/Move</button>
-          <button class="rename">Rename</button>
-          <button class="delete">Delete</button>
+          {#if entry.canRead && entry.canMove}
+            <button class="copymove">Copy/Move</button>
+          {:else if entry.canRead}
+            <button class="copymove">Copy</button>
+          {:else if entry.canMove}
+            <button class="copymove">Move</button>
+          {/if}
+          {#if entry.canMove}
+            <button class="rename">Rename</button>
+          {/if}
+          {#if entry.canDelete}
+            <button class="delete">Delete</button>
+          {/if}
         </td>
       </tr>
     {/each}
@@ -787,19 +800,23 @@
   </div>
 </div>
 
-<div id="mkdirContainer" style="margin-top: 1em; display: none;">
-  <form name="mkdir" id="mkdir">
-    New Directory: <input type="text" name="name" placeholder="Name" />
-    <button>Submit</button>
-  </form>
-</div>
+{#if canMkdir}
+  <div id="mkdirContainer" style="margin-top: 1em; display: none;">
+    <form name="mkdir" id="mkdir">
+      New Directory: <input type="text" name="name" placeholder="Name" />
+      <button>Submit</button>
+    </form>
+  </div>
+{/if}
 
-<div id="uploadContainer" style="margin-top: 1em; display: none;">
-  <form name="upload" id="upload">
-    Upload: <input type="file" name="file" multiple />
-    <button>Submit</button>
-  </form>
-</div>
+{#if canUpload}
+  <div id="uploadContainer" style="margin-top: 1em; display: none;">
+    <form name="upload" id="upload">
+      Upload: <input type="file" name="file" multiple />
+      <button>Submit</button>
+    </form>
+  </div>
+{/if}
 
 <div id="tasksContainer" style="margin-top: 1em; display: none;">
   Tasks
@@ -819,6 +836,8 @@
   export let self;
   export let urlParams;
   export let name;
+  export let canUpload;
+  export let canMkdir;
 
   function sortEntries() {
     return entries.sort((a, b) => {
