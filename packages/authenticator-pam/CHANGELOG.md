@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.23](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.22...v1.0.0-alpha.23) (2022-11-15)
+
+
+### Features
+
+* add index plugin config and refactor index page ([9248219](https://github.com/sciactive/nephele/commit/92482191780d92bbcf336c721564045daba7ee91))
+
+
+
+
+
 # [1.0.0-alpha.22](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.21...v1.0.0-alpha.22) (2022-09-16)
 
 **Note:** Version bump only for package @nephele/authenticator-pam

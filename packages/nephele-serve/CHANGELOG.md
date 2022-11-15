@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.23](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.22...v1.0.0-alpha.23) (2022-11-15)
+
+
+### Features
+
+* add index plugin to nephele-serve ([5c66a0d](https://github.com/sciactive/nephele/commit/5c66a0dddda51557e49a056a31412239ffb17bd6))
+
+
+
+
+
 # [1.0.0-alpha.22](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.21...v1.0.0-alpha.22) (2022-09-16)
 
 **Note:** Version bump only for package nephele-serve

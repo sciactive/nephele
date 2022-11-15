@@ -3,6 +3,25 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.23](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.22...v1.0.0-alpha.23) (2022-11-15)
+
+
+### Bug Fixes
+
+* getLockPermission call to wrong object ([3016259](https://github.com/sciactive/nephele/commit/30162599114804ce084d3955e2bd84da2b8df14e))
+
+
+### Features
+
+* add begin plugin calls to handle requests that would be 404 ([fa06f85](https://github.com/sciactive/nephele/commit/fa06f852bce5cc01f387feb1023e8b72d143bb36))
+* add index file and directory listing plugin ([e0c46ac](https://github.com/sciactive/nephele/commit/e0c46ac8d66cc242ff6b2d801e3fe4c967712f50))
+* add plugin calls to all methods ([a767c96](https://github.com/sciactive/nephele/commit/a767c96322b34020055cfcc2c15321afd2475571))
+* introduce a plugin mechanism ([d76f93c](https://github.com/sciactive/nephele/commit/d76f93c556dd8a2ec47828ec77ddea36f2c31238))
+
+
+
+
+
 # [1.0.0-alpha.22](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.21...v1.0.0-alpha.22) (2022-09-16)
 
 **Note:** Version bump only for package nephele
