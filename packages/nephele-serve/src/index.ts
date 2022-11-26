@@ -244,13 +244,11 @@ try {
         continue;
       }
       for (let net of netDict) {
-        const family =
-          typeof net.family === 'string' ? net.family : `IPv${net.family}`;
         if (!net.internal && net.address) {
           if (host.trim() !== '::' && host.trim() !== net.address) {
             continue;
           }
-          serverHosts.push({ name, family, address: net.address });
+          serverHosts.push({ name, family: net.family, address: net.address });
         }
       }
     }
