@@ -2,11 +2,21 @@
 
 A pluggable WebDAV, CardDAV, and CalDAV server for Node.js and Express.
 
+Nephele, the free and open source WebDAV server framework for Node.js, is designed to make it easy to develop and integrate WebDAV functionality into your Node.js applications.
+
+WebDAV (Web Distributed Authoring and Versioning) is a powerful and flexible protocol that allows users to access and manage files over the web. With Nephele, you can easily add WebDAV support to your Node.js applications, allowing your users to upload, download, and edit files directly from their web browser or file manager.
+
+Nephele is free and open source, so you can use it, modify it, and distribute it as you see fit. It is released under the Apache-2.0 license, which allows you to use it for any purpose, including commercial projects.
+
 # Work in Progress
 
 Nephele is currently a work in progress. It fully implements the WebDAV spec (RFC4918), but there are [still more RFCs planned](https://github.com/sciactive/nephele/blob/master/README.md#planned-rfcs) for version 1.0.
 
-It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
+It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/) and [QuickDAV](https://sciactive.com/quickdav/).
+
+# Nephele Serve
+
+If you are looking for a ready-to-run WebDAV server for Linux and Unix systems, check out the [nephele-serve](https://www.npmjs.com/package/nephele-serve) package.
 
 # Installation
 
@@ -192,7 +202,7 @@ Users are extremely flexible in Nephele. Basically Nephele hands your authentica
 
 ## Plugins
 
-Nephele offers additional features using [plugins](https://www.npmjs.com/search?q=keywords%3Anephele%20plugin). A plugin is given the chance to alter the behavior and response throughout the lifecycle of a Nephele request.
+Nephele offers additional features using [plugins](https://www.npmjs.com/search?q=keywords%3Anephele%20plugin). A plugin is given the chance to alter the behavior and response throughout [the lifecycle of a Nephele request](src/Interfaces/Plugin.ts).
 
 # Service Location for CardDAV and CalDAV Clients
 

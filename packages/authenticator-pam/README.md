@@ -4,6 +4,22 @@ A Nephele authenticator that uses PAM (system users) as its authentication backe
 
 # Installation
 
+Follow these steps to install PAM development libraries for your OS:
+
+```sh
+# Centos and RHEL:
+sudo yum install pam-devel
+
+# Debian/Ubuntu:
+sudo apt install libpam0g-dev
+
+# Arch and macOS: already installed
+```
+
+(Source: https://www.npmjs.com/package/authenticate-pam#Install)
+
+Then,
+
 ```sh
 npm i -s @nephele/authenticator-pam
 ```

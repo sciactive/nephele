@@ -4,9 +4,17 @@ A pluggable WebDAV, CardDAV, and CalDAV server for Node.js and Express.
 
 # Work in Progress
 
-Nephele is currently a work in progress. You can [install and run it](https://www.npmjs.com/package/nephele), but building adapters and authenticators for it is not recommended yet, because it will significantly change before the 1.0 release.
+Nephele is currently a work in progress. You can [install](https://www.npmjs.com/package/nephele) and [run](https://www.npmjs.com/package/nephele-serve) it, but building adapters and authenticators for it is not recommended yet, because it will significantly change before the 1.0 release.
 
-It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
+It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/) and [QuickDAV](https://sciactive.com/quickdav/).
+
+# What is WebDAV
+
+WebDAV (Web Distributed Authoring and Versioning) is a protocol that allows users to access and manage files stored on a remote server. It is commonly used for web-based file sharing and collaboration, as it allows users to upload, download, and edit files directly from a web browser.
+
+WebDAV is based on HTTP (Hypertext Transfer Protocol) and uses the same basic communication methods, but adds additional features and functionality specifically designed for file management. These features include support for file locking, collections, and metadata.
+
+WebDAV is a popular protocol for file sharing and collaboration, as it is easy to use and allows users to access their files from any device with an internet connection. It is also secure, with support for encrypted data transfer and authentication to prevent unauthorized access to files.
 
 # Compliance
 
