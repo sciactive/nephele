@@ -1,11 +1,11 @@
-# Nephele - Index Plugin
+# Nephele - Read-Only Plugin
 
-A Nephele plugin to serve index files and list directory contents.
+A Nephele plugin to make a path read-only.
 
 # Installation
 
 ```sh
-npm i -s @nephele/plugin-index
+npm i -s @nephele/plugin-read-only
 ```
 
 # Usage
@@ -17,7 +17,7 @@ import express from 'express';
 import nepheleServer from 'nephele';
 import ExampleAdapter from '@nephele/adapter-example';
 import InsecureAuthenticator from '@nephele/authenticator-none';
-import IndexPlugin from '@nephele/plugin-index';
+import ReadOnlyPlugin from '@nephele/plugin-read-only';
 
 const app = express();
 const port = 8080;
@@ -27,11 +27,7 @@ app.use(
   nepheleServer({
     adapter: new ExampleAdapter(),
     authenticator: new InsecureAuthenticator(),
-    plugins: [
-      new IndexPlugin({
-        name: 'Nephele Server',
-      }),
-    ],
+    plugins: [new ReadOnlyPlugin()],
   })
 );
 
@@ -40,18 +36,7 @@ app.listen(port, () => {
 });
 ```
 
-The plugin, by default, will serve the "index.html" or "index.htm" file (if it exists) when a request for the directory is made. If no such file exists, by default, the plugin will serve a directory listing page with upload/file management forms.
-
-# Options / Defaults
-
-- `name` = `'Nephele Server'`: The name of the server reported on the directory listing pages.
-- `serveIndexes` = `true`: Whether to serve "index.html" and "index.htm" files when a GET request for a directory is made.
-- `serveListings` = `true`: Whether to serve directory listings when a request to a directory is made.
-- `showForms` = `true`: Whether to show file management forms on directory listings.
-
-## serveListings
-
-If the user has access to create/modify/delete files in the directory, the listing page will include forms to do those tasks (if showForms is not false).
+This plugin is useful if you want to make a WebDAV server accessible publicly, but without all of the write/modify features enabled.
 
 # License
 

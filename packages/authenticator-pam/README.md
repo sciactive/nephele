@@ -61,11 +61,20 @@ Specifically, you may need to use `NODE_OPTIONS='--experimental-specifier-resolu
 # Options / Defaults
 
 - `realm` = `'Nephele WebDAV Service'`: The realm is the name reported by the server when the user is prompted to authenticate.
+- `unauthorizedAccess` = `false`: Allow the user to proceed, even if they are not authenticated.
 - `allowedUIDs` = `'500-59999'`: Comma separated UID ranges that are allowed to log in.
 
 ## realm
 
 It should be HTTP header safe (shouldn't include double quotes or semicolon).
+
+## unauthorizedAccess
+
+The authenticator will advertise that authentication is available, but the user will have access to the server without providing authentication.
+
+In the unauthorized state, the `user` presented to the Nephele adapter will have the username "nobody".
+
+WARNING: It is very dangerous to allow unauthorized access if write actions are allowed!
 
 ## allowedUIDs
 

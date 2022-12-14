@@ -65,6 +65,37 @@ export interface Plugin {
   close?: (request: Request, response: AuthResponse) => Promise<void>;
 
   //
+  // Authorization Events
+  //
+
+  /**
+   * Run before authorization is checked for a method.
+   */
+  beforeCheckAuthorization?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      methodName: string;
+      url: URL;
+    }
+  ) => Promise<void>;
+  /**
+   * Run after authorization is checked for a method.
+   *
+   * If this is run, it means the user *has* authorization for the method.
+   */
+  afterCheckAuthorization?: (
+    request: Request,
+    response: AuthResponse,
+    data: {
+      method: Method;
+      methodName: string;
+      url: URL;
+    }
+  ) => Promise<void>;
+
+  //
   // Method Specific Events
   //
 

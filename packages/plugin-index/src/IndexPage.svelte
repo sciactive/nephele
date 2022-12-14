@@ -731,11 +731,13 @@
           </span>
         {/if}
       </th>
-      <th
-        class="action"
-        style="text-align: left; border-bottom: 1px solid #ddd; display: none;"
-        >Actions</th
-      >
+      {#if showForms}
+        <th
+          class="action"
+          style="text-align: left; border-bottom: 1px solid #ddd; display: none;"
+          >Actions</th
+        >
+      {/if}
     </tr>
   </thead>
   <tbody>
@@ -766,67 +768,71 @@
         <td title={entry.directory ? '' : `${entry.size} bytes`}
           >{entry.directory ? '' : prettySize(entry.size)}</td
         >
-        <td
-          class="action"
-          style="width: 1px; white-space: nowrap; display: none;"
-          data-name={`${entry.name}${entry.directory ? '/' : ''}`}
-        >
-          {#if entry.canRead && entry.canMove}
-            <button class="copymove">Copy/Move</button>
-          {:else if entry.canRead}
-            <button class="copymove">Copy</button>
-          {:else if entry.canMove}
-            <button class="copymove">Move</button>
-          {/if}
-          {#if entry.canMove}
-            <button class="rename">Rename</button>
-          {/if}
-          {#if entry.canDelete}
-            <button class="delete">Delete</button>
-          {/if}
-        </td>
+        {#if showForms}
+          <td
+            class="action"
+            style="width: 1px; white-space: nowrap; display: none;"
+            data-name={`${entry.name}${entry.directory ? '/' : ''}`}
+          >
+            {#if entry.canRead && entry.canMove}
+              <button class="copymove">Copy/Move</button>
+            {:else if entry.canRead}
+              <button class="copymove">Copy</button>
+            {:else if entry.canMove}
+              <button class="copymove">Move</button>
+            {/if}
+            {#if entry.canMove}
+              <button class="rename">Rename</button>
+            {/if}
+            {#if entry.canDelete}
+              <button class="delete">Delete</button>
+            {/if}
+          </td>
+        {/if}
       </tr>
     {/each}
   </tbody>
 </table>
 
-<div id="copymoveContainer" style="margin-top: 1em; display: none;">
-  Selected: <code id="copymoveSelected" />
+{#if showForms}
+  <div id="copymoveContainer" style="margin-top: 1em; display: none;">
+    Selected: <code id="copymoveSelected" />
 
-  <div>
-    <button id="copyButton" class="copy">Copy Here</button>
-    <button id="moveButton" class="move">Move Here</button>
-    <button id="unselectButton" class="unselect">Unselect</button>
+    <div>
+      <button id="copyButton" class="copy">Copy Here</button>
+      <button id="moveButton" class="move">Move Here</button>
+      <button id="unselectButton" class="unselect">Unselect</button>
+    </div>
   </div>
-</div>
 
-{#if canMkdir}
-  <div id="mkdirContainer" style="margin-top: 1em; display: none;">
-    <form name="mkdir" id="mkdir">
-      New Directory: <input type="text" name="name" placeholder="Name" />
-      <button>Submit</button>
-    </form>
+  {#if canMkdir}
+    <div id="mkdirContainer" style="margin-top: 1em; display: none;">
+      <form name="mkdir" id="mkdir">
+        New Directory: <input type="text" name="name" placeholder="Name" />
+        <button>Submit</button>
+      </form>
+    </div>
+  {/if}
+
+  {#if canUpload}
+    <div id="uploadContainer" style="margin-top: 1em; display: none;">
+      <form name="upload" id="upload">
+        Upload: <input type="file" name="file" multiple />
+        <button>Submit</button>
+      </form>
+    </div>
+  {/if}
+
+  <div id="tasksContainer" style="margin-top: 1em; display: none;">
+    Tasks
+
+    <div id="tasks" />
+  </div>
+
+  <div id="refreshContainer" style="margin-top: 1em; display: none;">
+    <button id="refresh" onclick="window.location.reload()">Refresh</button>
   </div>
 {/if}
-
-{#if canUpload}
-  <div id="uploadContainer" style="margin-top: 1em; display: none;">
-    <form name="upload" id="upload">
-      Upload: <input type="file" name="file" multiple />
-      <button>Submit</button>
-    </form>
-  </div>
-{/if}
-
-<div id="tasksContainer" style="margin-top: 1em; display: none;">
-  Tasks
-
-  <div id="tasks" />
-</div>
-
-<div id="refreshContainer" style="margin-top: 1em; display: none;">
-  <button id="refresh" onclick="window.location.reload()">Refresh</button>
-</div>
 
 <hr />
 <p style="font-size: smaller; text-align: right;">Served by {name}</p>
@@ -836,6 +842,7 @@
   export let self;
   export let urlParams;
   export let name;
+  export let showForms;
   export let canUpload;
   export let canMkdir;
 

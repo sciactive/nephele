@@ -60,8 +60,9 @@ app.listen(port, () => {
 
 # Options / Defaults
 
-- `getUser`: A function that takes a username and returns a promise that resolves to a user if the user exists or it's not possible to tell whether they exist, or null otherwise.
 - `realm` = `'Nephele WebDAV Service'`: The realm is the name reported by the server when the user is prompted to authenticate.
+- `unauthorizedAccess` = `false`: Allow the user to proceed, even if they are not authenticated.
+- `getUser`: A function that takes a username and returns a promise that resolves to a user if the user exists or it's not possible to tell whether they exist, or null otherwise.
 - `key` = `random_uuid()`: A private key used to calculate nonce values for Digest authentication.
 - `nonceTimeout` = `1000 * 60 * 60 * 6`: The number of milliseconds for which a nonce is valid once issued. Defaults to 6 hours.
 - `authBasic`: Authorize a User returned by `getUser` with a password.
@@ -70,6 +71,14 @@ app.listen(port, () => {
 ## realm
 
 It should be HTTP header safe (shouldn't include double quotes or semicolon).
+
+## unauthorizedAccess
+
+The authenticator will advertise that authentication is available, but the user will have access to the server without providing authentication.
+
+In the unauthorized state, the `user` presented to the Nephele adapter will have the username "nobody".
+
+WARNING: It is very dangerous to allow unauthorized access if write actions are allowed!
 
 ## key
 

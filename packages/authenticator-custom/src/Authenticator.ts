@@ -16,12 +16,6 @@ import User from './User.js';
 
 export type AuthenticatorConfig = {
   /**
-   * A function that takes a username and returns a promise that resolves to a
-   * user if the user exists or it's not possible to tell whether they exist, or
-   * null otherwise.
-   */
-  getUser: (username: string) => Promise<User | null>;
-  /**
    * The realm is the name reported by the server when the user is prompted to
    * authenticate.
    *
@@ -29,6 +23,25 @@ export type AuthenticatorConfig = {
    * semicolon).
    */
   realm?: string;
+  /**
+   * Allow the user to proceed, even if they are not authenticated.
+   *
+   * The authenticator will advertise that authentication is available, but the
+   * user will have access to the server without providing authentication.
+   *
+   * In the unauthorized state, the `user` presented to the Nephele adapter will
+   * have the username "nobody".
+   *
+   * WARNING: It is very dangerous to allow unauthorized access if write actions
+   * are allowed!
+   */
+  unauthorizedAccess?: boolean;
+  /**
+   * A function that takes a username and returns a promise that resolves to a
+   * user if the user exists or it's not possible to tell whether they exist, or
+   * null otherwise.
+   */
+  getUser: (username: string) => Promise<User | null>;
   /**
    * A private key used to calculate nonce values for Digest authentication.
    *
@@ -104,6 +117,7 @@ export default class Authenticator implements AuthenticatorInterface {
     algorithm: 'sha256' | 'md5'
   ) => Promise<{ password: string } | { hash: string } | null>;
   realm: string;
+  unauthorizedAccess: boolean;
   key: string;
   nonceTimeout: number;
 
@@ -123,6 +137,7 @@ export default class Authenticator implements AuthenticatorInterface {
     }
 
     this.realm = config.realm || 'Nephele WebDAV Service';
+    this.unauthorizedAccess = config.unauthorizedAccess || false;
     this.key = config.key || uuid();
     // Nonce is valid for 6 hours by default.
     this.nonceTimeout = config.nonceTimeout || 1000 * 60 * 60 * 6;
@@ -315,6 +330,11 @@ export default class Authenticator implements AuthenticatorInterface {
         }
         response.set('WWW-Authenticate', auths);
       }
+
+      if (this.unauthorizedAccess) {
+        return new User({ username: 'nobody' });
+      }
+
       throw e;
     }
   }

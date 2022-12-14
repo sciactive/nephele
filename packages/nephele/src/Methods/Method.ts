@@ -127,6 +127,11 @@ export class Method {
     method?: string,
     url?: URL
   ) {
+    await this.runPlugins(request, response, 'beforeCheckAuthorization', {
+      method: this,
+      methodName: method,
+      url,
+    });
     // If the adapter says it can handle the method, just handle the
     // authorization and error handling for it.
     if (
@@ -140,6 +145,11 @@ export class Method {
     ) {
       throw new UnauthorizedError('Unauthorized.');
     }
+    await this.runPlugins(request, response, 'afterCheckAuthorization', {
+      method: this,
+      methodName: method,
+      url,
+    });
   }
 
   async getAdapter(response: AuthResponse, unencodedPath: string) {

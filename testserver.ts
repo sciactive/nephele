@@ -10,7 +10,7 @@ import type { Request } from 'express';
 import express from 'express';
 import createDebug from 'debug';
 
-import type { AuthResponse } from './packages/nephele/dist/index.js';
+import type { AuthResponse, Plugin } from './packages/nephele/dist/index.js';
 import server from './packages/nephele/dist/index.js';
 import FileSystemAdapter from './packages/adapter-file-system/dist/index.js';
 import VirtualAdapter from './packages/adapter-virtual/dist/index.js';
@@ -20,6 +20,7 @@ import CustomAuthenticator, {
 } from './packages/authenticator-custom/dist/index.js';
 import InsecureAuthenticator from './packages/authenticator-none/dist/index.js';
 import IndexPlugin from './packages/plugin-index/dist/index.js';
+import ReadOnlyPlugin from './packages/plugin-read-only/dist/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -29,7 +30,9 @@ const app = express();
 const host = hostname();
 const port = 8080;
 const root = process.argv.length > 2 ? resolve(process.argv[2]) : __dirname;
+const readonly = !!process.env.READONLY;
 const pam = !process.env.NOPAM;
+const unauthorized = !!process.env.UNAUTHORIZED;
 const virtual = !!process.env.VIRTUALFS;
 const envuser = process.env.USERNAME || process.env.USER;
 const envpass = process.env.PASSWORD;
@@ -66,9 +69,27 @@ app.use(
           },
         })
       : pam
-      ? new PamAuthenticator()
+      ? new PamAuthenticator({
+          unauthorizedAccess: unauthorized,
+        })
       : new InsecureAuthenticator(),
-    plugins: [new IndexPlugin(), simpleLogPlugin()],
+    plugins: async (_request, response) => {
+      const isReadonly =
+        readonly ||
+        (unauthorized &&
+          (response.locals.user == null ||
+            response.locals.user.username == 'nobody'));
+      const plugins: Plugin[] = [
+        new IndexPlugin({ showForms: !isReadonly }),
+        simpleLogPlugin(),
+      ];
+
+      if (isReadonly) {
+        plugins.push(new ReadOnlyPlugin());
+      }
+
+      return plugins;
+    },
   })
 );
 
@@ -94,6 +115,12 @@ function simpleLogPlugin() {
     },
     async close(request: Request, _res: AuthResponse) {
       console.log('close', request.url);
+    },
+    async beforeCheckAuthorization(request: Request, _res: AuthResponse) {
+      console.log('beforeCheckAuthorization', request.url);
+    },
+    async afterCheckAuthorization(request: Request, _res: AuthResponse) {
+      console.log('afterCheckAuthorization', request.url);
     },
     async beginGet(request: Request, _res: AuthResponse) {
       console.log('beginGet', request.url);

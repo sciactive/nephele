@@ -18,6 +18,19 @@ export type AuthenticatorConfig = {
    */
   realm?: string;
   /**
+   * Allow the user to proceed, even if they are not authenticated.
+   *
+   * The authenticator will advertise that authentication is available, but the
+   * user will have access to the server without providing authentication.
+   *
+   * In the unauthorized state, the `user` presented to the Nephele adapter will
+   * have the username "nobody".
+   *
+   * WARNING: It is very dangerous to allow unauthorized access if write actions
+   * are allowed!
+   */
+  unauthorizedAccess?: boolean;
+  /**
    * Comma separated UID ranges that are allowed to log in.
    *
    * You can set, for example, "0,1000-1999" to allow the first 1000 normal
@@ -42,13 +55,16 @@ export type AuthResponse = NepheleAuthResponse<any, { user: User }>;
  */
 export default class Authenticator implements AuthenticatorInterface {
   realm: string;
+  unauthorizedAccess: boolean;
   allowedUIDs: string[];
 
   constructor({
     realm = 'Nephele WebDAV Service',
+    unauthorizedAccess = false,
     allowedUIDs = '500-59999',
   }: AuthenticatorConfig = {}) {
     this.realm = realm;
+    this.unauthorizedAccess = unauthorizedAccess;
     this.allowedUIDs = allowedUIDs.split(',').map((range) => range.trim());
   }
 
@@ -85,6 +101,11 @@ export default class Authenticator implements AuthenticatorInterface {
           `Basic realm="${this.realm}", charset="UTF-8"`
         );
       }
+
+      if (this.unauthorizedAccess) {
+        return new User({ username: 'nobody' });
+      }
+
       throw e;
     }
   }

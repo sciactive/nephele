@@ -24,9 +24,14 @@ export type PluginConfig = {
    * Whether to serve directory listings when a request to a directory is made.
    *
    * If the user has access to create/modify/delete files in the directory, the
-   * listing page will include forms to do those tasks.
+   * listing page will include forms to do those tasks (if showForms is not
+   * false).
    */
   serveListings?: boolean;
+  /**
+   * Whether to show file management forms on directory listings.
+   */
+  showForms?: boolean;
 };
 
 /**
@@ -38,8 +43,14 @@ export default class Plugin implements PluginInterface {
   name = 'Nephele Server';
   serveIndexes = true;
   serveListings = true;
+  showForms = true;
 
-  constructor({ name, serveIndexes, serveListings }: PluginConfig = {}) {
+  constructor({
+    name,
+    serveIndexes,
+    serveListings,
+    showForms,
+  }: PluginConfig = {}) {
     if (name != null) {
       this.name = name;
     }
@@ -48,6 +59,9 @@ export default class Plugin implements PluginInterface {
     }
     if (serveListings != null) {
       this.serveListings = serveListings;
+    }
+    if (showForms != null) {
+      this.showForms = showForms;
     }
   }
 
@@ -161,6 +175,7 @@ export default class Plugin implements PluginInterface {
           },
           urlParams: request.query,
           name: this.name,
+          showForms: this.showForms,
           canUpload,
           canMkdir,
         });
