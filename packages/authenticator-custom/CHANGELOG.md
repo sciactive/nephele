@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.24](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.23...v1.0.0-alpha.24) (2022-12-14)
+
+
+### Features
+
+* new plugin to make a path read-only ([59cf973](https://github.com/sciactive/nephele/commit/59cf973da2633b41f7aa0938965c3c71495d85b9))
+
+
+
+
+
 # [1.0.0-alpha.23](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.22...v1.0.0-alpha.23) (2022-11-15)
 
 **Note:** Version bump only for package @nephele/authenticator-custom

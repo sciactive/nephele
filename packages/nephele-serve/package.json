@@ -1,6 +1,6 @@
 {
   "name": "nephele-serve",
-  "version": "1.0.0-alpha.23",
+  "version": "1.0.0-alpha.24",
   "description": "Run Nephele WebDAV server to serve local files.",
   "type": "module",
   "bin": {
@@ -46,14 +46,14 @@
     "typescript": "^4.6.4"
   },
   "dependencies": {
-    "@nephele/adapter-file-system": "^1.0.0-alpha.23",
-    "@nephele/adapter-virtual": "^1.0.0-alpha.23",
-    "@nephele/authenticator-none": "^1.0.0-alpha.23",
-    "@nephele/authenticator-pam": "^1.0.0-alpha.23",
-    "@nephele/plugin-index": "^1.0.0-alpha.23",
+    "@nephele/adapter-file-system": "^1.0.0-alpha.24",
+    "@nephele/adapter-virtual": "^1.0.0-alpha.24",
+    "@nephele/authenticator-none": "^1.0.0-alpha.24",
+    "@nephele/authenticator-pam": "^1.0.0-alpha.24",
+    "@nephele/plugin-index": "^1.0.0-alpha.24",
     "commander": "^9.4.0",
     "express": "^4.18.1",
-    "nephele": "^1.0.0-alpha.23",
+    "nephele": "^1.0.0-alpha.24",
     "userhomepath": "^1.0.6",
     "userid": "^1.2.5"
   },
