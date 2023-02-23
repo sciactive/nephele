@@ -122,7 +122,7 @@ Arguments:
 
 Options:
   -v, --version                    Print the current version
-  -h, --host <host>                A host address to listen on. The default is to listen on all hosts. (default: "::")
+  -h, --host <host>                A host address to listen on. The default is to listen on all external hosts. (default: "::")
   -r, --realm <realm>              The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.
   --cert <cert_file>               The filename of a certificate to use for HTTPS in PEM format.
   --key <key_file>                 The filename of a private key to use for HTTPS in PEM format.
@@ -133,6 +133,7 @@ Options:
   --serve-indexes                  Serve index.html and index.htm files when the user requests a directory.
   --serve-listings                 Serve directory listings with file management forms when the user requests a directory.
   --no-auth                        Don't require authorization. (Not compatible with serving home directories or user directories.)
+  --no-update-check                Don't check for updates.
   --help                           display help for command
 
 Environment Variables:
@@ -149,6 +150,7 @@ Environment Variables:
   SERVE_INDEXES        Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS       Same as --serve-listings when set to "true", "on" or "1".
   AUTH                 Same as --no-auth when set to "false", "off" or "0".
+  UPDATE_CHECK         Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT          Same as [directory].
 
 Options given on the command line take precedence over options from an environment variable.

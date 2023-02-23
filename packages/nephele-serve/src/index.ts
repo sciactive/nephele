@@ -15,6 +15,7 @@ import VirtualAdapter from '@nephele/adapter-virtual';
 import PamAuthenticator from '@nephele/authenticator-pam';
 import InsecureAuthenticator from '@nephele/authenticator-none';
 import IndexPlugin from '@nephele/plugin-index';
+import updateNotifier from 'update-notifier';
 
 type Hosts = {
   name: string;
@@ -42,6 +43,7 @@ type Conf = {
   serveIndexes: boolean;
   serveListings: boolean;
   auth: boolean;
+  updateCheck: boolean;
   directory?: string;
 };
 
@@ -53,7 +55,7 @@ program
 program
   .option(
     '-h, --host <host>',
-    'A host address to listen on. The default is to listen on all hosts.',
+    'A host address to listen on. The default is to listen on all external hosts.',
     '::'
   )
   .option(
@@ -100,6 +102,7 @@ program
     '--no-auth',
     "Don't require authorization. (Not compatible with serving home directories or user directories.)"
   )
+  .option('--no-update-check', "Don't check for updates.")
   .argument(
     '[directory]',
     'The path of the directory to use as the server root.'
@@ -122,6 +125,7 @@ Environment Variables:
   SERVE_INDEXES        Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS       Same as --serve-listings when set to "true", "on" or "1".
   AUTH                 Same as --no-auth when set to "false", "off" or "0".
+  UPDATE_CHECK         Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT          Same as [directory].
 
 Options given on the command line take precedence over options from an environment variable.`
@@ -151,6 +155,7 @@ try {
     serveIndexes,
     serveListings,
     auth,
+    updateCheck,
     directory,
   } = {
     host: process.env.HOST,
@@ -172,11 +177,23 @@ try {
     auth: !['false', 'off', '0'].includes(
       (process.env.AUTH || '').toLowerCase()
     ),
+    updateCheck: !['false', 'off', '0'].includes(
+      (process.env.UPDATE_CHECK || '').toLowerCase()
+    ),
     directory: program.args.length
       ? path.resolve(program.args[0])
       : process.env.SERVER_ROOT && path.resolve(process.env.SERVER_ROOT),
     ...options,
   } as Conf;
+
+  if (updateCheck) {
+    updateNotifier({
+      pkg,
+      updateCheckInterval: 0,
+    }).notify({
+      defer: false,
+    });
+  }
 
   if (cert) {
     cert = fs.readFileSync(path.resolve(cert)).toString();
@@ -367,12 +384,12 @@ try {
 
   server.on('listening', () => {
     console.log(
-      `Nephele server listening on ${serverHosts
+      `Nephele server listening on \n\t${serverHosts
         .map(
           ({ name, address }) =>
             `dav${secure ? 's' : ''}://${address}:${port} (${name})`
         )
-        .join(', ')}`
+        .join('\n\t')}`
     );
   });
 
