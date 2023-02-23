@@ -592,12 +592,12 @@ export default class Resource implements ResourceInterface {
     let etag: string;
     if (
       (await this.isCollection()) ||
-      stat.size / (1024 * 1024) > this.adapter.contentEtagMaxMB
+      stat.size > this.adapter.contentEtagMaxBytes
     ) {
       etag = crc32
         .c(
           Buffer.from(
-            `size: ${stat.size}; ctime: ${stat.ctimeMs}; mtime: ${stat.mtimeMs}`,
+            `size: ${stat.size}; birthtime: ${stat.birthtimeMs}; mtime: ${stat.mtimeMs}`,
             'utf8'
           )
         )

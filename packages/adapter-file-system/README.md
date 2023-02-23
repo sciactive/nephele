@@ -39,15 +39,16 @@ app.listen(port, () => {
 # Options / Defaults
 
 - `root`: The absolute path of the directory that acts as the root directory for the service.
-- `contentEtagMaxMB` = `100`: The maximum filesize in megabytes to calculate etags by a CRC-32C checksum of the file contents.
+- `contentEtagMaxBytes` = `-1`: The maximum filesize in bytes to calculate etags by a CRC-32C checksum of the file contents.
 
-## contentEtagMaxMB
+## contentEtagMaxBytes
 
-Anything above this file size will use a CRC-32C checksum of the size, created time, and modified time instead. This will significantly speed up responses to requests for these files, but at the cost of reduced accuracy of etags. A file that has the exact same content, but a different modified time will not be pulled from cache by the client.
+Any files above this file size will use an etag of a CRC-32C checksum of the size, created time, and modified time. This will significantly speed up responses to requests for these files, but at the cost of reduced accuracy of etags. A file that has the exact same content, but a different modified time will not be pulled from cache by the client.
 
 - Set this value to `Infinity` if you wish to fully follow the WebDAV spec to the letter.
 - Set this value to `-1` if you want to absolutely minimize disk IO.
-- `100` is a good value for fast disks, like SSDs. If you are serving files from spinning hard disks or optical media, you should consider lowering this threshold.
+
+By default, all etags will be based on file size, created date, and modified date, since this only requires retrieving metadata from the file system, which is very fast compared to actually retrieving file contents. This could technically go against the WebDAV spec section 8.8, which reads, 'For any given URL, an "ETag" value MUST NOT be reused for different representations returned by GET.' A file the exact same size and exact same created and modified dates with different contents, though extremely unlikely, would return the same etag.
 
 # Properties and Locks
 
