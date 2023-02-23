@@ -1,4 +1,4 @@
-# Nephele - Insecure Authenticator
+# Unrestricted Nephele Authenticator
 
 A Nephele authenticator that allows **unrestricted access** to all users.
 
@@ -10,7 +10,7 @@ npm i -s @nephele/authenticator-none
 
 # Security Implications
 
-If you use this authenticator, anyone who can reach your server on the network will have full access to create, read, update, and delete all resources!
+If you use this authenticator, anyone who can reach your server on the network will have full access to create, read, update, and delete all resources controlled by this authenticator!
 
 # Usage
 

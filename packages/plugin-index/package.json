@@ -1,7 +1,7 @@
 {
   "name": "@nephele/plugin-index",
   "version": "1.0.0-alpha.24",
-  "description": "A plugin for the Nephele WebDAV server to serve index files and list directory contents.",
+  "description": "Index file and directory contents listing plugin (browser support) for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -26,7 +26,9 @@
     "webdav",
     "nephele",
     "plugin",
-    "nephele plugin"
+    "nephele plugin",
+    "directory listing",
+    "directory index"
   ],
   "author": "Hunter Perrin <hperrin@gmail.com>",
   "license": "Apache-2.0",

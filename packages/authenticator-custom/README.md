@@ -1,4 +1,4 @@
-# Nephele - Custom Authenticator
+# Custom Nephele Authenticator
 
 A Nephele authenticator that uses customizable logic to authenticate users.
 

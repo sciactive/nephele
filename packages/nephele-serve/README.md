@@ -1,6 +1,6 @@
-# Nephele - Local File Server
+# Nephele Serve - File System Backed WebDAV Server
 
-Run Nephele WebDAV server to serve local files.
+Run Nephele WebDAV server to serve files from a file system.
 
 # What is WebDAV
 
@@ -26,7 +26,7 @@ sudo apt install libpam0g-dev
 
 (Source: https://www.npmjs.com/package/authenticate-pam#Install)
 
-Then,
+Then install Nephele Serve:
 
 ```sh
 sudo npm install -g nephele-serve
@@ -58,7 +58,7 @@ If you want to run it without installing it, you can do that too.
 sudo npx nephele-serve .
 ```
 
-If you want to run it without root, you can do that too, but you must set the port to something higher than 1000, and you'll likely only be able to log in with the user who runs the script.
+If you want to run it without root, you can do that too, but you must set the port to something higher than 1000, and you'll likely only be able to log in as the user who runs the script.
 
 ```sh
 nephele-serve -p 8080 .
@@ -72,7 +72,11 @@ You can load Nephele as a cluster of worker processes using PM2. The following w
 
 ```sh
 sudo npm install -g pm2
-sudo pm2 start -i 8 -u root --uid 0 nephele-serve --node-args "--experimental-specifier-resolution=node" -- --home-directories
+sudo pm2 start -i 8 -u root --uid 0 \
+  nephele-serve \
+  --node-args "--experimental-specifier-resolution=node" \
+  -- \
+  --home-directories
 ```
 
 Then you can save it and have it load at system startup.
@@ -87,21 +91,54 @@ So, putting it all together, if you:
 - use Ubuntu Server
 - use a Let's Encrypt certificate for TLS
 - want to serve user directories out of a custom folder
+- want to serve directory listings for browser support
 - want to use a cluster of 8 worker processes
 - want to have the server load on startup
 
 You'd do this (replacing example.com with your domain, and the path at the end with your server root path).
 
 ```sh
+# Install requirements.
 sudo apt install libpam0g-dev nodejs npm
-sudo npm i -g npm n
+# Make sure we're on Node 16. You can use any version above this too, but minimum is 16.
+sudo npm i -g n
 sudo n 16
+# Make sure npm is up to date.
+sudo npm i -g npm
+# Install nephele-serve and pm2.
 sudo npm i -g nephele-serve pm2
 
-sudo pm2 start -i 8 -u root --uid 0 nephele-serve --node-args "--experimental-specifier-resolution=node" -- --user-directories --cert /etc/letsencrypt/live/example.com/fullchain.pem --key /etc/letsencrypt/live/example.com/privkey.pem /path/to/your/data/directory/
+# Start a nephele-serve cluster.
+sudo pm2 start -i 8 -u root --uid 0 \
+  nephele-serve \
+  --node-args "--experimental-specifier-resolution=node" \
+  -- \
+  --user-directories \
+  --serve-listings \
+  --cert /etc/letsencrypt/live/example.com/fullchain.pem \
+  --key /etc/letsencrypt/live/example.com/privkey.pem \
+  /path/to/your/data/directory/
 
+# Save the cluster and have it start on system start.
 sudo pm2 save
 sudo pm2 startup systemd
+```
+
+# Updates
+
+Nephele Serve will check for updates on launch, but if your server is set to load on system start with PM2, you probably won't ever see the notification that there's an update. Therefore, every once in a while you should install the latest version (of Node, NPM, PM2, and Nephele Serve).
+
+```sh
+# Update n
+sudo npm i -g n
+# Update node
+sudo n 16
+# Update npm
+sudo npm i -g npm
+# Update nephele-serve and pm2
+sudo npm i -g nephele-serve pm2
+# Restart the server
+sudo pm2 restart all
 ```
 
 # Help

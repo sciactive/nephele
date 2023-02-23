@@ -1,7 +1,7 @@
 {
   "name": "nephele-serve",
   "version": "1.0.0-alpha.24",
-  "description": "Run Nephele WebDAV server to serve local files.",
+  "description": "Command line WebDAV server with browser support for local users to access files remotely.",
   "type": "module",
   "bin": {
     "nephele-serve": "nephele-serve.cjs"
@@ -27,8 +27,17 @@
     "server",
     "serve",
     "file server",
+    "webdav server",
+    "cli",
     "command line",
-    "terminal"
+    "terminal",
+    "command",
+    "personal cloud",
+    "local file server",
+    "file share",
+    "nas",
+    "network storage",
+    "nephele"
   ],
   "author": "Hunter Perrin <hperrin@gmail.com>",
   "license": "Apache-2.0",

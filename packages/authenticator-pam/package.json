@@ -1,7 +1,7 @@
 {
   "name": "@nephele/authenticator-pam",
   "version": "1.0.0-alpha.24",
-  "description": "A PAM authenticator for the Nephele WebDAV server.",
+  "description": "PAM based authenticator (local system users) for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,7 +24,8 @@
     "webdav",
     "nephele",
     "authenticator",
-    "nephele authenticator"
+    "nephele authenticator",
+    "pam"
   ],
   "author": "Hunter Perrin <hperrin@gmail.com>",
   "license": "Apache-2.0",

@@ -1,4 +1,4 @@
-# Nephele - PAM Authenticator
+# PAM Nephele Authenticator
 
 A Nephele authenticator that uses PAM (system users) as its authentication backend.
 
@@ -56,7 +56,7 @@ app.listen(port, () => {
 
 Read the details on https://www.npmjs.com/package/authenticate-pam, which is used for the actual PAM authentication.
 
-Specifically, you may need to use `NODE_OPTIONS='--experimental-specifier-resolution=node'` when you launch your server.
+You may also need to use `NODE_OPTIONS='--experimental-specifier-resolution=node'` when you launch your server.
 
 # Options / Defaults
 

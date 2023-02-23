@@ -1,7 +1,7 @@
 {
   "name": "@nephele/plugin-read-only",
   "version": "1.0.0-alpha.24",
-  "description": "A plugin for the Nephele WebDAV server to make a path read-only.",
+  "description": "Read-only path plugin for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,7 +24,10 @@
     "webdav",
     "nephele",
     "plugin",
-    "nephele plugin"
+    "nephele plugin",
+    "read only",
+    "read only server",
+    "read only file server"
   ],
   "author": "Hunter Perrin <hperrin@gmail.com>",
   "license": "Apache-2.0",

@@ -1,4 +1,4 @@
-# Nephele - Virtual Adapter
+# Virtual File Nephele Adapter
 
 A Nephele adapter that serves virtual files from memory.
 
@@ -66,7 +66,7 @@ app.listen(port, () => {
 });
 ```
 
-If you're using the insecure authenticator, setting the `owner` of a resource to `"nobody"` will make it editable.
+If you're using the insecure authenticator, setting the `owner` of a resource to `"nobody"` will make it editable. If you're using the PAM authenticator, setting the `owner` to `"root"` will make it read-only.
 
 # Options / Defaults
 

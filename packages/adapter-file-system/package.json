@@ -1,7 +1,7 @@
 {
   "name": "@nephele/adapter-file-system",
   "version": "1.0.0-alpha.24",
-  "description": "A file system adapter for the Nephele WebDAV server.",
+  "description": "File system adapter for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -24,7 +24,10 @@
     "webdav",
     "nephele",
     "adapter",
-    "nephele adapter"
+    "nephele adapter",
+    "server",
+    "file server",
+    "webdav file server"
   ],
   "author": "Hunter Perrin <hperrin@gmail.com>",
   "license": "Apache-2.0",

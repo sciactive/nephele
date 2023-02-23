@@ -1,7 +1,7 @@
 {
   "name": "@nephele/authenticator-custom",
   "version": "1.0.0-alpha.24",
-  "description": "A custom logic authenticator for the Nephele WebDAV server.",
+  "description": "Custom logic authenticator for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

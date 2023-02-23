@@ -1,7 +1,7 @@
 {
   "name": "@nephele/authenticator-none",
   "version": "1.0.0-alpha.24",
-  "description": "An insecure authenticator for the Nephele WebDAV server.",
+  "description": "Unrestricted authenticator for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

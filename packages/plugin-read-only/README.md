@@ -1,4 +1,4 @@
-# Nephele - Read-Only Plugin
+# Read-Only Nephele Plugin
 
 A Nephele plugin to make a path read-only.
 

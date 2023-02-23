@@ -1,6 +1,6 @@
-# Nephele - Server Middleware
+# Nephele WebDAV Server Middleware
 
-A pluggable WebDAV, CardDAV, and CalDAV server for Node.js and Express.
+A pluggable WebDAV (and soon CardDAV and CalDAV) server for Node.js and Express.
 
 Nephele, the free and open source WebDAV server framework for Node.js, is designed to make it easy to develop and integrate WebDAV functionality into your Node.js applications.
 
@@ -8,15 +8,19 @@ WebDAV (Web Distributed Authoring and Versioning) is a powerful and flexible pro
 
 Nephele is free and open source, so you can use it, modify it, and distribute it as you see fit. It is released under the Apache-2.0 license, which allows you to use it for any purpose, including commercial projects.
 
+# Nephele Serve
+
+If you are looking for a ready-to-run WebDAV server for Linux and Unix systems, check out the [nephele-serve](https://www.npmjs.com/package/nephele-serve) package.
+
+# QuickDAV
+
+If you're looking for an easy to use desktop app for local file transfers that uses Nephele as its server, check out [QuickDAV](https://sciactive.com/quickdav/) for both Windows and Linux.
+
 # Work in Progress
 
 Nephele is currently a work in progress. It fully implements the WebDAV spec (RFC4918), but there are [still more RFCs planned](https://github.com/sciactive/nephele/blob/master/README.md#planned-rfcs) for version 1.0.
 
-It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/) and [QuickDAV](https://sciactive.com/quickdav/).
-
-# Nephele Serve
-
-If you are looking for a ready-to-run WebDAV server for Linux and Unix systems, check out the [nephele-serve](https://www.npmjs.com/package/nephele-serve) package.
+It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
 
 # Installation
 
@@ -75,9 +79,11 @@ app.use(
   nepheleServer({
     adapter: async (_request, response) => {
       if (response.locals.user == null) {
+        // This adapter will be used when the user hasn't authenticated.
         return new ExampleUnauthorizedAdapter();
       }
 
+      // This adapter will be used once the user is authenticated.
       return new ExampleAuthorizedAdapter({
         username: response.locals.user.username,
       });
@@ -170,7 +176,7 @@ app.listen(port, () => {
 });
 ```
 
-This object can also be returned from an adapter, authenticator, and/or plugins function.
+This object can also be returned from adapter, authenticator, and plugins functions.
 
 # How it Works
 
@@ -203,12 +209,6 @@ Users are extremely flexible in Nephele. Basically Nephele hands your authentica
 ## Plugins
 
 Nephele offers additional features using [plugins](https://www.npmjs.com/search?q=keywords%3Anephele%20plugin). A plugin is given the chance to alter the behavior and response throughout [the lifecycle of a Nephele request](src/Interfaces/Plugin.ts).
-
-# Service Location for CardDAV and CalDAV Clients
-
-You should read and follow this RFC to make your server work well with CardDAV and CalDAV clients:
-
-[Locating Services for Calendaring Extensions to WebDAV (CalDAV) and vCard Extensions to WebDAV (CardDAV)](https://datatracker.ietf.org/doc/html/rfc6764)
 
 # License
 

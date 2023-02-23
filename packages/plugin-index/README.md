@@ -1,4 +1,4 @@
-# Nephele - Index Plugin
+# Index Nephele Plugin
 
 A Nephele plugin to serve index files and list directory contents.
 

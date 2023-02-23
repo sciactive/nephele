@@ -187,12 +187,7 @@ try {
   } as Conf;
 
   if (updateCheck) {
-    updateNotifier({
-      pkg,
-      updateCheckInterval: 0,
-    }).notify({
-      defer: false,
-    });
+    updateNotifier({ pkg }).notify({ defer: false });
   }
 
   if (cert) {

@@ -1,4 +1,4 @@
-# Nephele - File System Adapter
+# File System Nephele Adapter
 
 A Nephele adapter that uses the file system as the storage backend.
 

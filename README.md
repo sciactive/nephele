@@ -1,12 +1,20 @@
 # Nephele
 
-A pluggable WebDAV, CardDAV, and CalDAV server for Node.js and Express.
+A pluggable WebDAV (and soon CardDAV and CalDAV) server for Node.js and Express.
+
+# Nephele Serve
+
+If you are looking for a ready-to-run WebDAV server for Linux and Unix systems, check out the [nephele-serve](https://www.npmjs.com/package/nephele-serve) package.
+
+# QuickDAV
+
+If you're looking for an easy to use desktop app for local file transfers that uses Nephele as its server, check out [QuickDAV](https://sciactive.com/quickdav/) for both Windows and Linux.
 
 # Work in Progress
 
 Nephele is currently a work in progress. You can [install](https://www.npmjs.com/package/nephele) and [run](https://www.npmjs.com/package/nephele-serve) it, but building adapters and authenticators for it is not recommended yet, because it will significantly change before the 1.0 release.
 
-It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/) and [QuickDAV](https://sciactive.com/quickdav/).
+It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
 
 # What is WebDAV
 
@@ -49,6 +57,12 @@ Nephele will hopefully eventually support the following RFCs. I've included how 
 - [Scheduling Extensions to CalDAV](https://datatracker.ietf.org/doc/html/rfc6638) (probably not)
 - [Calendaring Extensions to WebDAV (CalDAV): Time Zones by Reference](https://datatracker.ietf.org/doc/html/rfc7809) (probably not)
 - [Calendar Availability](https://datatracker.ietf.org/doc/html/rfc7953) (probably not)
+
+# Service Location for CardDAV and CalDAV Clients
+
+Once CardDAV and CalDAV are implemented, you should read and follow this RFC to make your server work well with CardDAV and CalDAV clients:
+
+[Locating Services for Calendaring Extensions to WebDAV (CalDAV) and vCard Extensions to WebDAV (CardDAV)](https://datatracker.ietf.org/doc/html/rfc6764)
 
 # Testing
 
