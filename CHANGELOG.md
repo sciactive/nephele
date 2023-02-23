@@ -3,6 +3,23 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.25](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.24...v1.0.0-alpha.25) (2023-02-23)
+
+
+### Bug Fixes
+
+* nephele-serve script runs in macOS ([0986c72](https://github.com/sciactive/nephele/commit/0986c7223a3591e69454e335c0f7b22ebcd84405))
+
+
+### Features
+
+* add update check in nephele-serve ([c831baf](https://github.com/sciactive/nephele/commit/c831bafd07d05e8b6341d0afc03e476e4aea6c03))
+* change contentEtagMaxMB to contentEtagMaxBytes and set to -1 by default ([183a9f6](https://github.com/sciactive/nephele/commit/183a9f6045058e44a1ff26af63d153846836f2a3))
+
+
+
+
+
 # [1.0.0-alpha.24](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.23...v1.0.0-alpha.24) (2022-12-14)
 
 
