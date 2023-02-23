@@ -131,7 +131,7 @@ program.addHelpText(
   'afterAll',
   `
 Nephele repo: https://github.com/sciactive/nephele
-Copyright (C) 2022 SciActive, Inc
+Copyright (C) 2022-2023 SciActive, Inc
 https://sciactive.com/`
 );
 

@@ -154,7 +154,7 @@ Environment Variables:
 Options given on the command line take precedence over options from an environment variable.
 
 Nephele repo: https://github.com/sciactive/nephele
-Copyright (C) 2022 SciActive, Inc
+Copyright (C) 2022-2023 SciActive, Inc
 https://sciactive.com/
 ```
 
@@ -171,7 +171,7 @@ Don't worry, it's because the script is using `--experimental-specifier-resoluti
 
 # License
 
-Copyright 2022 SciActive Inc
+Copyright 2022-2023 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

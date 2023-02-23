@@ -55,7 +55,7 @@ If the user has access to create/modify/delete files in the directory, the listi
 
 # License
 
-Copyright 2022 SciActive Inc
+Copyright 2022-2023 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
