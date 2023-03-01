@@ -24,7 +24,8 @@
     "webdav",
     "nephele",
     "authenticator",
-    "nephele authenticator"
+    "nephele authenticator",
+    "auth"
   ],
   "author": "Hunter Perrin <hperrin@gmail.com>",
   "license": "Apache-2.0",

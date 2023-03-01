@@ -188,6 +188,41 @@ export default function createServer(
     }
   );
 
+  async function loadAdapter(
+    request: Request,
+    response: AuthResponse,
+    next: NextFunction
+  ) {
+    if (typeof adapter === 'function') {
+      const adapt = await adapter(request, response);
+      response.locals.adapterConfig = adapt;
+      const parsedAdapter = getAdapter(
+        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
+        adapt
+      );
+      response.locals.adapter = parsedAdapter.adapter;
+      response.locals.baseUrl = new URL(
+        path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
+        `${request.protocol}://${request.headers.host}`
+      );
+    } else {
+      response.locals.adapterConfig = adapter;
+      const parsedAdapter = getAdapter(
+        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
+        adapter
+      );
+      response.locals.adapter = parsedAdapter.adapter;
+      response.locals.baseUrl = new URL(
+        path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
+        `${request.protocol}://${request.headers.host}`
+      );
+    }
+    next();
+  }
+
+  // Get the initial adapter (before authentication).
+  app.use(loadAdapter);
+
   async function authenticate(
     request: Request,
     response: AuthResponse,
@@ -229,6 +264,9 @@ export default function createServer(
   // Authenticate before the request.
   app.use(authenticate);
 
+  // Get the adapter.
+  app.use(loadAdapter);
+
   // Run plugin afterAuth.
   app.use(
     async (request: Request, response: AuthResponse, next: NextFunction) => {
@@ -246,41 +284,6 @@ export default function createServer(
       }
     }
   );
-
-  async function loadAdapter(
-    request: Request,
-    response: AuthResponse,
-    next: NextFunction
-  ) {
-    if (typeof adapter === 'function') {
-      const adapt = await adapter(request, response);
-      response.locals.adapterConfig = adapt;
-      const parsedAdapter = getAdapter(
-        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-        adapt
-      );
-      response.locals.adapter = parsedAdapter.adapter;
-      response.locals.baseUrl = new URL(
-        path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
-        `${request.protocol}://${request.headers.host}`
-      );
-    } else {
-      response.locals.adapterConfig = adapter;
-      const parsedAdapter = getAdapter(
-        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-        adapter
-      );
-      response.locals.adapter = parsedAdapter.adapter;
-      response.locals.baseUrl = new URL(
-        path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
-        `${request.protocol}://${request.headers.host}`
-      );
-    }
-    next();
-  }
-
-  // Get the adapter.
-  app.use(loadAdapter);
 
   async function unauthenticate(
     request: Request,

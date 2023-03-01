@@ -25,6 +25,7 @@
     "nephele",
     "authenticator",
     "nephele authenticator",
+    "auth",
     "pam"
   ],
   "author": "Hunter Perrin <hperrin@gmail.com>",

@@ -5,6 +5,7 @@ import {
   FailedDependencyError,
   ForbiddenError,
   InsufficientStorageError,
+  InternalServerError,
   LockedError,
   MediaTypeNotSupportedError,
   MethodNotImplementedError,
@@ -148,6 +149,12 @@ export function catchErrors<A extends any[], R = void>(
       if (e instanceof FailedDependencyError) {
         // Failed Dependency
         await errorHandler(424, e.message, e, args);
+        return;
+      }
+
+      if (e instanceof InternalServerError) {
+        // Internal Server Error
+        await errorHandler(500, e.message, e, args);
         return;
       }
 

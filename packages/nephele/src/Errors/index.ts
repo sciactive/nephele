@@ -4,6 +4,7 @@ export * from './EncodingNotSupportedError.js';
 export * from './FailedDependencyError.js';
 export * from './ForbiddenError.js';
 export * from './InsufficientStorageError.js';
+export * from './InternalServerError.js';
 export * from './LockedError.js';
 export * from './MediaTypeNotSupportedError.js';
 export * from './MethodNotImplementedError.js';

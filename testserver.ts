@@ -15,6 +15,7 @@ import server from './packages/nephele/dist/index.js';
 import FileSystemAdapter from './packages/adapter-file-system/dist/index.js';
 import VirtualAdapter from './packages/adapter-virtual/dist/index.js';
 import PamAuthenticator from './packages/authenticator-pam/dist/index.js';
+import HtpasswdAuthenticator from './packages/authenticator-htpasswd/dist/index.js';
 import CustomAuthenticator, {
   User as CustomUser,
 } from './packages/authenticator-custom/dist/index.js';
@@ -31,6 +32,7 @@ const host = hostname();
 const port = 8080;
 const root = process.argv.length > 2 ? resolve(process.argv[2]) : __dirname;
 const readonly = !!process.env.READONLY;
+const htpasswd = !!process.env.HTPASSWD;
 const pam = !process.env.NOPAM;
 const unauthorized = !!process.env.UNAUTHORIZED;
 const virtual = !!process.env.VIRTUALFS;
@@ -67,6 +69,10 @@ app.use(
             }
             return false;
           },
+        })
+      : htpasswd
+      ? new HtpasswdAuthenticator({
+          unauthorizedAccess: unauthorized,
         })
       : pam
       ? new PamAuthenticator({
