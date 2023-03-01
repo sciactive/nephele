@@ -1,6 +1,6 @@
 {
   "name": "nephele-serve",
-  "version": "1.0.0-alpha.25",
+  "version": "1.0.0-alpha.26",
   "description": "Command line WebDAV server with browser support for local users to access files remotely.",
   "type": "module",
   "bin": {
@@ -56,14 +56,14 @@
     "typescript": "^4.6.4"
   },
   "dependencies": {
-    "@nephele/adapter-file-system": "^1.0.0-alpha.25",
-    "@nephele/adapter-virtual": "^1.0.0-alpha.25",
-    "@nephele/authenticator-none": "^1.0.0-alpha.25",
-    "@nephele/authenticator-pam": "^1.0.0-alpha.25",
-    "@nephele/plugin-index": "^1.0.0-alpha.25",
+    "@nephele/adapter-file-system": "^1.0.0-alpha.26",
+    "@nephele/adapter-virtual": "^1.0.0-alpha.26",
+    "@nephele/authenticator-none": "^1.0.0-alpha.26",
+    "@nephele/authenticator-pam": "^1.0.0-alpha.26",
+    "@nephele/plugin-index": "^1.0.0-alpha.26",
     "commander": "^9.4.0",
     "express": "^4.18.1",
-    "nephele": "^1.0.0-alpha.25",
+    "nephele": "^1.0.0-alpha.26",
     "update-notifier": "^6.0.2",
     "userhomepath": "^1.0.6",
     "userid": "^1.2.5"
