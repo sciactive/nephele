@@ -16,7 +16,7 @@ The default export is the plugin, and it's also a named export "Plugin". Instant
 import express from 'express';
 import nepheleServer from 'nephele';
 import ExampleAdapter from '@nephele/adapter-example';
-import InsecureAuthenticator from '@nephele/authenticator-none';
+import ExampleAuthenticator from '@nephele/authenticator-example';
 import ReadOnlyPlugin from '@nephele/plugin-read-only';
 
 const app = express();
@@ -26,7 +26,7 @@ app.use(
   '/',
   nepheleServer({
     adapter: new ExampleAdapter(),
-    authenticator: new InsecureAuthenticator(),
+    authenticator: new ExampleAuthenticator(),
     plugins: [new ReadOnlyPlugin()],
   })
 );
