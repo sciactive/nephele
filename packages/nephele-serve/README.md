@@ -12,14 +12,14 @@ WebDAV is a popular protocol for file sharing and collaboration, as it is easy t
 
 # Installation
 
-Follow these steps to install PAM development libraries for your OS:
+Follow these steps to install PAM development libraries and build tools for your OS:
 
 ```sh
-# Centos and RHEL:
-sudo yum install pam-devel
+# Centos/RHEL/Fedora:
+sudo yum install pam-devel gcc gcc-c++ make
 
 # Debian/Ubuntu:
-sudo apt install libpam0g-dev
+sudo apt install libpam0g-dev build-essential
 
 # Arch and macOS: already installed
 ```
@@ -88,7 +88,7 @@ sudo pm2 startup systemd
 
 So, putting it all together, if you:
 
-- use Ubuntu Server
+- use an Ubuntu or Debian based server
 - use a Let's Encrypt certificate for TLS
 - want to serve user directories out of a custom folder
 - want to serve directory listings for browser support
@@ -98,13 +98,11 @@ So, putting it all together, if you:
 You'd do this (replacing example.com with your domain, and the path at the end with your server root path).
 
 ```sh
+# Follow these install directions to install Node (the minimum Node version is v16):
+# https://github.com/nodesource/distributions#installation-instructions
+
 # Install requirements.
-sudo apt install libpam0g-dev nodejs npm
-# Make sure we're on Node 16. You can use any version above this too, but minimum is 16.
-sudo npm i -g n
-sudo n 16
-# Make sure npm is up to date.
-sudo npm i -g npm
+sudo apt install libpam0g-dev build-essential
 # Install nephele-serve and pm2.
 sudo npm i -g nephele-serve pm2
 
@@ -124,17 +122,13 @@ sudo pm2 save
 sudo pm2 startup systemd
 ```
 
+I recommend installing Node from NodeSource instead of apt, because apt tends to have very outdated versions and lots of unnecessary dependencies.
+
 # Updates
 
-Nephele Serve will check for updates on launch, but if your server is set to load on system start with PM2, you probably won't ever see the notification that there's an update. Therefore, every once in a while you should install the latest version (of Node, NPM, PM2, and Nephele Serve).
+Nephele Serve will check for updates on launch, but if your server is set to load on system start with PM2, you probably won't ever see the notification that there's an update. Therefore, every once in a while you should install the latest version (of PM2 and Nephele Serve).
 
 ```sh
-# Update n
-sudo npm i -g n
-# Update node
-sudo n 16
-# Update npm
-sudo npm i -g npm
 # Update nephele-serve and pm2
 sudo npm i -g nephele-serve pm2
 # Restart the server
