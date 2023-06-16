@@ -10,9 +10,8 @@
     "build": "lerna run build",
     "watch": "lerna run watch --concurrency=20",
     "docs": "typedoc",
-    "prepare": "husky install && npm run bootstrap && npm run lint",
-    "bootstrap": "lerna bootstrap",
-    "bootstrap:win": "lerna bootstrap --ignore '@nephele/authenticator-pam' --ignore 'nephele-serve'",
+    "prepare": "husky install && npm run lint",
+    "bootstrap:win": "# todo, after workspaces migrations: lerna bootstrap --ignore '@nephele/authenticator-pam' --ignore 'nephele-serve'",
     "test": "lerna run test --concurrency=1 --stream --no-prefix --no-bail -- -- --passWithNoTests"
   },
   "repository": {
@@ -25,23 +24,26 @@
     "url": "https://github.com/sciactive/nephele/issues"
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
+  "workspaces": [
+    "packages/*"
+  ],
   "devDependencies": {
-    "@commitlint/cli": "^17.6.3",
-    "@commitlint/config-conventional": "^17.6.3",
+    "@commitlint/cli": "^17.6.5",
+    "@commitlint/config-conventional": "^17.6.5",
     "@tsconfig/recommended": "^1.0.2",
-    "@types/debug": "^4.1.7",
+    "@types/debug": "^4.1.8",
     "@types/express": "^4.17.17",
     "@types/xml2js": "^0.4.11",
     "debug": "^4.3.4",
     "express": "^4.18.2",
     "husky": "^8.0.3",
-    "lerna": "^6.6.2",
+    "lerna": "^7.0.2",
     "lint-staged": "^13.2.2",
     "prettier": "^2.8.8",
     "ts-node": "^10.9.1",
-    "typedoc": "^0.24.7",
+    "typedoc": "^0.24.8",
     "userhomepath": "^1.0.6",
-    "xml2js": "^0.5.0"
+    "xml2js": "^0.6.0"
   },
   "engines": {
     "node": ">=16"
