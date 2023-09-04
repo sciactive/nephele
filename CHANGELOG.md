@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.27](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.26...v1.0.0-alpha.27) (2023-09-04)
+
+
+### Bug Fixes
+
+* add types package for mime package ([4eb3dd9](https://github.com/sciactive/nephele/commit/4eb3dd9de8b045ef17de0623df7a5b7e499b6d00))
+
+
+### Features
+
+* update packages, require node>=18 ([96b9210](https://github.com/sciactive/nephele/commit/96b9210b2111afd969e9679bc9f6ff6d7d3dd5a2))
+
+
+
+
+
 # [1.0.0-alpha.26](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.25...v1.0.0-alpha.26) (2023-03-01)
 
 
