@@ -13,6 +13,9 @@ sudo yum install pam-devel
 # Debian/Ubuntu:
 sudo apt install libpam0g-dev
 
+# Fedora
+sudo dnf install pam-devel
+
 # Arch and macOS: already installed
 ```
 
