@@ -1,6 +1,6 @@
 {
   "name": "@nephele/authenticator-htpasswd",
-  "version": "1.0.0-alpha.27",
+  "version": "1.0.0-alpha.28",
   "description": "Apache htpasswd based authenticator for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -51,7 +51,7 @@
     "apache-md5": "^1.1.8",
     "basic-auth": "^2.0.1",
     "bcrypt": "^5.1.1",
-    "nephele": "^1.0.0-alpha.27"
+    "nephele": "^1.0.0-alpha.28"
   },
   "engines": {
     "node": ">=16"

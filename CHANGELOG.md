@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.28](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.27...v1.0.0-alpha.28) (2023-09-05)
+
+
+### Bug Fixes
+
+* index plugin import because svelte only outputs esm now ([d6d9ffe](https://github.com/sciactive/nephele/commit/d6d9ffeee905d3d5884fbc3cb819aadd94abbf87))
+
+
+
+
+
 # [1.0.0-alpha.27](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.26...v1.0.0-alpha.27) (2023-09-04)
 
 
