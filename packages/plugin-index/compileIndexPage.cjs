@@ -9,17 +9,16 @@ const svelte = require('svelte/compiler');
   const IndexPage = svelte.compile(IndexPageSrc, {
     name: 'IndexPage',
     generate: 'ssr',
-    format: 'cjs',
   });
 
   console.log('Compiling Svelte index page...');
 
   await fs.writeFile(
-    path.resolve(__dirname, 'dist/IndexPage.cjs'),
+    path.resolve(__dirname, 'dist/IndexPage.js'),
     IndexPage.js.code
   );
   await fs.writeFile(
-    path.resolve(__dirname, 'dist/IndexPage.cjs.map'),
+    path.resolve(__dirname, 'dist/IndexPage.js.map'),
     JSON.stringify(IndexPage.js.map)
   );
 

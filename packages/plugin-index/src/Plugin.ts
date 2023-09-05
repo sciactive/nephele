@@ -8,7 +8,7 @@ import {
 } from 'nephele';
 import { ResourceNotFoundError } from 'nephele';
 // @ts-ignore
-import IndexPage from './IndexPage.cjs';
+import IndexPage from './IndexPage.js';
 
 export type PluginConfig = {
   /**
@@ -167,7 +167,7 @@ export default class Plugin implements PluginInterface {
           canMkdir = false;
         }
 
-        const { head, html, css } = IndexPage.default.render({
+        const { head, html, css } = IndexPage.render({
           entries,
           self: {
             name: await resource.getCanonicalName(),
