@@ -366,8 +366,18 @@ export default class Resource implements ResourceInterface {
       try {
         const stat = await fsp.stat(destinationPath);
         if (stat.isDirectory()) {
+          const metaFilePath = path.join(destinationPath, '.nephelemeta');
+          const contents = await fsp.readdir(destinationPath);
+
+          if (
+            contents.length > 1 ||
+            (contents.length === 1 && contents[0] !== metaFilePath)
+          ) {
+            throw new Error('Directory not empty.');
+          }
+
           try {
-            await fsp.rm(path.join(destinationPath, '.nephelemeta'));
+            await fsp.unlink(metaFilePath);
           } catch (e: any) {
             // Ignore errors deleting possible non-existent file.
           }
@@ -395,7 +405,7 @@ export default class Resource implements ResourceInterface {
         try {
           await fsp.unlink(metaFilePath);
         } catch (e: any) {
-          // Ignore errors deleting a possibly non-existend file.
+          // Ignore errors deleting a possibly non-existent file.
         }
 
         const meta = await this.readMetadataFile();
@@ -415,7 +425,7 @@ export default class Resource implements ResourceInterface {
         try {
           await fsp.unlink(metaFilePath);
         } catch (e: any) {
-          // Ignore errors deleting a possibly non-existend file.
+          // Ignore errors deleting a possibly non-existent file.
         }
 
         const meta = await this.readMetadataFile();
@@ -438,8 +448,12 @@ export default class Resource implements ResourceInterface {
       await fsp.chmod(destinationPath, stat.mode % 0o1000);
 
       if (metaFilePath != null) {
-        await fsp.chown(metaFilePath, uid, gid);
-        await fsp.chmod(destinationPath, stat.mode % 0o1000);
+        try {
+          await fsp.chown(metaFilePath, uid, gid);
+          await fsp.chmod(metaFilePath, stat.mode % 0o1000);
+        } catch (e: any) {
+          // Ignore errors chown/chmod a possibly non-existent file.
+        }
       }
     }
 
@@ -557,7 +571,7 @@ export default class Resource implements ResourceInterface {
       try {
         await fsp.unlink(metaFilePath);
       } catch (e: any) {
-        // Ignore errors deleting a possibly non-existend file.
+        // Ignore errors deleting a possibly non-existent file.
       }
 
       const meta = await this.readMetadataFile();
