@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.29](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.28...v1.0.0-alpha.29) (2023-09-06)
+
+
+### Bug Fixes
+
+* error running chown on non-existent metadata file during directory move and copy ([b7c6ec3](https://github.com/sciactive/nephele/commit/b7c6ec37d3cf5ab4c4aa72f8e1728a958b81f266))
+
+
+
+
+
 # [1.0.0-alpha.28](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.27...v1.0.0-alpha.28) (2023-09-05)
 
 **Note:** Version bump only for package @nephele/adapter-file-system
