@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.30](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.29...v1.0.0-alpha.30) (2023-09-08)
+
+**Note:** Version bump only for package nephele-serve
+
+
+
+
+
 # [1.0.0-alpha.29](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.28...v1.0.0-alpha.29) (2023-09-06)
 
 **Note:** Version bump only for package nephele-serve
