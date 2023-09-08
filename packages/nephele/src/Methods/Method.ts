@@ -773,15 +773,6 @@ export class Method {
 
     let mustIgnoreIfModifiedSince = false;
     if (ifNoneMatch != null) {
-      if (
-        (request.method === 'MKCOL' || request.method === 'PUT') &&
-        ifNoneMatch !== '*'
-      ) {
-        throw new BadRequestError(
-          `If-None-Match, if provided, must be "*" on a ${request.method} request.`
-        );
-      }
-
       // Check the request header for the etag.
       if (
         (ifNoneMatch === '*' && !newResource) ||
