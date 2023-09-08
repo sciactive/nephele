@@ -257,7 +257,7 @@ export default class Adapter implements AdapterInterface {
             }
           }
         } catch (e: any) {
-          if (exists || i < parts.length) {
+          if (exists || (i < parts.length && e.code !== 'ENOENT')) {
             return false;
           }
         }
