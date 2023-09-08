@@ -4,7 +4,7 @@ Run Nephele WebDAV server to serve files from a file system.
 
 # What is WebDAV
 
-WebDAV (Web Distributed Authoring and Versioning) is a protocol that allows users to access and manage files stored on a remote server. It is commonly used for web-based file sharing and collaboration, as it allows users to upload, download, and edit files directly from a web browser.
+WebDAV (Web Distributed Authoring and Versioning) is a protocol that allows users to access and manage files stored on a remote server. It is commonly used for web-based file sharing and collaboration, as it allows users to upload, download, and manage files directly from a web browser or file manager.
 
 WebDAV is based on HTTP (Hypertext Transfer Protocol) and uses the same basic communication methods, but adds additional features and functionality specifically designed for file management. These features include support for file locking, collections, and metadata.
 
@@ -15,8 +15,11 @@ WebDAV is a popular protocol for file sharing and collaboration, as it is easy t
 Follow these steps to install PAM development libraries and build tools for your OS:
 
 ```sh
-# Centos/RHEL/Fedora:
+# Centos/RHEL:
 sudo yum install pam-devel gcc gcc-c++ make
+
+# Fedora:
+sudo dnf install pam-devel gcc gcc-c++ make
 
 # Debian/Ubuntu:
 sudo apt install libpam0g-dev build-essential

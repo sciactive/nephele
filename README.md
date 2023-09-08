@@ -8,7 +8,7 @@ If you are looking for a ready-to-run WebDAV server for Linux and Unix systems, 
 
 # QuickDAV
 
-If you're looking for an easy to use desktop app for local file transfers that uses Nephele as its server, check out [QuickDAV](https://sciactive.com/quickdav/) for both Windows and Linux.
+If you're looking for an easy to use desktop app for local file transfers that uses Nephele as its server, check out [QuickDAV](https://sciactive.com/quickdav/) for Windows, macOS, and Linux.
 
 # Work in Progress
 
@@ -18,7 +18,7 @@ It is being actively developed by [SciActive Inc](https://sciactive.com/) for us
 
 # What is WebDAV
 
-WebDAV (Web Distributed Authoring and Versioning) is a protocol that allows users to access and manage files stored on a remote server. It is commonly used for web-based file sharing and collaboration, as it allows users to upload, download, and edit files directly from a web browser.
+WebDAV (Web Distributed Authoring and Versioning) is a protocol that allows users to access and manage files stored on a remote server. It is commonly used for web-based file sharing and collaboration, as it allows users to upload, download, and manage files directly from a web browser or file manager.
 
 WebDAV is based on HTTP (Hypertext Transfer Protocol) and uses the same basic communication methods, but adds additional features and functionality specifically designed for file management. These features include support for file locking, collections, and metadata.
 
