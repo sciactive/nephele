@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.31](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.30...v1.0.0-alpha.31) (2023-09-10)
+
+
+### Bug Fixes
+
+* data.destination on move and copy plugin callbacks not the right type ([7d2fb0b](https://github.com/sciactive/nephele/commit/7d2fb0b0aaf1903b803cfb11a5695b1fb4ee170a))
+
+
+
+
+
 # [1.0.0-alpha.30](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.29...v1.0.0-alpha.30) (2023-09-08)
 
 
