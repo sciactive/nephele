@@ -118,11 +118,31 @@ export class MOVE extends Method {
 
     await this.checkConditionalHeaders(request, response);
 
+    let destResource: Resource;
+    let destExists = true;
+    try {
+      destResource = await adapter.getResource(
+        destination,
+        response.locals.baseUrl
+      );
+    } catch (e: any) {
+      if (e instanceof ResourceNotFoundError) {
+        destResource = await adapter.newResource(
+          destination,
+          response.locals.baseUrl
+        );
+        destExists = false;
+      } else {
+        throw e;
+      }
+    }
+
     if (
       await this.runPlugins(request, response, 'beforeMove', {
         method: this,
         resource,
-        destination,
+        destination: destResource,
+        exists: destExists,
         overwrite,
       })
     ) {
@@ -375,7 +395,8 @@ export class MOVE extends Method {
       await this.runPlugins(request, response, 'afterMove', {
         method: this,
         resource,
-        destination,
+        destination: destResource,
+        exists: destExists,
         overwrite,
       })
     ) {

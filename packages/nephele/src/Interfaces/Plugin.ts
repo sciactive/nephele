@@ -248,7 +248,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-      destination: Resource;
+      destination: URL | undefined;
       depth: string;
       overwrite: string | undefined;
     }
@@ -266,6 +266,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       destination: Resource;
+      exists: boolean;
       depth: string;
       overwrite: string | undefined;
     }
@@ -280,6 +281,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       destination: Resource;
+      exists: boolean;
       depth: string;
       overwrite: string | undefined;
     }
@@ -531,7 +533,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-      destination: Resource;
+      destination: URL | undefined;
       overwrite: string | undefined;
     }
   ) => Promise<false | void>;
@@ -548,6 +550,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       destination: Resource;
+      exists: boolean;
       overwrite: string | undefined;
     }
   ) => Promise<false | void>;
@@ -561,6 +564,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       destination: Resource;
+      exists: boolean;
       overwrite: string | undefined;
     }
   ) => Promise<void>;

@@ -126,11 +126,31 @@ export class COPY extends Method {
 
     await this.checkConditionalHeaders(request, response);
 
+    let destResource: Resource;
+    let destExists = true;
+    try {
+      destResource = await adapter.getResource(
+        destination,
+        response.locals.baseUrl
+      );
+    } catch (e: any) {
+      if (e instanceof ResourceNotFoundError) {
+        destResource = await adapter.newResource(
+          destination,
+          response.locals.baseUrl
+        );
+        destExists = false;
+      } else {
+        throw e;
+      }
+    }
+
     if (
       await this.runPlugins(request, response, 'beforeCopy', {
         method: this,
         resource,
-        destination,
+        destination: destResource,
+        exists: destExists,
         depth,
         overwrite,
       })
@@ -344,7 +364,8 @@ export class COPY extends Method {
     await this.runPlugins(request, response, 'afterCopy', {
       method: this,
       resource,
-      destination,
+      destination: destResource,
+      exists: destExists,
       depth,
       overwrite,
     });
