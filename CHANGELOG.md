@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.32](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.31...v1.0.0-alpha.32) (2023-10-21)
+
+
+### Features
+
+* add configuration options for request timeouts in nephele-serve ([39cd0bc](https://github.com/sciactive/nephele/commit/39cd0bceacc0fa630e3090bb8938c5af06af2bf5))
+
+
+
+
+
 # [1.0.0-alpha.31](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.30...v1.0.0-alpha.31) (2023-09-10)
 
 
