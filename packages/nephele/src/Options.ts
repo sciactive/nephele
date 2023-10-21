@@ -74,13 +74,6 @@ export interface Options {
    */
   compression: boolean;
   /**
-   * Timeout for reading data from the request.
-   *
-   * If the client doesn't provide data for this many milliseconds, the server
-   * will give up waiting and issue an error.
-   */
-  timeout: number;
-  /**
    * The minimum length of time a lock can be granted for, in milliseconds.
    */
   minLockTimeout: number;
@@ -104,9 +97,8 @@ export interface Options {
 
 export const defaults: Options = {
   compression: false,
-  timeout: 30000,
   minLockTimeout: 1000 * 10, // 10 seconds
-  maxLockTimeout: 1000 * 60 * 60 * 18, // 18 hours.
+  maxLockTimeout: 1000 * 60 * 60 * 18, // 18 hours
   errorHandler: async (
     code: number,
     message: string,

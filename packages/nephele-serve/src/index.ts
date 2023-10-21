@@ -38,6 +38,8 @@ type Conf = {
   key?: string;
   port?: number;
   redirectPort?: number;
+  timeout?: number;
+  keepAliveTimeout?: number;
   homeDirectories: boolean;
   userDirectories: boolean;
   serveIndexes: boolean;
@@ -82,6 +84,18 @@ program
       'The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.'
     ).argParser(parseInt)
   )
+  .addOption(
+    new Option(
+      '-t, --timeout <milliseconds>',
+      'The request timeout. Requests will be terminated if they take longer than this time.'
+    ).argParser(parseInt)
+  )
+  .addOption(
+    new Option(
+      '-k, --keep-alive-timeout <milliseconds>',
+      'The keep alive timeout. Server will wait this long for additional data after writing its last response.'
+    ).argParser(parseInt)
+  )
   .option(
     '--home-directories',
     "Serve users' home directories to them when they log in."
@@ -115,6 +129,8 @@ Environment Variables:
   HOST                 Same as --host.
   PORT                 Same as --port.
   REDIRECT_PORT        Same as --redirect-port.
+  TIMEOUT              Same as --timeout.
+  KEEPALIVETIMEOUT     Same as --keep-alive-timeout.
   REALM                Same as --realm.
   CERT_FILE            Same as --cert.
   CERT                 Text of a cert in PEM format.
@@ -150,6 +166,8 @@ try {
     key,
     port,
     redirectPort,
+    timeout,
+    keepAliveTimeout,
     homeDirectories,
     userDirectories,
     serveIndexes,
@@ -213,6 +231,24 @@ try {
 
   if (redirectPort != null && redirectPort <= 0) {
     redirectPort = undefined;
+  }
+
+  if (timeout == null) {
+    timeout = parseInt(process.env.TIMEOUT || '1800000') || 0;
+  }
+
+  if (timeout != null && timeout < 0) {
+    timeout = 0;
+  }
+
+  if (keepAliveTimeout == null) {
+    keepAliveTimeout = process.env.KEEPALIVETIMEOUT
+      ? parseInt(process.env.KEEPALIVETIMEOUT)
+      : undefined;
+  }
+
+  if (keepAliveTimeout != null && keepAliveTimeout < 0) {
+    keepAliveTimeout = 0;
   }
 
   // Validate args.
@@ -386,6 +422,15 @@ try {
         )
         .join('\n\t')}`
     );
+
+    server.requestTimeout = timeout || 0;
+    if (keepAliveTimeout != null) {
+      server.keepAliveTimeout = keepAliveTimeout;
+      server.headersTimeout = Math.max(
+        server.headersTimeout,
+        server.keepAliveTimeout + 1000
+      );
+    }
   });
 
   server.on('close', () => {

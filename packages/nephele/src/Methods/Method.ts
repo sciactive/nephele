@@ -933,16 +933,6 @@ export class Method {
 
     response.locals.debug('Getting body stream.');
 
-    request.setTimeout(this.opts.timeout);
-
-    request.on('timeout', () => {
-      response.locals.debug(
-        `Timed out after waiting ${this.opts.timeout / 1000} seconds for data.`
-      );
-
-      stream.destroy();
-    });
-
     let stream: Readable = request;
     let encoding = request.get('Content-Encoding');
     switch (encoding) {
