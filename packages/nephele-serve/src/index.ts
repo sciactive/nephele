@@ -87,13 +87,13 @@ program
   .addOption(
     new Option(
       '-t, --timeout <milliseconds>',
-      'The request timeout. Requests will be terminated if they take longer than this time.'
+      'Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.'
     ).argParser(parseInt)
   )
   .addOption(
     new Option(
-      '-k, --keep-alive-timeout <milliseconds>',
-      'The keep alive timeout. Server will wait this long for additional data after writing its last response.'
+      '--keep-alive-timeout <milliseconds>',
+      'Server will wait this long for additional data after writing its last response.'
     ).argParser(parseInt)
   )
   .option(
@@ -234,7 +234,7 @@ try {
   }
 
   if (timeout == null) {
-    timeout = parseInt(process.env.TIMEOUT || '1800000') || 0;
+    timeout = parseInt(process.env.TIMEOUT || '7200000') || 0;
   }
 
   if (timeout != null && timeout < 0) {
