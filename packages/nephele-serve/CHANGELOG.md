@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.33](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.32...v1.0.0-alpha.33) (2023-10-22)
+
+
+### Bug Fixes
+
+* raise default request timeout to support massive file transfers ([0601fa8](https://github.com/sciactive/nephele/commit/0601fa82039824f5fd9d922fa5a8da85f74418a8))
+
+
+
+
+
 # [1.0.0-alpha.32](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.31...v1.0.0-alpha.32) (2023-10-21)
 
 
