@@ -1,20 +1,14 @@
-# Nephele
+<div align="center"><img alt="Nephele" src="assets/logo.png" /></div>
 
-A pluggable WebDAV (and soon CardDAV and CalDAV) server for Node.js and Express.
+Nephele: A pluggable WebDAV (and soon CardDAV and CalDAV) server for Node.js and Express.
 
 # Nephele Serve
 
-If you are looking for a ready-to-run WebDAV server for Linux and Unix systems, check out the [nephele-serve](https://www.npmjs.com/package/nephele-serve) package.
+If you are looking for a ready-to-run WebDAV server for Linux or macOS, check out the [nephele-serve](https://www.npmjs.com/package/nephele-serve) package.
 
 # QuickDAV
 
 If you're looking for an easy to use desktop app for local file transfers that uses Nephele as its server, check out [QuickDAV](https://sciactive.com/quickdav/) for Windows, macOS, and Linux.
-
-# Work in Progress
-
-Nephele is currently a work in progress. You can [install](https://www.npmjs.com/package/nephele) and [run](https://www.npmjs.com/package/nephele-serve) it, but building adapters and authenticators for it is not recommended yet, because it will significantly change before the 1.0 release.
-
-It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
 
 # What is WebDAV
 
@@ -22,43 +16,53 @@ WebDAV (Web Distributed Authoring and Versioning) is a protocol that allows user
 
 WebDAV is based on HTTP (Hypertext Transfer Protocol) and uses the same basic communication methods, but adds additional features and functionality specifically designed for file management. These features include support for file locking, collections, and metadata.
 
-WebDAV is a popular protocol for file sharing and collaboration, as it is easy to use and allows users to access their files from any device with an internet connection. It is also secure, with support for encrypted data transfer and authentication to prevent unauthorized access to files.
-
 # Compliance
 
-Nephele focuses on complete compliance with the implemented specifications. The specifications (RFCs) include [keywords](https://www.rfc-editor.org/rfc/rfc2119) which determine what behavior is required to be fully compliant. Nephele follows all behaviors described as "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", and "NOT RECOMMENDED". Unless otherwise stated in an adapter's or authenticator's readme, the official adapters and authenticators also follow these behaviors.
+Nephele focuses on strict compliance with the implemented protocols. The specifications (RFCs) include [keywords](https://www.rfc-editor.org/rfc/rfc2119) which determine what behavior is required to be fully compliant. Nephele follows all behaviors described as "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD", "SHOULD NOT", "RECOMMENDED", and "NOT RECOMMENDED". Unless otherwise stated in an adapter's or authenticator's readme, the official adapters and authenticators also follow these behaviors.
 
 If you find behavior in Nephele or the official adapters/authenticators that does not align with behavior described in the spec using the aforementioned keywords, this should be considered a bug, and a bug report in this repository would be greatly appreciated.
 
-# Implemented RFCs
+# Performance
 
-## WebDAV
+Nephele also prioritizes performance and stability. Nephele aims to minimize disk IO and memory usage. Nephele is already production ready, and aims to perform as well as or better than any other WebDAV server.
+
+# Work in Progress
+
+Nephele is currently a work in progress. You can [install](https://www.npmjs.com/package/nephele) and [run](https://www.npmjs.com/package/nephele-serve) it, but building adapters and authenticators for it is not recommended yet, because the API may significantly change before the 1.0 release.
+
+It is being actively developed by [SciActive Inc](https://sciactive.com/) for use in [Port87](https://port87.com/).
+
+# RFCs
+
+## Implemented RFCs
+
+### WebDAV
 
 - [HTTP Extensions for Web Distributed Authoring and Versioning (WebDAV)](https://datatracker.ietf.org/doc/html/rfc4918)
 
-# Planned RFCs
+## Planned RFCs
 
-Nephele will hopefully eventually support the following RFCs. I've included how likely version 1.0 is to support the RFCs.
+Nephele will hopefully eventually support the following RFCs. I've included how likely version 1.0 is to support each RFC.
 
-## WebDAV
+### WebDAV
 
 - [Web Distributed Authoring and Versioning (WebDAV) Access Control Protocol](https://datatracker.ietf.org/doc/html/rfc3744) (in progress)
 - [WebDAV Current Principal Extension](https://datatracker.ietf.org/doc/html/rfc5397) (definitely)
 - [Extended MKCOL for Web Distributed Authoring and Versioning (WebDAV)](https://datatracker.ietf.org/doc/html/rfc5689) (definitely)
 - [Web Distributed Authoring and Versioning (WebDAV) SEARCH](https://datatracker.ietf.org/doc/html/rfc5323) (probably not)
 
-## CardDAV
+### CardDAV
 
 - [CardDAV: vCard Extensions to Web Distributed Authoring and Versioning (WebDAV)](https://datatracker.ietf.org/doc/html/rfc6352) (definitely)
 
-## CalDAV
+### CalDAV
 
 - [Calendaring Extensions to WebDAV (CalDAV)](https://datatracker.ietf.org/doc/html/rfc4791) (maybe)
 - [Scheduling Extensions to CalDAV](https://datatracker.ietf.org/doc/html/rfc6638) (probably not)
 - [Calendaring Extensions to WebDAV (CalDAV): Time Zones by Reference](https://datatracker.ietf.org/doc/html/rfc7809) (probably not)
 - [Calendar Availability](https://datatracker.ietf.org/doc/html/rfc7953) (probably not)
 
-# Service Location for CardDAV and CalDAV Clients
+## Service Location for CardDAV and CalDAV Clients
 
 Once CardDAV and CalDAV are implemented, you should read and follow this RFC to make your server work well with CardDAV and CalDAV clients:
 

@@ -10,7 +10,7 @@ Nephele is free and open source, so you can use it, modify it, and distribute it
 
 # Nephele Serve
 
-If you are looking for a ready-to-run WebDAV server for Linux and Unix systems, check out the [nephele-serve](https://www.npmjs.com/package/nephele-serve) package.
+If you are looking for a ready-to-run WebDAV server for Linux and macOS, check out the [nephele-serve](https://www.npmjs.com/package/nephele-serve) package.
 
 # QuickDAV
 
@@ -57,7 +57,43 @@ app.listen(port, () => {
 });
 ```
 
-You can also provide options as a second argument to the create server function.
+You can also provide options as a second argument to the Nephele server function.
+
+## Request Timeout
+
+Node.js has a default request timeout for HTTP(S) servers of 5 minutes. This limits the size of files you can upload/download. If this is not acceptable, you can change the request timeout of the server by using the `node:http` or `node:https` imports and setting `server.requestTimeout`.
+
+```js
+import https from 'node:https';
+import express from 'express';
+import nepheleServer from 'nephele';
+import ExampleAdapter from '@nephele/adapter-example';
+import ExampleAuthenticator from '@nephele/authenticator-example';
+import ExamplePluginA from '@nephele/plugin-example-a';
+import ExamplePluginB from '@nephele/plugin-example-b';
+
+const app = express();
+const port = 8080;
+const cert = process.env.CERT;
+const key = process.env.KEY;
+
+app.use(
+  '/',
+  nepheleServer({
+    adapter: new ExampleAdapter(),
+    authenticator: new ExampleAuthenticator(),
+    plugins: [new ExamplePluginA(), new ExamplePluginB()],
+  })
+);
+
+const server = https.createServer({ cert, key }, app).listen(port);
+
+server.requestTimeout = 1800000; // 30 minutes in milliseconds
+
+server.on('listening', () => {
+  console.log(`Nephele WebDAV server listening on port ${port}`);
+});
+```
 
 ## Conditional Adapters, Authenticators, and Plugins
 
