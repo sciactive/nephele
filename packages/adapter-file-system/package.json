@@ -52,6 +52,6 @@
     "nephele": "^1.0.0-alpha.33"
   },
   "engines": {
-    "node": ">=16"
+    "node": ">=18"
   }
 }
