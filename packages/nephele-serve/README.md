@@ -6,66 +6,52 @@ Run Nephele WebDAV server to serve files from a file system.
 
 WebDAV (Web Distributed Authoring and Versioning) is a protocol that allows users to access and manage files stored on a remote server. It is commonly used for web-based file sharing and collaboration, as it allows users to upload, download, and manage files directly from a web browser or file manager.
 
-WebDAV is based on HTTP (Hypertext Transfer Protocol) and uses the same basic communication methods, but adds additional features and functionality specifically designed for file management. These features include support for file locking, collections, and metadata.
-
 WebDAV is a popular protocol for file sharing and collaboration, as it is easy to use and allows users to access their files from any device with an internet connection. It is also secure, with support for encrypted data transfer and authentication to prevent unauthorized access to files.
-
-# BREAKING CHANGE
-
-Version 1.0.0-alpha.34 and above require the `@nephele/authenticator-pam` package and `--pam-auth` option to authenticate with system users.
 
 # Installation
 
-Install Nephele Serve:
+Quickly install Nephele Serve using npm:
 
 ```sh
 sudo npm install -g nephele-serve
 ```
 
-By default, nephele-serve will look for a file called `.htpasswd` in the directory it is serving. This is where your users and passwords go. You can use Apache's `htpasswd` utility, or an online generator, like http://aspirine.org/htpasswd_en.html
+Note: By default, Nephele Serve uses a `.htpasswd` file for user authentication. Create this file in the directory you're serving. Use Apache's `htpasswd` utility or an online generator like http://aspirine.org/htpasswd_en.html for ease.
 
 ## Adding System User Authentication
 
 To authenticate with system users instead of an htpasswd file, follow these steps to install PAM development libraries and build tools for your OS:
 
-```sh
-# Centos/RHEL:
-sudo yum install pam-devel gcc gcc-c++ make
+1. Install PAM development libraries:
 
-# Fedora:
-sudo dnf install pam-devel gcc gcc-c++ make
+- For CentOS/RHEL: `sudo yum install pam-devel gcc gcc-c++ make`
+- For Fedora: `sudo dnf install pam-devel gcc gcc-c++ make`
+- For Debian/Ubuntu: `sudo apt install libpam0g-dev build-essential`
+- Arch and macOS come pre-installed with the necessary tools.
 
-# Debian/Ubuntu:
-sudo apt install libpam0g-dev build-essential
-
-# Arch and macOS: already installed
-```
-
-(Source: https://www.npmjs.com/package/authenticate-pam#Install)
-
-Then install the PAM authenticator:
+2. Install the PAM authenticator
 
 ```sh
 sudo npm install -g @nephele/authenticator-pam
 ```
 
-Files and directories will be created with the proper ownership for the logged in user when using the PAM authenticator.
+Note: Files and directories will be created with the proper ownership for the logged in user when using the PAM authenticator.
 
 # Usage
 
-To serve the current directory.
+Serve the current directory.
 
 ```sh
 sudo nephele-serve .
 ```
 
-To serve users' home directories (requires PAM authenticator).
+Serve users' home directories (requires PAM authenticator).
 
 ```sh
 sudo nephele-serve --home-directories
 ```
 
-To serve user directories under the current directory. This creates directories within the server root with the users' usernames, and serves their own directory to them.
+Serve user directories under the server root. This creates directories with the users' usernames, and serves their own directory to them.
 
 ```sh
 sudo nephele-serve --user-directories .
@@ -85,9 +71,9 @@ nephele-serve -p 8080 .
 
 Only regular users (UIDs 500-59999) are allowed to log in.
 
-# Cluster with PM2
+## Cluster with PM2
 
-You can load Nephele as a cluster of worker processes using PM2. The following will start a cluster of 8 instances serving users' home directories.
+Nephele Serve supports clustering for handling high loads. Here's how to set up a cluster of 8 Nephele Serve instances.
 
 ```sh
 sudo npm install -g pm2
@@ -105,43 +91,9 @@ sudo pm2 save
 sudo pm2 startup systemd
 ```
 
-So, putting it all together, if you:
+## Comprehensive Example Setup
 
-- use an Ubuntu or Debian based server
-- use a Let's Encrypt certificate for TLS
-- want to serve user directories for system users out of a custom folder
-- want to serve directory listings for browser support
-- want to use a cluster of 8 worker processes
-- want to have the server load on startup
-
-You'd do this (replacing example.com with your domain, and the path at the end with your server root path).
-
-```sh
-# Follow these install directions to install Node (the minimum Node version is v16):
-# https://github.com/nodesource/distributions#installation-instructions
-
-# Install requirements.
-sudo apt install libpam0g-dev build-essential
-# Install nephele-serve and pm2.
-sudo npm i -g nephele-serve @nephele/authenticator-pam pm2
-
-# Start a nephele-serve cluster.
-sudo pm2 start -i 8 -u root --uid 0 \
-  nephele-serve \
-  --node-args "--experimental-specifier-resolution=node" \
-  -- \
-  --user-directories \
-  --serve-listings \
-  --cert /etc/letsencrypt/live/example.com/fullchain.pem \
-  --key /etc/letsencrypt/live/example.com/privkey.pem \
-  /path/to/your/data/directory/
-
-# Save the cluster and have it start on system start.
-sudo pm2 save
-sudo pm2 startup systemd
-```
-
-I recommend installing Node from NodeSource instead of apt, because apt tends to have very outdated versions and lots of unnecessary dependencies.
+For a complete setup example with TLS, directory listings, and cluster mode, see the extended setup instructions at the end of this document.
 
 # Updates
 
@@ -230,6 +182,46 @@ If you see this warning:
 ```
 
 Don't worry, it's because the script is using `--experimental-specifier-resolution=node` to be able to load the PAM authentication module from an ES module.
+
+# Comprehensive Example
+
+This example shows the steps for a setup where you:
+
+- use an Ubuntu or Debian based server
+- use a Let's Encrypt certificate for TLS
+- want to serve user directories for system users out of a custom folder
+- want to serve directory listings for browser support
+- want to use a cluster of 8 worker processes
+- want to have the server load on startup
+
+You would replace example.com with your domain, and the path at the end with your server root path.
+
+```sh
+# Follow these install directions to install Node (the minimum Node version is v18):
+# https://github.com/nodesource/distributions#installation-instructions
+
+# Install requirements.
+sudo apt install libpam0g-dev build-essential
+# Install nephele-serve and pm2.
+sudo npm i -g nephele-serve @nephele/authenticator-pam pm2
+
+# Start a nephele-serve cluster.
+sudo pm2 start -i 8 -u root --uid 0 \
+  nephele-serve \
+  --node-args "--experimental-specifier-resolution=node" \
+  -- \
+  --user-directories \
+  --serve-listings \
+  --cert /etc/letsencrypt/live/example.com/fullchain.pem \
+  --key /etc/letsencrypt/live/example.com/privkey.pem \
+  /path/to/your/data/directory/
+
+# Save the cluster and have it start on system start.
+sudo pm2 save
+sudo pm2 startup systemd
+```
+
+I recommend installing Node from NodeSource instead of apt, because apt tends to have very outdated versions and lots of unnecessary dependencies.
 
 # License
 
