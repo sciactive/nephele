@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.34](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.33...v1.0.0-alpha.34) (2024-01-20)
+
+
+### Features
+
+* add htpasswd support to nephele-serve ([94ef1c2](https://github.com/sciactive/nephele/commit/94ef1c29a8c3986772339f156b4f23c064ade8c4))
+* bump node requirement up to 18, since 16 is eol ([43b6d01](https://github.com/sciactive/nephele/commit/43b6d01354adaec1f6c8a8ea55efa43c7c287716))
+
+
+
+
+
 # [1.0.0-alpha.33](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.32...v1.0.0-alpha.33) (2023-10-22)
 
 **Note:** Version bump only for package @nephele/authenticator-custom
