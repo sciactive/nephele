@@ -210,6 +210,7 @@ sudo pm2 start -i 8 -u root --uid 0 \
   nephele-serve \
   --node-args "--experimental-specifier-resolution=node" \
   -- \
+  --pam-auth \
   --user-directories \
   --serve-listings \
   --cert /etc/letsencrypt/live/example.com/fullchain.pem \
