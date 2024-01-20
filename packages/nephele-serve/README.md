@@ -10,9 +10,23 @@ WebDAV is based on HTTP (Hypertext Transfer Protocol) and uses the same basic co
 
 WebDAV is a popular protocol for file sharing and collaboration, as it is easy to use and allows users to access their files from any device with an internet connection. It is also secure, with support for encrypted data transfer and authentication to prevent unauthorized access to files.
 
+# BREAKING CHANGE
+
+Version 1.0.0-alpha.34 and above require the `@nephele/authenticator-pam` package and `--pam-auth` option to authenticate with system users.
+
 # Installation
 
-Follow these steps to install PAM development libraries and build tools for your OS:
+Install Nephele Serve:
+
+```sh
+sudo npm install -g nephele-serve
+```
+
+By default, nephele-serve will look for a file called `.htpasswd` in the directory it is serving. This is where your users and passwords go. You can use Apache's `htpasswd` utility, or an online generator, like http://aspirine.org/htpasswd_en.html
+
+## Adding System User Authentication
+
+To authenticate with system users instead of an htpasswd file, follow these steps to install PAM development libraries and build tools for your OS:
 
 ```sh
 # Centos/RHEL:
@@ -29,11 +43,13 @@ sudo apt install libpam0g-dev build-essential
 
 (Source: https://www.npmjs.com/package/authenticate-pam#Install)
 
-Then install Nephele Serve:
+Then install the PAM authenticator:
 
 ```sh
-sudo npm install -g nephele-serve
+sudo npm install -g @nephele/authenticator-pam
 ```
+
+Files and directories will be created with the proper ownership for the logged in user when using the PAM authenticator.
 
 # Usage
 
@@ -43,7 +59,7 @@ To serve the current directory.
 sudo nephele-serve .
 ```
 
-To serve users' home directories.
+To serve users' home directories (requires PAM authenticator).
 
 ```sh
 sudo nephele-serve --home-directories
@@ -61,7 +77,7 @@ If you want to run it without installing it, you can do that too.
 sudo npx nephele-serve .
 ```
 
-If you want to run it without root, you can do that too, but you must set the port to something higher than 1000, and you'll likely only be able to log in as the user who runs the script.
+If you want to run it without root, you can do that too, but you must set the port to something higher than 1000, and you'll likely only be able to log in (with PAM) as the user who runs the script.
 
 ```sh
 nephele-serve -p 8080 .
@@ -93,7 +109,7 @@ So, putting it all together, if you:
 
 - use an Ubuntu or Debian based server
 - use a Let's Encrypt certificate for TLS
-- want to serve user directories out of a custom folder
+- want to serve user directories for system users out of a custom folder
 - want to serve directory listings for browser support
 - want to use a cluster of 8 worker processes
 - want to have the server load on startup
@@ -107,7 +123,7 @@ You'd do this (replacing example.com with your domain, and the path at the end w
 # Install requirements.
 sudo apt install libpam0g-dev build-essential
 # Install nephele-serve and pm2.
-sudo npm i -g nephele-serve pm2
+sudo npm i -g nephele-serve @nephele/authenticator-pam pm2
 
 # Start a nephele-serve cluster.
 sudo pm2 start -i 8 -u root --uid 0 \
@@ -164,11 +180,14 @@ Options:
   --redirect-port <redirect_port>      The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
   -t, --timeout <milliseconds>         Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.
   --keep-alive-timeout <milliseconds>  Server will wait this long for additional data after writing its last response.
-  --home-directories                   Serve users' home directories to them when they log in.
+  --home-directories                   Serve users' home directories to them when they log in. (Impies --pam-auth.)
   --user-directories                   Serve users their own directory under the server root when they log in.
   --serve-indexes                      Serve index.html and index.htm files when the user requests a directory.
   --serve-listings                     Serve directory listings with file management forms when the user requests a directory.
-  --no-auth                            Don't require authorization. (Not compatible with serving home directories or user directories.)
+  --no-auth                            Don't require authentication. (Not compatible with --home-directories or --user-directories.)
+  --pam-auth                           Use PAM authentication. (Requires @nephele/authenticator-pam.)
+  --auth-user-filename                 htpasswd filename. (Defaults to '.htpasswd'.)
+  --auth-user-file                     A specific htpasswd file to use for every request.
   --no-update-check                    Don't check for updates.
   --help                               display help for command
 
@@ -188,13 +207,16 @@ Environment Variables:
   SERVE_INDEXES                        Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS                       Same as --serve-listings when set to "true", "on" or "1".
   AUTH                                 Same as --no-auth when set to "false", "off" or "0".
+  PAM_AUTH                             Same as --pam-auth when set to "true", "on" or "1".
+  AUTH_USER_FILENAME                   Same as --auth-user-filename.
+  AUTH_USER_FILE                       Same as --auth-user-file.
   UPDATE_CHECK                         Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT                          Same as [directory].
 
 Options given on the command line take precedence over options from an environment variable.
 
 Nephele repo: https://github.com/sciactive/nephele
-Copyright (C) 2022-2023 SciActive, Inc
+Copyright (C) 2022-2024 SciActive, Inc
 https://sciactive.com/
 ```
 
@@ -211,7 +233,7 @@ Don't worry, it's because the script is using `--experimental-specifier-resoluti
 
 # License
 
-Copyright 2022-2023 SciActive Inc
+Copyright 2022-2024 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

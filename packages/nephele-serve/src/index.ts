@@ -12,7 +12,7 @@ import express from 'express';
 import nepheleServer from 'nephele';
 import FileSystemAdapter from '@nephele/adapter-file-system';
 import VirtualAdapter from '@nephele/adapter-virtual';
-import PamAuthenticator from '@nephele/authenticator-pam';
+import HtpasswdAuthenticator from '@nephele/authenticator-htpasswd';
 import InsecureAuthenticator from '@nephele/authenticator-none';
 import IndexPlugin from '@nephele/plugin-index';
 import updateNotifier from 'update-notifier';
@@ -45,6 +45,9 @@ type Conf = {
   serveIndexes: boolean;
   serveListings: boolean;
   auth: boolean;
+  pamAuth: boolean;
+  authUserFilename: string;
+  authUserFile: string;
   updateCheck: boolean;
   directory?: string;
 };
@@ -98,7 +101,7 @@ program
   )
   .option(
     '--home-directories',
-    "Serve users' home directories to them when they log in."
+    "Serve users' home directories to them when they log in. (Impies --pam-auth.)"
   )
   .option(
     '--user-directories',
@@ -114,7 +117,19 @@ program
   )
   .option(
     '--no-auth',
-    "Don't require authorization. (Not compatible with serving home directories or user directories.)"
+    "Don't require authentication. (Not compatible with --home-directories or --user-directories.)"
+  )
+  .option(
+    '--pam-auth',
+    'Use PAM authentication. (Requires @nephele/authenticator-pam.)'
+  )
+  .option(
+    '--auth-user-filename',
+    "htpasswd filename. (Defaults to '.htpasswd'.)"
+  )
+  .option(
+    '--auth-user-file',
+    'A specific htpasswd file to use for every request.'
   )
   .option('--no-update-check', "Don't check for updates.")
   .argument(
@@ -141,6 +156,9 @@ Environment Variables:
   SERVE_INDEXES        Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS       Same as --serve-listings when set to "true", "on" or "1".
   AUTH                 Same as --no-auth when set to "false", "off" or "0".
+  PAM_AUTH             Same as --pam-auth when set to "true", "on" or "1".
+  AUTH_USER_FILENAME   Same as --auth-user-filename.
+  AUTH_USER_FILE       Same as --auth-user-file.
   UPDATE_CHECK         Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT          Same as [directory].
 
@@ -151,7 +169,7 @@ program.addHelpText(
   'afterAll',
   `
 Nephele repo: https://github.com/sciactive/nephele
-Copyright (C) 2022-2023 SciActive, Inc
+Copyright (C) 2022-2024 SciActive, Inc
 https://sciactive.com/`
 );
 
@@ -173,6 +191,9 @@ try {
     serveIndexes,
     serveListings,
     auth,
+    pamAuth,
+    authUserFilename,
+    authUserFile,
     updateCheck,
     directory,
   } = {
@@ -195,6 +216,11 @@ try {
     auth: !['false', 'off', '0'].includes(
       (process.env.AUTH || '').toLowerCase()
     ),
+    pamAuth: ['true', 'on', '1'].includes(
+      (process.env.PAM_AUTH || '').toLowerCase()
+    ),
+    authUserFilename: process.env.AUTH_USER_FILENAME,
+    authUserFile: process.env.AUTH_USER_FILE,
     updateCheck: !['false', 'off', '0'].includes(
       (process.env.UPDATE_CHECK || '').toLowerCase()
     ),
@@ -278,6 +304,18 @@ try {
     );
   }
 
+  if (homeDirectories) {
+    pamAuth = true;
+  }
+
+  if (!pamAuth) {
+    console.log(
+      '\x1b[43m\x1b[37m\x1b[1m%s\x1b[0m\x1b[33m\x1b[1m%s\x1b[0m',
+      ' ⚠  ',
+      ' BREAKING CHANGE: nephele-serve 1.0.0-alpha.34 and above require the `@nephele/authenticator-pam` package and `--pam-auth` option to authenticate with system users.'
+    );
+  }
+
   if (directory != null && !fs.statSync(directory).isDirectory()) {
     throw new Error('Provided server root is not an accessible directory.');
   }
@@ -315,7 +353,7 @@ try {
     '/',
     nepheleServer({
       adapter: async (_request, response) => {
-        if (auth && response.locals.user == null) {
+        if (homeDirectories && response.locals.user == null) {
           return new VirtualAdapter({
             files: {
               properties: {
@@ -339,7 +377,7 @@ try {
             throw new Error('Server root is not an accessible directory.');
           }
 
-          if (userDirectories) {
+          if (userDirectories && response.locals.user != null) {
             const root = path.join(
               directory,
               response.locals.user.username.replace(/\//g, '_')
@@ -349,9 +387,11 @@ try {
               fs.accessSync(root);
             } catch (e: any) {
               fs.mkdirSync(root);
-              const { uid, gid } = ids(response.locals.user.username);
-              fs.chownSync(root, uid, gid);
-              fs.chmodSync(root, 0o750);
+              if (pamAuth) {
+                const { uid, gid } = ids(response.locals.user.username);
+                fs.chownSync(root, uid, gid);
+                fs.chmodSync(root, 0o750);
+              }
             }
 
             return new FileSystemAdapter({ root });
@@ -362,9 +402,17 @@ try {
           throw new Error("Couldn't mount server root.");
         }
       },
-      authenticator: auth
-        ? new PamAuthenticator({ realm })
-        : new InsecureAuthenticator(),
+      authenticator: async (_request, _response) => {
+        if (pamAuth) {
+          const { Authenticator: PamAuthenticator } = await import(
+            '@nephele/authenticator-pam'
+          );
+          return new PamAuthenticator({ realm });
+        }
+        return auth
+          ? new HtpasswdAuthenticator({ realm, authUserFilename, authUserFile })
+          : new InsecureAuthenticator();
+      },
       plugins: [
         ...(!serveIndexes && !serveListings
           ? []
