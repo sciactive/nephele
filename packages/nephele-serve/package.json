@@ -63,12 +63,12 @@
     "commander": "^11.0.0",
     "express": "^4.18.2",
     "nephele": "^1.0.0-alpha.34",
-    "update-notifier": "^6.0.2",
-    "userhomepath": "^1.0.6",
-    "userid": "^1.2.5"
+    "update-notifier": "^6.0.2"
   },
   "optionalDependencies": {
-    "@nephele/authenticator-pam": "^1.0.0-alpha.34"
+    "@nephele/authenticator-pam": "^1.0.0-alpha.34",
+    "userhomepath": "^1.0.6",
+    "userid": "^1.2.5"
   },
   "engines": {
     "node": ">=18"

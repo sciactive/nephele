@@ -6,8 +6,6 @@ import path from 'node:path';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { program, Option } from 'commander';
-import { homedir as userHomePath } from 'userhomepath';
-import userid from 'userid';
 import express from 'express';
 import nepheleServer from 'nephele';
 import FileSystemAdapter from '@nephele/adapter-file-system';
@@ -28,8 +26,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, '..', 'package.json')).toString()
 );
-
-const { ids } = userid;
 
 type Conf = {
   host: string;
@@ -369,6 +365,7 @@ try {
 
         try {
           if (homeDirectories) {
+            const { homedir: userHomePath } = await import('userhomepath');
             const root = await userHomePath(response.locals.user.username);
             return new FileSystemAdapter({ root });
           }
@@ -388,6 +385,7 @@ try {
             } catch (e: any) {
               fs.mkdirSync(root);
               if (pamAuth) {
+                const { ids } = await import('userid');
                 const { uid, gid } = ids(response.locals.user.username);
                 fs.chownSync(root, uid, gid);
                 fs.chmodSync(root, 0o750);
