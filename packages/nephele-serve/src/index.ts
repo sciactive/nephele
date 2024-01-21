@@ -21,7 +21,8 @@ type Hosts = {
   address: string;
 }[];
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const pkg = JSON.parse(
   fs.readFileSync(path.resolve(__dirname, '..', 'package.json')).toString()
@@ -168,7 +169,21 @@ https://sciactive.com/`
 
 try {
   // Parse args.
-  program.parse();
+  if (
+    process.argv.length > 2 &&
+    process.argv[1].includes('/pm2/') &&
+    process.argv.includes('--')
+  ) {
+    // pm2-runtime command is sometimes given whole and not understood by commander
+    // also it doubles the args after --
+    const rest = process.argv.slice(process.argv.indexOf('--') + 1);
+    if (rest.length > 1 && rest[0] === rest[rest.length / 2]) {
+      rest.splice(rest.length / 2, rest.length);
+    }
+    program.parse([process.argv[0], __filename, ...rest]);
+  } else {
+    program.parse();
+  }
   const options = program.opts();
   let {
     host,
