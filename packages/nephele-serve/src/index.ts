@@ -115,10 +115,7 @@ program
     '--no-auth',
     "Don't require authentication. (Not compatible with --home-directories or --user-directories.)"
   )
-  .option(
-    '--pam-auth',
-    'Use PAM authentication. (Requires @nephele/authenticator-pam.)'
-  )
+  .option('--pam-auth', 'Use PAM authentication. (Requires PAM libraries.)')
   .option(
     '--auth-user-filename',
     "htpasswd filename. (Defaults to '.htpasswd'.)"
