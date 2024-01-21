@@ -29,10 +29,10 @@ To authenticate with system users instead of an htpasswd file, follow these step
 - For Debian/Ubuntu: `sudo apt install libpam0g-dev build-essential`
 - Arch and macOS come pre-installed with the necessary tools.
 
-2. Install the PAM authenticator
+2. Now install Nephele Serve:
 
 ```sh
-sudo npm install -g @nephele/authenticator-pam
+sudo npm install -g nephele-serve
 ```
 
 Note: Files and directories will be created with the proper ownership for the logged in user when using the PAM authenticator.
@@ -45,7 +45,7 @@ Serve the current directory.
 sudo nephele-serve .
 ```
 
-Serve users' home directories (requires PAM authenticator).
+Serve users' home directories (requires PAM libraries).
 
 ```sh
 sudo nephele-serve --home-directories
@@ -137,7 +137,7 @@ Options:
   --serve-indexes                      Serve index.html and index.htm files when the user requests a directory.
   --serve-listings                     Serve directory listings with file management forms when the user requests a directory.
   --no-auth                            Don't require authentication. (Not compatible with --home-directories or --user-directories.)
-  --pam-auth                           Use PAM authentication. (Requires @nephele/authenticator-pam.)
+  --pam-auth                           Use PAM authentication. (Requires PAM libraries.)
   --auth-user-filename                 htpasswd filename. (Defaults to '.htpasswd'.)
   --auth-user-file                     A specific htpasswd file to use for every request.
   --no-update-check                    Don't check for updates.
@@ -203,7 +203,7 @@ You would replace example.com with your domain, and the path at the end with you
 # Install requirements.
 sudo apt install libpam0g-dev build-essential
 # Install nephele-serve and pm2.
-sudo npm i -g nephele-serve @nephele/authenticator-pam pm2
+sudo npm i -g nephele-serve pm2
 
 # Start a nephele-serve cluster.
 sudo pm2 start -i 8 -u root --uid 0 \
