@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.36](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.35...v1.0.0-alpha.36) (2024-01-21)
+
+
+### Bug Fixes
+
+* pm2-runtime compatibility ([f7fb3cd](https://github.com/sciactive/nephele/commit/f7fb3cd139275705d5bac28fbb05f9e6f12bc1fd))
+
+
+
+
+
 # [1.0.0-alpha.35](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.34...v1.0.0-alpha.35) (2024-01-21)
 
 
