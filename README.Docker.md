@@ -22,6 +22,16 @@ Note: By default, Nephele Serve uses a `.htpasswd` file for user authentication.
 
 # Usage
 
+Setup your server root with a `.htpasswd` file.
+
+```sh
+cd myserverroot
+htpasswd -c .htpasswd mynewuser
+htpasswd .htpasswd myseconduser
+```
+
+## Examples
+
 Serve the current directory.
 
 ```sh
@@ -32,6 +42,32 @@ Serve user directories under the server root. This creates directories with the 
 
 ```sh
 docker run --rm --name nephele -p 80:80 --user "$(id -u):$(id -g)" --env SERVE_LISTINGS=true --env USER_DIRECTORIES=true -v ./:/data/ sciactive/nephele
+```
+
+The same, but as a permanent daemonized server.
+
+```sh
+docker run -d --restart=unless-stopped --name nephele -p 80:80 --user "$(id -u):$(id -g)" --env SERVE_LISTINGS=true --env USER_DIRECTORIES=true -v ./:/data/ sciactive/nephele
+```
+
+Using a certificate from Let's Encrypt for HTTPS traffic.
+
+```sh
+docker run \
+  -d \
+  --restart=unless-stopped \
+  --name nephele \
+  -p 80:80 \
+  -p 443:443 \
+  --user "$(id -u):$(id -g)" \
+  --env REALM="example.com" \
+  --env CERT_FILE=/cert/fullchain1.pem \
+  --env KEY_FILE=/cert/privkey1.pem \
+  --env SERVE_LISTINGS=true \
+  --env USER_DIRECTORIES=true \
+  -v ./:/data/ \
+  -v /etc/letsencrypt/archive/example.com/:/cert/ \
+  sciactive/nephele
 ```
 
 ## Options
@@ -59,26 +95,6 @@ Nephele Serve has a number of options available as environment variables. You ca
 ## Clustering
 
 The Nephele Serve Docker image uses [PM2](https://pm2.keymetrics.io/docs/usage/cluster-mode/) to run in cluster mode. This lets it answer multiple requests simultaneously. You can scale the number of worker processes with the `WORKERS` environment variable.
-
-## Serving HTTPS Traffic
-
-You can provide a certificate and key to serve HTTPS traffic.
-
-```sh
-docker run \
-  --rm \
-  --name nephele \
-  -p 80:80 \
-  -p 443:443 \
-  --user "$(id -u):$(id -g)" \
-  --env CERT_FILE=/cert/fullchain1.pem \
-  --env KEY_FILE=/cert/privkey1.pem \
-  --env SERVE_LISTINGS=true \
-  --env USER_DIRECTORIES=true \
-  -v ./:/data/ \
-  -v /etc/letsencrypt/archive/example.com/:/cert/ \
-  sciactive/nephele
-```
 
 # License
 
