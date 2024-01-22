@@ -1,6 +1,6 @@
 <div align="center"><img alt="Nephele" src="https://github.com/sciactive/nephele/raw/master/assets/logo.png" /></div>
 
-# Nephele Serve for Docker - File System Backed WebDAV Server
+# Nephele for Docker
 
 Run Nephele WebDAV server to serve files from a file system.
 
@@ -61,12 +61,13 @@ docker run \
   -p 443:443 \
   --user "$(id -u):$(id -g)" \
   --env REALM="example.com" \
-  --env CERT_FILE=/cert/fullchain1.pem \
-  --env KEY_FILE=/cert/privkey1.pem \
+  --env CERT_FILE=/cert/live/example.com/fullchain.pem \
+  --env KEY_FILE=/cert/live/example.com/privkey.pem \
+  --env REDIRECT_PORT=80 \
   --env SERVE_LISTINGS=true \
   --env USER_DIRECTORIES=true \
   -v ./:/data/ \
-  -v /etc/letsencrypt/archive/example.com/:/cert/ \
+  -v /etc/letsencrypt/:/cert/ \
   sciactive/nephele
 ```
 
@@ -74,7 +75,7 @@ docker run \
 
 Nephele Serve has a number of options available as environment variables. You can see the `SERVE_LISTINGS` and `USER_DIRECTORIES` options used above. Here is the list of available options. Some options available to [the underlying app](https://github.com/sciactive/nephele/tree/master/packages/nephele-serve#readme) have been left out, because they don't make sense to configure in a Docker container.
 
-- `WORKERS`: Number of cluster workers. Higher number means more requests can be answers simultaneously, but more memory is used. Defaults to 8.
+- `WORKERS`: Number of cluster workers. Higher number means more requests can be answered simultaneously, but more memory is used. Defaults to 8.
 - `REALM`: The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.
 - `PORT`: The port to listen on (inside the container). Defaults to 443 if a cert is provided, 80 otherwise.
 - `REDIRECT_PORT`: The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
