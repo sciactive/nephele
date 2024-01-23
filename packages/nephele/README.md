@@ -10,11 +10,11 @@ Nephele is free and open source, so you can use it, modify it, and distribute it
 
 # Nephele Serve
 
-If you are looking for a ready-to-run WebDAV server for Linux and macOS, check out the [nephele-serve](https://www.npmjs.com/package/nephele-serve) package.
+If you are looking for a ready-to-run dedicated WebDAV server, check out the [nephele-serve package](https://www.npmjs.com/package/nephele-serve) on NPM or the [Nephele Docker image](https://hub.docker.com/r/sciactive/nephele) on Docker Hub.
 
 # QuickDAV
 
-If you're looking for an easy to use desktop app for local file transfers that uses Nephele as its server, check out [QuickDAV](https://sciactive.com/quickdav/) for both Windows and Linux.
+If you're looking for an easy to use desktop app for local file transfers, check out [QuickDAV](https://sciactive.com/quickdav/) for Windows, macOS, and Linux.
 
 # Work in Progress
 
