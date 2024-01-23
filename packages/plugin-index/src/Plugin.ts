@@ -73,7 +73,11 @@ export default class Plugin implements PluginInterface {
       resource,
     }: { method: Method; resource: Resource; properties: Properties }
   ) {
-    if (await resource.isCollection()) {
+    if (!(await resource.isCollection())) {
+      return;
+    }
+
+    if (this.serveIndexes) {
       const indexFile = await this._getIndexFile(
         request,
         response,
@@ -81,7 +85,7 @@ export default class Plugin implements PluginInterface {
         resource
       );
 
-      if (indexFile != null && this.serveIndexes) {
+      if (indexFile != null) {
         const originalUrl = request.url;
 
         request.url = (await indexFile.getCanonicalUrl()).pathname;
@@ -89,104 +93,106 @@ export default class Plugin implements PluginInterface {
         request.url = originalUrl;
 
         return false;
-      } else if (this.serveListings) {
-        const listing = await resource.getInternalMembers(response.locals.user);
-        const entries = await Promise.all(
-          listing.map(async (resource: Resource) => {
-            const lastModified = await (
-              await resource.getProperties()
-            ).get('getlastmodified');
-            const url = await resource.getCanonicalUrl();
+      }
+    }
 
-            let canRead = true;
-            try {
-              await method.checkAuthorization(request, response, 'GET', url);
-            } catch (e: any) {
-              canRead = false;
-            }
+    if (this.serveListings) {
+      const listing = await resource.getInternalMembers(response.locals.user);
+      const entries = await Promise.all(
+        listing.map(async (resource: Resource) => {
+          const lastModified = await (
+            await resource.getProperties()
+          ).get('getlastmodified');
+          const url = await resource.getCanonicalUrl();
 
-            let canMove = true;
-            try {
-              await method.checkAuthorization(request, response, 'MOVE', url);
-            } catch (e: any) {
-              canMove = false;
-            }
+          let canRead = true;
+          try {
+            await method.checkAuthorization(request, response, 'GET', url);
+          } catch (e: any) {
+            canRead = false;
+          }
 
-            let canDelete = true;
-            try {
-              await method.checkAuthorization(request, response, 'DELETE', url);
-            } catch (e: any) {
-              canDelete = false;
-            }
+          let canMove = true;
+          try {
+            await method.checkAuthorization(request, response, 'MOVE', url);
+          } catch (e: any) {
+            canMove = false;
+          }
 
-            return {
-              name: await resource.getCanonicalName(),
-              url,
-              size: await resource.getLength(),
-              lastModified: new Date(
-                typeof lastModified === 'string' ? lastModified : 0
-              ).getTime(),
-              type: await resource.getMediaType(),
-              directory: await resource.isCollection(),
-              canRead,
-              canMove,
-              canDelete,
-            };
-          })
-        );
+          let canDelete = true;
+          try {
+            await method.checkAuthorization(request, response, 'DELETE', url);
+          } catch (e: any) {
+            canDelete = false;
+          }
 
-        let canUpload = true;
-        try {
-          await method.checkAuthorization(
-            request,
-            response,
-            'PUT',
-            new URL(
-              `${request.url}`.replace(/\/?$/, '/') +
-                '--nephele-new-file-name--',
-              `${request.protocol}://${request.headers.host}`
-            )
-          );
-        } catch (e: any) {
-          canUpload = false;
-        }
-
-        let canMkdir = true;
-        try {
-          await method.checkAuthorization(
-            request,
-            response,
-            'MKCOL',
-            new URL(
-              `${request.url}`.replace(/\/?$/, '/') +
-                '--nephele-new-directory-name--',
-              `${request.protocol}://${request.headers.host}`
-            )
-          );
-        } catch (e: any) {
-          canMkdir = false;
-        }
-
-        const { head, html, css } = IndexPage.render({
-          entries,
-          self: {
+          return {
             name: await resource.getCanonicalName(),
-            url: await resource.getCanonicalUrl(),
-          },
-          urlParams: request.query,
-          name: this.name,
-          showForms: this.showForms,
-          canUpload,
-          canMkdir,
-        });
+            url,
+            size: await resource.getLength(),
+            lastModified: new Date(
+              typeof lastModified === 'string' ? lastModified : 0
+            ).getTime(),
+            type: await resource.getMediaType(),
+            directory: await resource.isCollection(),
+            canRead,
+            canMove,
+            canDelete,
+          };
+        })
+      );
 
-        response.set({
-          'Cache-Control': 'private, no-cache',
-          Date: new Date().toUTCString(),
-          'Content-Type': 'text/html',
-        });
+      let canUpload = true;
+      try {
+        await method.checkAuthorization(
+          request,
+          response,
+          'PUT',
+          new URL(
+            `${request.url}`.replace(/\/?$/, '/') + '--nephele-new-file-name--',
+            `${request.protocol}://${request.headers.host}`
+          )
+        );
+      } catch (e: any) {
+        canUpload = false;
+      }
 
-        response.send(`<!DOCTYPE html>
+      let canMkdir = true;
+      try {
+        await method.checkAuthorization(
+          request,
+          response,
+          'MKCOL',
+          new URL(
+            `${request.url}`.replace(/\/?$/, '/') +
+              '--nephele-new-directory-name--',
+            `${request.protocol}://${request.headers.host}`
+          )
+        );
+      } catch (e: any) {
+        canMkdir = false;
+      }
+
+      const { head, html, css } = IndexPage.render({
+        entries,
+        self: {
+          name: await resource.getCanonicalName(),
+          url: await resource.getCanonicalUrl(),
+        },
+        urlParams: request.query,
+        name: this.name,
+        showForms: this.showForms,
+        canUpload,
+        canMkdir,
+      });
+
+      response.set({
+        'Cache-Control': 'private, no-cache',
+        Date: new Date().toUTCString(),
+        'Content-Type': 'text/html',
+      });
+
+      response.send(`<!DOCTYPE html>
 <html>
   <head>
     <title>Index of ${
@@ -203,8 +209,7 @@ export default class Plugin implements PluginInterface {
   </body>
 </html>
 `);
-        return false;
-      }
+      return false;
     }
   }
 
