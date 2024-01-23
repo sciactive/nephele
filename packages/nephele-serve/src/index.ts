@@ -10,6 +10,9 @@ import express from 'express';
 import nepheleServer from 'nephele';
 import FileSystemAdapter from '@nephele/adapter-file-system';
 import VirtualAdapter from '@nephele/adapter-virtual';
+import CustomAuthenticator, {
+  User as CustomUser,
+} from '@nephele/authenticator-custom';
 import HtpasswdAuthenticator from '@nephele/authenticator-htpasswd';
 import InsecureAuthenticator from '@nephele/authenticator-none';
 import IndexPlugin from '@nephele/plugin-index';
@@ -43,8 +46,10 @@ type Conf = {
   serveListings: boolean;
   auth: boolean;
   pamAuth: boolean;
-  authUserFilename: string;
-  authUserFile: string;
+  authUserFilename?: string;
+  authUserFile?: string;
+  authUsername?: string;
+  authPassword?: string;
   updateCheck: boolean;
   directory?: string;
 };
@@ -125,6 +130,14 @@ program
     '--auth-user-file',
     'A specific htpasswd file to use for every request.'
   )
+  .option(
+    '--auth-username <username>',
+    'Authenticate with a given username instead.'
+  )
+  .option(
+    '--auth-password <password>',
+    'Authenticate with a given password instead.'
+  )
   .option('--no-update-check', "Don't check for updates.")
   .argument(
     '[directory]',
@@ -153,6 +166,8 @@ Environment Variables:
   PAM_AUTH             Same as --pam-auth when set to "true", "on" or "1".
   AUTH_USER_FILENAME   Same as --auth-user-filename.
   AUTH_USER_FILE       Same as --auth-user-file.
+  AUTH_USERNAME        Same as --auth-username.
+  AUTH_PASSWORD        Same as --auth-password.
   UPDATE_CHECK         Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT          Same as [directory].
 
@@ -202,6 +217,8 @@ try {
     pamAuth,
     authUserFilename,
     authUserFile,
+    authUsername,
+    authPassword,
     updateCheck,
     directory,
   } = {
@@ -229,6 +246,8 @@ try {
     ),
     authUserFilename: process.env.AUTH_USER_FILENAME,
     authUserFile: process.env.AUTH_USER_FILE,
+    authUsername: process.env.AUTH_USERNAME,
+    authPassword: process.env.AUTH_PASSWORD,
     updateCheck: !['false', 'off', '0'].includes(
       (process.env.UPDATE_CHECK || '').toLowerCase()
     ),
@@ -412,6 +431,7 @@ try {
           throw new Error("Couldn't mount server root.");
         }
       },
+
       authenticator: async (_request, _response) => {
         if (pamAuth) {
           const { Authenticator: PamAuthenticator } = await import(
@@ -419,10 +439,36 @@ try {
           );
           return new PamAuthenticator({ realm });
         }
-        return auth
-          ? new HtpasswdAuthenticator({ realm, authUserFilename, authUserFile })
-          : new InsecureAuthenticator();
+
+        if (auth) {
+          if (authUsername != null && authPassword != null) {
+            return new CustomAuthenticator({
+              realm,
+
+              async getUser(username) {
+                return username === authUsername
+                  ? new CustomUser({ username })
+                  : null;
+              },
+
+              async authBasic(user, password) {
+                return (
+                  user.username === authUsername && password === authPassword
+                );
+              },
+            });
+          }
+
+          return new HtpasswdAuthenticator({
+            realm,
+            authUserFilename,
+            authUserFile,
+          });
+        }
+
+        return new InsecureAuthenticator();
       },
+
       plugins: [
         ...(!serveIndexes && !serveListings
           ? []
