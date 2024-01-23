@@ -20,7 +20,7 @@ export default class Properties implements PropertiesInterface {
     switch (name) {
       case 'creationdate': {
         const stats = await this.resource.getStats();
-        return stats.ctime.toISOString();
+        return stats.birthtime.toISOString();
       }
       case 'getcontentlength':
         return `${await this.resource.getLength()}`;

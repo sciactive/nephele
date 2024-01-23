@@ -542,7 +542,7 @@ export default class Resource implements ResourceInterface {
           `size: ${
             ('content' in this.file ? this.file.content : Buffer.from([]))
               .byteLength
-          }; ctime: ${this.file.properties.creationdate.getTime()}; mtime: ${this.file.properties.getlastmodified.getTime()}`,
+          }; birthtime: ${this.file.properties.creationdate.getTime()}; mtime: ${this.file.properties.getlastmodified.getTime()}`,
           'utf8'
         )
       )
