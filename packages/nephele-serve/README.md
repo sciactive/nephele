@@ -45,6 +45,12 @@ Serve the current directory.
 sudo nephele-serve .
 ```
 
+Serve the current directory with a specific username and password (not .htpasswd file).
+
+```sh
+sudo nephele-serve --auth-username admin --auth-password "S3cur3P4ssw0rd" .
+```
+
 Serve users' home directories (requires PAM libraries).
 
 ```sh
@@ -140,6 +146,8 @@ Options:
   --pam-auth                           Use PAM authentication. (Requires PAM libraries.)
   --auth-user-filename                 htpasswd filename. (Defaults to '.htpasswd'.)
   --auth-user-file                     A specific htpasswd file to use for every request.
+  --auth-username <username>           Authenticate with a given username instead.
+  --auth-password <password>           Authenticate with a given password instead.
   --no-update-check                    Don't check for updates.
   --help                               display help for command
 
@@ -162,6 +170,8 @@ Environment Variables:
   PAM_AUTH                             Same as --pam-auth when set to "true", "on" or "1".
   AUTH_USER_FILENAME                   Same as --auth-user-filename.
   AUTH_USER_FILE                       Same as --auth-user-file.
+  AUTH_USERNAME                        Same as --auth-username.
+  AUTH_PASSWORD                        Same as --auth-password.
   UPDATE_CHECK                         Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT                          Same as [directory].
 

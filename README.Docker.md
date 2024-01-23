@@ -38,6 +38,12 @@ Serve the current directory.
 docker run --rm --name nephele -p 80:80 --user "$(id -u):$(id -g)" --env SERVE_LISTINGS=true -v ./:/data/ sciactive/nephele
 ```
 
+Serve the current directory with a specific username and password (not .htpasswd file).
+
+```sh
+docker run --rm --name nephele -p 80:80 --user "$(id -u):$(id -g)" --env SERVE_LISTINGS=true --env AUTH_USERNAME=admin --env AUTH_PASSWORD=S3cur3P4ssw0rd -v ./:/data/ sciactive/nephele
+```
+
 Serve user directories under the server root. This creates directories with the users' usernames, and serves their own directory to them.
 
 ```sh
@@ -60,7 +66,7 @@ docker run \
   -p 80:80 \
   -p 443:443 \
   --user "$(id -u):$(id -g)" \
-  --env REALM="example.com" \
+  --env REALM=example.com \
   --env CERT_FILE=/cert/live/example.com/fullchain.pem \
   --env KEY_FILE=/cert/live/example.com/privkey.pem \
   --env REDIRECT_PORT=80 \
@@ -91,6 +97,8 @@ Nephele Serve has a number of options available as environment variables. You ca
 - `AUTH` Don't require authentication. (Not compatible with `USER_DIRECTORIES`.) (When set to "false", "off" or "0".)
 - `AUTH_USER_FILENAME`: htpasswd filename. (Defaults to '.htpasswd'.)
 - `AUTH_USER_FILE`: A specific htpasswd file to use for every request.
+- `AUTH_USERNAME`: Authenticate with a given username instead.
+- `AUTH_PASSWORD`: Authenticate with a given password instead.
 - `SERVER_ROOT`: The path of the directory to use as the server root. Defaults to `/data/`, which is set to be a volume. You can bind mount an external directory here to serve it.
 
 ## Clustering

@@ -441,19 +441,24 @@ try {
         }
 
         if (auth) {
-          if (authUsername != null && authPassword != null) {
+          if (
+            authUsername != null &&
+            authUsername.trim() !== '' &&
+            authPassword != null
+          ) {
             return new CustomAuthenticator({
               realm,
 
               async getUser(username) {
-                return username === authUsername
+                return username === authUsername?.trim()
                   ? new CustomUser({ username })
                   : null;
               },
 
               async authBasic(user, password) {
                 return (
-                  user.username === authUsername && password === authPassword
+                  user.username === authUsername?.trim() &&
+                  password === authPassword?.trim()
                 );
               },
             });
