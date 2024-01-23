@@ -2,7 +2,7 @@
 
 # Nephele for Docker
 
-Run Nephele WebDAV server to serve files from a file system.
+Run [Nephele WebDAV server](https://github.com/sciactive/nephele) to serve files from a file system.
 
 # What is WebDAV
 
