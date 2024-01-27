@@ -26,3 +26,7 @@ EXPOSE 80
 EXPOSE 443
 
 CMD pm2-runtime start -i $WORKERS --node-args "--experimental-specifier-resolution=node" nephele-serve -- $SERVER_ROOT
+
+# Note to future Hunter: This is the command to build for both amd64 and arm64 and push to Docker Hub.
+# docker buildx build --platform linux/amd64,linux/arm64 -t sciactive/nephele:latest -t sciactive/nephele:1.0.0-alpha.37 --push .
+# You need buildx and qemu: https://stackoverflow.com/a/76129784/664915
