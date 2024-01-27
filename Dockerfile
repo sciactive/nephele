@@ -18,7 +18,6 @@ ENV NODE_ENV=production
 ENV SERVER_ROOT=/data/
 ENV UPDATE_CHECK=false
 
-RUN mkdir /data
 VOLUME ["/data"]
 
 RUN npm i -g pm2 nephele-serve@1.0.0-alpha.37
