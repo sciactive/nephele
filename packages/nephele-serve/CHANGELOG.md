@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.37](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.36...v1.0.0-alpha.37) (2024-01-27)
+
+
+### Bug Fixes
+
+* trim username and password and update readmes ([6024a76](https://github.com/sciactive/nephele/commit/6024a76d0f19274338f51c6945c2b4437c849a96))
+
+
+### Features
+
+* add custom authenticator to nephele-serve ([a74072c](https://github.com/sciactive/nephele/commit/a74072c6ec2fae509aafa8926488bfb3a9a51850))
+
+
+
+
+
 # [1.0.0-alpha.36](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.35...v1.0.0-alpha.36) (2024-01-21)
 
 
