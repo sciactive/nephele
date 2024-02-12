@@ -410,7 +410,7 @@ export default class Resource implements ResourceInterface {
 
         const meta = await this.readMetadataFile();
         meta.locks = {};
-        await this.saveMetadataFile(meta, metaFilePath);
+        await this.saveMetadataFile(meta, destinationPath, metaFilePath);
       } catch (e: any) {
         // Ignore errors while copying metadata files.
         metaFilePath = undefined;
@@ -430,7 +430,7 @@ export default class Resource implements ResourceInterface {
 
         const meta = await this.readMetadataFile();
         meta.locks = {};
-        await this.saveMetadataFile(meta, metaFilePath);
+        await this.saveMetadataFile(meta, destinationPath, metaFilePath);
       } catch (e: any) {
         // Ignore errors while copying metadata files.
         metaFilePath = undefined;
@@ -563,23 +563,29 @@ export default class Resource implements ResourceInterface {
       }
     }
 
+    const metaFilePath = await this.getMetadataFilePath();
+    const meta = await this.readMetadataFile();
     await fsp.rename(this.absolutePath, destinationPath);
     try {
       const dirname = path.dirname(destinationPath);
       const basename = path.basename(destinationPath);
-      const metaFilePath = path.join(dirname, `${basename}.nephelemeta`);
+      const destMetaFilePath = path.join(dirname, `${basename}.nephelemeta`);
+      try {
+        await fsp.unlink(destMetaFilePath);
+      } catch (e: any) {
+        // Ignore errors deleting a possibly non-existent file.
+      }
+
+      meta.locks = {};
+      await this.saveMetadataFile(meta, destinationPath, destMetaFilePath);
+
       try {
         await fsp.unlink(metaFilePath);
       } catch (e: any) {
         // Ignore errors deleting a possibly non-existent file.
       }
-
-      const meta = await this.readMetadataFile();
-      meta.locks = {};
-      await this.saveMetadataFile(meta);
-
-      await fsp.rename(await this.getMetadataFilePath(), metaFilePath);
     } catch (e: any) {
+      console.log(e);
       // Ignore errors while moving metadata files.
     }
 
@@ -823,14 +829,18 @@ export default class Resource implements ResourceInterface {
     return meta;
   }
 
-  async saveMetadataFile(meta: MetaStorage, filepath?: string) {
-    if (!filepath) {
-      filepath = await this.getMetadataFilePath();
+  async saveMetadataFile(
+    meta: MetaStorage,
+    filePath?: string,
+    metaFilePath?: string
+  ) {
+    if (!metaFilePath) {
+      metaFilePath = await this.getMetadataFilePath();
     }
     let exists = true;
 
     try {
-      await fsp.access(path.dirname(filepath), constants.F_OK);
+      await fsp.access(path.dirname(metaFilePath), constants.F_OK);
     } catch (e: any) {
       throw new ResourceTreeNotCompleteError(
         'One or more intermediate collections must be created before this resource.'
@@ -838,7 +848,7 @@ export default class Resource implements ResourceInterface {
     }
 
     try {
-      await fsp.access(filepath, constants.F_OK);
+      await fsp.access(metaFilePath, constants.F_OK);
     } catch (e: any) {
       exists = false;
     }
@@ -849,15 +859,15 @@ export default class Resource implements ResourceInterface {
     ) {
       if (exists) {
         // Delete metadata file, since it should now be empty.
-        await fsp.unlink(filepath);
+        await fsp.unlink(metaFilePath);
       }
     } else {
-      await fsp.writeFile(filepath, JSON.stringify(meta, null, 2));
+      await fsp.writeFile(metaFilePath, JSON.stringify(meta, null, 2));
 
-      const stat = await fsp.stat(this.absolutePath);
       try {
-        await fsp.chown(filepath, stat.uid, stat.gid);
-        await fsp.chmod(filepath, stat.mode % 0o1000);
+        const stat = await fsp.stat(filePath ?? this.absolutePath);
+        await fsp.chown(metaFilePath, stat.uid, stat.gid);
+        await fsp.chmod(metaFilePath, stat.mode % 0o1000);
       } catch (e: any) {
         // Ignore errors on setting ownership of meta file.
       }
