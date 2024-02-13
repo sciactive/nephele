@@ -1,5 +1,5 @@
 import zlib from 'node:zlib';
-import { pipeline, Readable } from 'node:stream';
+import { Transform } from 'node:stream';
 import type { Request } from 'express';
 import vary from 'vary';
 import parseRange from 'range-parser';
@@ -188,9 +188,9 @@ export class GET_HEAD extends Method {
         const stream = await resource.getStream(range);
 
         request.on('close', () => {
-          if (!stream.readableEnded) {
+          if (!stream.readableEnded || !stream.destroyed) {
             // This happens when the request is aborted.
-            stream.destroy();
+            stream.destroy(new Error('Request aborted.'));
           }
         });
 
@@ -199,9 +199,20 @@ export class GET_HEAD extends Method {
           'Content-Range': `bytes ${range.start}-${range.end}/${contentLength}`,
         });
 
-        stream.pipe(response);
-        stream.on('end', () => {
-          response.locals.debug('Response stream finished.');
+        await new Promise<void>((resolve, reject) => {
+          stream.on('error', reject);
+
+          stream.on('end', () => {
+            response.locals.debug('Response stream finished.');
+          });
+
+          stream.on('close', resolve);
+
+          if (stream.errored) {
+            reject(stream.errored);
+          } else {
+            stream.pipe(response);
+          }
         });
       } else {
         const boundary = uuid();
@@ -216,9 +227,9 @@ export class GET_HEAD extends Method {
           const stream = await resource.getStream(range);
 
           request.on('close', () => {
-            if (!stream.readableEnded) {
+            if (!stream.readableEnded || !stream.destroyed) {
               // This happens when the request is aborted.
-              stream.destroy();
+              stream.destroy(new Error('Request aborted.'));
             }
           });
 
@@ -248,111 +259,127 @@ export class GET_HEAD extends Method {
           });
         }
       }
-
-      return;
-    }
-
-    response.status(mediaType == null ? 204 : 200); // No Content or Ok
-
-    response.set({
-      ETag: JSON.stringify(etag),
-      'Last-Modified': lastModified.toUTCString(),
-    });
-
-    if (mediaType == null) {
-      response.end();
-      return;
-    }
-
-    response.set({
-      'Content-Type': mediaType,
-    });
-    if (encoding !== 'identity') {
-      // Inform the client, even on a HEAD request, that this entity will be transmitted in
-      // chunks.
-      response.locals.debug('Set to chunked encoding.');
-      response.set({
-        'Transfer-Encoding': 'chunked',
-      });
-    }
-    response.locals.debug(`Response encoding: ${encoding}`);
-    if (request.method === 'HEAD') {
-      response.end();
     } else {
-      let stream: Readable = await resource.getStream();
+      response.status(mediaType == null ? 204 : 200); // No Content or Ok
 
-      request.on('close', () => {
-        if (!stream.readableEnded) {
-          // This happens when the request is aborted.
-          stream.destroy();
-        }
+      response.set({
+        ETag: JSON.stringify(etag),
+        'Last-Modified': lastModified.toUTCString(),
       });
 
-      response.locals.debug('Beginning response stream.');
-      if (encoding === 'identity') {
+      if (mediaType == null) {
+        response.end();
+        return;
+      }
+
+      response.set({
+        'Content-Type': mediaType,
+      });
+      if (encoding !== 'identity') {
+        // Inform the client, even on a HEAD request, that this entity will be transmitted in
+        // chunks.
+        response.locals.debug('Set to chunked encoding.');
         response.set({
-          'Content-Length': `${await resource.getLength()}`,
-        });
-
-        stream.pipe(response);
-        stream.on('end', () => {
-          response.locals.debug('Response stream finished.');
-        });
-      } else {
-        response.set({
-          'Content-Encoding': encoding,
-        });
-
-        switch (encoding) {
-          case 'gzip':
-          case 'x-gzip':
-            stream = pipeline(stream, zlib.createGzip(), (e: any) => {
-              if (e) {
-                throw new Error('Compression pipeline failed: ' + e);
-              }
-            });
-            break;
-          case 'deflate':
-            stream = pipeline(stream, zlib.createDeflate(), (e: any) => {
-              if (e) {
-                throw new Error('Compression pipeline failed: ' + e);
-              }
-            });
-            break;
-          case 'br':
-            stream = pipeline(stream, zlib.createBrotliCompress(), (e: any) => {
-              if (e) {
-                throw new Error('Compression pipeline failed: ' + e);
-              }
-            });
-            break;
-        }
-
-        await new Promise<void>((resolve, reject) => {
-          stream.on('data', (chunk) => {
-            response.write(
-              ('length' in chunk ? chunk.length : chunk.size).toString(16) +
-                '\r\n'
-            );
-            response.write(chunk);
-            if (!response.write('\r\n')) {
-              stream.pause();
-
-              response.once('drain', () => stream.resume());
-            }
-          });
-
-          stream.on('error', reject);
-
-          stream.on('end', () => {
-            writeText('0\r\n\r\n');
-            response.locals.debug('Response stream finished.');
-          });
-
-          stream.on('close', resolve);
+          'Transfer-Encoding': 'chunked',
         });
       }
+      response.locals.debug(`Response encoding: ${encoding}`);
+
+      if (request.method !== 'HEAD') {
+        let stream = await resource.getStream();
+
+        request.on('close', () => {
+          if (!stream.readableEnded || !stream.destroyed) {
+            // This happens when the request is aborted.
+            stream.destroy(new Error('Request aborted.'));
+          }
+        });
+
+        response.locals.debug('Beginning response stream.');
+        if (encoding === 'identity') {
+          response.set({
+            'Content-Length': `${await resource.getLength()}`,
+          });
+
+          await new Promise<void>((resolve, reject) => {
+            stream.on('error', reject);
+
+            stream.on('end', () => {
+              response.locals.debug('Response stream finished.');
+            });
+
+            stream.on('close', resolve);
+
+            if (stream.errored) {
+              reject(stream.errored);
+            } else {
+              stream.pipe(response);
+            }
+          });
+        } else {
+          response.set({
+            'Content-Encoding': encoding,
+          });
+
+          let encodingStream: Transform;
+
+          switch (encoding) {
+            case 'gzip':
+            case 'x-gzip':
+              encodingStream = zlib.createGzip();
+              break;
+            case 'deflate':
+              encodingStream = zlib.createDeflate();
+              break;
+            case 'br':
+              encodingStream = zlib.createBrotliCompress();
+              break;
+          }
+
+          await new Promise<void>((resolve, reject) => {
+            encodingStream.on('data', (chunk) => {
+              response.write(
+                ('length' in chunk ? chunk.length : chunk.size).toString(16) +
+                  '\r\n'
+              );
+              response.write(chunk);
+              if (!response.write('\r\n')) {
+                encodingStream.pause();
+
+                response.once('drain', () => encodingStream.resume());
+              }
+            });
+
+            encodingStream.on('error', reject);
+
+            encodingStream.on('end', () => {
+              writeText('0\r\n\r\n');
+              response.locals.debug('Response stream finished.');
+            });
+
+            encodingStream.on('close', resolve);
+
+            if (stream.errored) {
+              reject(stream.errored);
+            } else {
+              stream.pipe(encodingStream);
+              stream.on('error', (err) => {
+                if (!encodingStream.destroyed) {
+                  encodingStream.destroy(err);
+                }
+              });
+              encodingStream.on('error', (err) => {
+                if (!stream.destroyed) {
+                  stream.destroy(err);
+                }
+              });
+            }
+          });
+        }
+      }
     }
+
+    response.end();
 
     await this.runPlugins(
       request,

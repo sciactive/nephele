@@ -129,7 +129,10 @@ export class PROPFIND extends Method {
     response.locals.debug(`Requested depth: ${depth}`);
 
     let level = 0;
-    const addResourceProps = async (resource: Resource) => {
+    const addResourceProps = async (
+      resource: Resource,
+      skipRootCheck = false
+    ) => {
       const url = await resource.getCanonicalUrl();
       response.locals.debug(
         `Retrieving props for ${await resource.getCanonicalPath()}`
@@ -138,10 +141,14 @@ export class PROPFIND extends Method {
       try {
         // If the resource is the root of another adapter, we need its copy of the
         // resource in order to continue getting props.
-        if (await this.isAdapterRoot(request, response, url)) {
+        if (
+          !skipRootCheck &&
+          (await this.isAdapterRoot(request, response, url))
+        ) {
           const absoluteUrl = new URL(
             url.toString().replace(/\/?$/, () => '/')
           );
+          // TODO: run plugins on adapters returned by getAdapter
           const adapter = await this.getAdapter(
             response,
             decodeURI(absoluteUrl.pathname.substring(request.baseUrl.length))
@@ -343,7 +350,7 @@ export class PROPFIND extends Method {
         level--;
       }
     };
-    await addResourceProps(resource);
+    await addResourceProps(resource, true);
 
     const responseXml = await this.renderXml(multiStatus.render(), prefixes);
     response.status(207); // Multi-Status

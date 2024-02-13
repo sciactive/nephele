@@ -1,7 +1,7 @@
 /**
  * This file requires the --experimental-specifier-resolution=node option.
  *
- * env NODE_OPTIONS='--experimental-specifier-resolution=node' npx ts-node --esm testserver.ts testroot
+ * env NODE_OPTIONS='--experimental-specifier-resolution=node' npx tsx testserver.ts testroot
  */
 import { hostname } from 'node:os';
 import { dirname, resolve } from 'node:path';
@@ -22,6 +22,7 @@ import CustomAuthenticator, {
 import InsecureAuthenticator from './packages/authenticator-none/dist/index.js';
 import IndexPlugin from './packages/plugin-index/dist/index.js';
 import ReadOnlyPlugin from './packages/plugin-read-only/dist/index.js';
+import EncryptionPlugin from './packages/plugin-encryption/dist/index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -93,6 +94,12 @@ app.use(
       if (isReadonly) {
         plugins.push(new ReadOnlyPlugin());
       }
+
+      plugins.push(
+        new EncryptionPlugin({
+          exclude: ['**/.htaccess'],
+        })
+      );
 
       return plugins;
     },

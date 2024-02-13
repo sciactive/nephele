@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import {
+import type {
   Plugin as PluginInterface,
   AuthResponse,
   Method,
@@ -78,12 +78,7 @@ export default class Plugin implements PluginInterface {
     }
 
     if (this.serveIndexes) {
-      const indexFile = await this._getIndexFile(
-        request,
-        response,
-        method,
-        resource
-      );
+      const indexFile = await this._getIndexFile(response, resource);
 
       if (indexFile != null) {
         const originalUrl = request.url;
@@ -213,22 +208,12 @@ export default class Plugin implements PluginInterface {
     }
   }
 
-  async _getIndexFile(
-    request: Request,
-    response: AuthResponse,
-    method: Method,
-    resource: Resource
-  ) {
+  async _getIndexFile(response: AuthResponse, resource: Resource) {
     const url = await resource.getCanonicalUrl();
     const indexHtmlUrl = new URL('index.html', url);
     const indexHtmUrl = new URL('index.htm', url);
 
-    const adapter = await method.getAdapter(
-      response,
-      decodeURI(
-        indexHtmlUrl.pathname.substring(request.baseUrl.length)
-      ).replace(/\/?$/, () => '/')
-    );
+    const adapter = resource.adapter;
 
     let indexResource: Resource | undefined = undefined;
     try {

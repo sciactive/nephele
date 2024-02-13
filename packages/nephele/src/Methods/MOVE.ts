@@ -85,13 +85,20 @@ export class MOVE extends Method {
       throw new BadRequestError("Can't move a resource to its own ancestor.");
     }
 
-    const adapter = await this.getAdapter(
+    // Check that the adapter at the destination is the same as the adapter at
+    // the source. We don't want to check `response.locals.adapter`, because
+    // plugins can proxy the real adapter by replacing it.
+    const sourceAdapter = await this.getAdapter(
+      response,
+      decodeURI(request.path.substring(request.baseUrl.length))
+    );
+    const destAdapter = await this.getAdapter(
       response,
       decodeURI(destination.pathname.substring(request.baseUrl.length))
     );
 
     // Can't move to another adapter.
-    if (adapter !== response.locals.adapter) {
+    if (destAdapter !== sourceAdapter) {
       throw new ForbiddenError(
         'This resource cannot be moved to the destination.'
       );
@@ -121,13 +128,13 @@ export class MOVE extends Method {
     let destResource: Resource;
     let destExists = true;
     try {
-      destResource = await adapter.getResource(
+      destResource = await response.locals.adapter.getResource(
         destination,
         response.locals.baseUrl
       );
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
-        destResource = await adapter.newResource(
+        destResource = await response.locals.adapter.newResource(
           destination,
           response.locals.baseUrl
         );
@@ -163,7 +170,15 @@ export class MOVE extends Method {
     ) => {
       const run = catchErrors(
         async () => {
-          const adapter = await this.getAdapter(
+          const sourceAdapter = await this.getAdapter(
+            response,
+            decodeURI(
+              (
+                await resource.getCanonicalUrl()
+              ).pathname.substring(request.baseUrl.length)
+            )
+          );
+          const destAdapter = await this.getAdapter(
             response,
             decodeURI(
               destination.pathname.substring(request.baseUrl.length)
@@ -171,7 +186,7 @@ export class MOVE extends Method {
           );
 
           // Can't move to another adapter.
-          if (adapter !== response.locals.adapter) {
+          if (destAdapter !== sourceAdapter) {
             throw new ForbiddenError(
               'This resource cannot be moved to the destination.'
             );

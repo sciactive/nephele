@@ -18,10 +18,10 @@ export type AuthResponse<
   ResBody,
   {
     adapterConfig: AdapterConfig;
-    authenticatorConfig: AuthenticatorConfig;
-    pluginsConfig: PluginsConfig;
     adapter: Adapter;
+    authenticatorConfig: AuthenticatorConfig;
     authenticator: Authenticator;
+    pluginsConfig: PluginsConfig;
     plugins: Plugin[];
     baseUrl: URL;
     user: User;

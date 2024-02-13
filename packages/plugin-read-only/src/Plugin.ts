@@ -1,9 +1,6 @@
 import type { Request } from 'express';
-import {
-  Plugin as PluginInterface,
-  AuthResponse,
-  UnauthorizedError,
-} from 'nephele';
+import type { Plugin as PluginInterface, AuthResponse } from 'nephele';
+import { UnauthorizedError } from 'nephele';
 
 export type PluginConfig = {};
 

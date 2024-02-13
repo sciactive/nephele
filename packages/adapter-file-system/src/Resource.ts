@@ -141,6 +141,9 @@ export default class Resource implements ResourceInterface {
     const handle = await fsp.open(this.absolutePath, 'r');
 
     const stream = handle.createReadStream(range ? range : undefined);
+    stream.on('error', () => {
+      handle.close();
+    });
     stream.on('close', () => {
       handle.close();
     });
@@ -187,17 +190,36 @@ export default class Resource implements ResourceInterface {
 
     input.pipe(stream);
 
+    // Throttle throughput. Maybe add this as an option.
+
+    // input.on('data', (chunk) => {
+    //   if (!stream.write(chunk)) {
+    //     input.pause();
+    //     stream.once('drain', () => input.resume());
+    //   } else {
+    //     input.pause();
+    //     setTimeout(() => input.resume(), 50);
+    //   }
+    // });
+
+    // input.on('end', () => {
+    //   stream.close();
+    // });
+
     return new Promise<void>((resolve, reject) => {
-      stream.on('close', async () => {
+      stream.on('close', () => {
+        handle.close();
         resolve();
       });
 
       stream.on('error', (err) => {
+        input.destroy(err);
         handle.close();
         reject(err);
       });
 
       input.on('error', (err) => {
+        stream.destroy(err);
         handle.close();
         reject(err);
       });
@@ -585,7 +607,6 @@ export default class Resource implements ResourceInterface {
         // Ignore errors deleting a possibly non-existent file.
       }
     } catch (e: any) {
-      console.log(e);
       // Ignore errors while moving metadata files.
     }
 

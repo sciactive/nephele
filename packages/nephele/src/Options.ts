@@ -211,19 +211,19 @@ export function getAuthenticator(
 export function getPlugins(
   unencodedPath: string,
   config: PluginsConfig
-): Plugins {
+): { plugins: Plugins; baseUrl: string } {
   if (Array.isArray(config)) {
-    return config as Plugins;
+    return { plugins: config as Plugins, baseUrl: '/' };
   } else if (config != null) {
     const keys = Object.keys(config).sort((a, b) => b.length - a.length);
     const key = keys.find((key) => (unencodedPath || '/').startsWith(key));
 
     if (!key) {
-      return [];
+      return { plugins: [], baseUrl: '/' };
+    } else {
+      return { plugins: config[key], baseUrl: key };
     }
-
-    return config[key];
   } else {
-    return [];
+    return { plugins: [], baseUrl: '/' };
   }
 }

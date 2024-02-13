@@ -104,22 +104,25 @@ export default function createServer(
     response: AuthResponse,
     next: NextFunction
   ) {
-    if (typeof plugins === 'function') {
-      const pluginArray = await plugins(request, response);
+    if (plugins == null) {
+      response.locals.pluginsConfig = plugins;
+      response.locals.plugins = [];
+    } else {
+      const pluginArray =
+        typeof plugins === 'function'
+          ? await plugins(request, response)
+          : plugins;
       response.locals.pluginsConfig = pluginArray;
-      response.locals.plugins = getPlugins(
+      const parsedPlugins = getPlugins(
         decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
         pluginArray
       );
-    } else if (plugins != null) {
-      response.locals.pluginsConfig = plugins;
-      response.locals.plugins = getPlugins(
-        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-        plugins
+      const baseUrl = new URL(
+        path.join(request.baseUrl || '/', parsedPlugins.baseUrl),
+        `${request.protocol}://${request.headers.host}`
       );
-    } else {
-      response.locals.pluginsConfig = plugins;
-      response.locals.plugins = [];
+      response.locals.plugins = parsedPlugins.plugins;
+      response.locals.plugins.forEach((plugin) => (plugin.baseUrl = baseUrl));
     }
     next();
   }
@@ -131,14 +134,21 @@ export default function createServer(
   app.use(
     async (request: Request, response: AuthResponse, next: NextFunction) => {
       let ended = false;
-      for (let plugin of response.locals.plugins) {
-        if ('prepare' in plugin && plugin.prepare) {
-          const result = await plugin.prepare(request, response);
-          if (result === false) {
-            ended = true;
+      await catchErrors(
+        async () => {
+          for (let plugin of response.locals.plugins) {
+            if ('prepare' in plugin && plugin.prepare) {
+              const result = await plugin.prepare(request, response);
+              if (result === false) {
+                ended = true;
+              }
+            }
           }
+        },
+        async (code, message, error) => {
+          await opts.errorHandler(code, message, request, response, error);
         }
-      }
+      )();
       if (!ended) {
         next();
       }
@@ -150,20 +160,15 @@ export default function createServer(
     response: AuthResponse,
     next: NextFunction
   ) {
-    if (typeof authenticator === 'function') {
-      const auth = await authenticator(request, response);
-      response.locals.authenticatorConfig = auth;
-      response.locals.authenticator = getAuthenticator(
-        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-        auth
-      );
-    } else {
-      response.locals.authenticatorConfig = authenticator;
-      response.locals.authenticator = getAuthenticator(
-        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-        authenticator
-      );
-    }
+    const auth =
+      typeof authenticator === 'function'
+        ? await authenticator(request, response)
+        : authenticator;
+    response.locals.authenticatorConfig = auth;
+    response.locals.authenticator = getAuthenticator(
+      decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
+      auth
+    );
     next();
   }
 
@@ -174,14 +179,21 @@ export default function createServer(
   app.use(
     async (request: Request, response: AuthResponse, next: NextFunction) => {
       let ended = false;
-      for (let plugin of response.locals.plugins) {
-        if ('beforeAuth' in plugin && plugin.beforeAuth) {
-          const result = await plugin.beforeAuth(request, response);
-          if (result === false) {
-            ended = true;
+      await catchErrors(
+        async () => {
+          for (let plugin of response.locals.plugins) {
+            if ('beforeAuth' in plugin && plugin.beforeAuth) {
+              const result = await plugin.beforeAuth(request, response);
+              if (result === false) {
+                ended = true;
+              }
+            }
           }
+        },
+        async (code, message, error) => {
+          await opts.errorHandler(code, message, request, response, error);
         }
-      }
+      )();
       if (!ended) {
         next();
       }
@@ -193,30 +205,20 @@ export default function createServer(
     response: AuthResponse,
     next: NextFunction
   ) {
-    if (typeof adapter === 'function') {
-      const adapt = await adapter(request, response);
-      response.locals.adapterConfig = adapt;
-      const parsedAdapter = getAdapter(
-        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-        adapt
-      );
-      response.locals.adapter = parsedAdapter.adapter;
-      response.locals.baseUrl = new URL(
-        path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
-        `${request.protocol}://${request.headers.host}`
-      );
-    } else {
-      response.locals.adapterConfig = adapter;
-      const parsedAdapter = getAdapter(
-        decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-        adapter
-      );
-      response.locals.adapter = parsedAdapter.adapter;
-      response.locals.baseUrl = new URL(
-        path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
-        `${request.protocol}://${request.headers.host}`
-      );
-    }
+    const adapt =
+      typeof adapter === 'function'
+        ? await adapter(request, response)
+        : adapter;
+    response.locals.adapterConfig = adapt;
+    const parsedAdapter = getAdapter(
+      decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
+      adapt
+    );
+    response.locals.adapter = parsedAdapter.adapter;
+    response.locals.baseUrl = new URL(
+      path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
+      `${request.protocol}://${request.headers.host}`
+    );
     next();
   }
 
@@ -271,14 +273,21 @@ export default function createServer(
   app.use(
     async (request: Request, response: AuthResponse, next: NextFunction) => {
       let ended = false;
-      for (let plugin of response.locals.plugins) {
-        if ('afterAuth' in plugin && plugin.afterAuth) {
-          const result = await plugin.afterAuth(request, response);
-          if (result === false) {
-            ended = true;
+      await catchErrors(
+        async () => {
+          for (let plugin of response.locals.plugins) {
+            if ('afterAuth' in plugin && plugin.afterAuth) {
+              const result = await plugin.afterAuth(request, response);
+              if (result === false) {
+                ended = true;
+              }
+            }
           }
+        },
+        async (code, message, error) => {
+          await opts.errorHandler(code, message, request, response, error);
         }
-      }
+      )();
       if (!ended) {
         next();
       }
@@ -350,14 +359,21 @@ export default function createServer(
   app.use(
     async (request: Request, response: AuthResponse, next: NextFunction) => {
       let ended = false;
-      for (let plugin of response.locals.plugins) {
-        if ('begin' in plugin && plugin.begin) {
-          const result = await plugin.begin(request, response);
-          if (result === false) {
-            ended = true;
+      await catchErrors(
+        async () => {
+          for (let plugin of response.locals.plugins) {
+            if ('begin' in plugin && plugin.begin) {
+              const result = await plugin.begin(request, response);
+              if (result === false) {
+                ended = true;
+              }
+            }
           }
+        },
+        async (code, message, error) => {
+          await opts.errorHandler(code, message, request, response, error);
         }
-      }
+      )();
       if (!ended) {
         next();
       }
@@ -368,11 +384,18 @@ export default function createServer(
   app.use(
     async (request: Request, response: AuthResponse, next: NextFunction) => {
       response.on('close', async () => {
-        for (let plugin of response.locals.plugins) {
-          if ('close' in plugin && plugin.close) {
-            await plugin.close(request, response);
+        await catchErrors(
+          async () => {
+            for (let plugin of response.locals.plugins) {
+              if ('close' in plugin && plugin.close) {
+                await plugin.close(request, response);
+              }
+            }
+          },
+          async (code, message, error) => {
+            await opts.errorHandler(code, message, request, response, error);
           }
-        }
+        )();
       });
       next();
     }

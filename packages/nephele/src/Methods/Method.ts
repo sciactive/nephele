@@ -10,7 +10,7 @@ import vary from 'vary';
 import type {
   AuthResponse,
   Lock,
-  Plugin,
+  PluginEvent,
   Resource,
   User,
 } from '../Interfaces/index.js';
@@ -88,7 +88,7 @@ export class Method {
   async runPlugins(
     request: Request,
     response: AuthResponse,
-    event: keyof Plugin,
+    event: PluginEvent,
     data: any = {}
   ) {
     let ended = false;

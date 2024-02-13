@@ -42,7 +42,7 @@
     "lint-staged": "^14.0.1",
     "prettier": "^2.8.8",
     "prettier-plugin-svelte": "^2.10.1",
-    "ts-node": "^10.9.1",
+    "tsx": "^4.7.1",
     "typedoc": "^0.25.0",
     "userhomepath": "^1.0.6",
     "xml2js": "^0.6.2"

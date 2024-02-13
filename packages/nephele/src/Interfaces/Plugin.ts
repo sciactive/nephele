@@ -7,7 +7,14 @@ import { Properties } from './Properties.js';
 import { Resource } from './Resource.js';
 import { Lock } from './Lock.js';
 
+export type PluginEvent = Exclude<keyof Plugin, 'baseUrl'>;
+
 export interface Plugin {
+  /**
+   * The root of the plugin's namespace.
+   */
+  baseUrl?: URL;
+
   //
   // Request Lifecycle Related Events
   //

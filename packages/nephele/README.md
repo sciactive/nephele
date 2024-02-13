@@ -144,7 +144,7 @@ app.listen(port, () => {
 
 # Mounted Adapters, Authenticators, and Plugins
 
-You can mount adapters, authenticators, and plugins to different points in the namespace by providing an object whose keys are the mount points instead. There must always be an adapter and authenticator mounted at the "/" mount point.
+You can mount adapters, authenticators, and plugins to different points in the namespace by providing an object whose keys are the mount points instead. There must always be an adapter and authenticator mounted at the "/" mount point. Don't reuse plugin instances in multiple mount points; instead, instantiate the plugin each time it is mounted (because the plugin is provided the mount point as its base URL).
 
 ```js
 import express from 'express';
@@ -155,6 +155,8 @@ import AnotherAdapter from '@nephele/adapter-another';
 import InsecureAuthenticator from '@nephele/authenticator-none';
 import ExampleAuthenticator from '@nephele/authenticator-example';
 import AnotherAuthenticator from '@nephele/authenticator-another';
+import ExamplePlugin from '@nephele/plugin-example';
+import AnotherPlugin from '@nephele/plugin-another';
 
 const app = express();
 const port = 8080;
@@ -203,6 +205,11 @@ app.use(
       '/': new InsecureAuthenticator(),
       '/Some Directory/': new ExampleAuthenticator(),
       '/Another Directory/': new AnotherAuthenticator(),
+    },
+
+    plugins: {
+      '/Some Directory/': [new ExamplePlugin()],
+      '/Another Directory/': [new AnotherPlugin()],
     },
   })
 );
