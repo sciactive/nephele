@@ -97,7 +97,10 @@ app.use(
 
       plugins.push(
         new EncryptionPlugin({
-          exclude: ['**/.htaccess'],
+          salt: '5de338e9a6c8465591821c4f5e1c5acf',
+          filenameSalt: '3ac159a27a3342c0bb106affac46812f',
+          filenameIVSalt: '7f3bf86e561d46bcbba06702eb0d7718',
+          exclude: ['/.htpasswd'],
         })
       );
 

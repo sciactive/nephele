@@ -1,4 +1,5 @@
 import type { Properties, User } from 'nephele';
+import { PropertyIsProtectedError } from 'nephele';
 
 import type Plugin from './Plugin.js';
 import type { EncryptionProxyResource } from './EncryptionProxyResource.js';
@@ -22,13 +23,20 @@ export class EncryptionProxyProperties implements Properties {
     let prop = await this.targetProperties.get(name);
 
     if (await this.resource.shouldEncrypt()) {
-      if (name === 'getcontentlength') {
+      if (
+        name === 'getcontentlength' &&
+        !(await this.resource.isCollection())
+      ) {
         let padding = await this.targetProperties.get(
           'nephele-encryption-padding-bytes'
         );
         if (typeof prop === 'string' && typeof padding === 'string') {
           prop = `${parseFloat(prop) - parseFloat(padding)}`;
         }
+      }
+
+      if (name === 'getcontenttype') {
+        return (await this.resource.getMediaType()) ?? undefined;
       }
 
       if (name.startsWith('nephele-encryption-')) {
@@ -52,6 +60,10 @@ export class EncryptionProxyProperties implements Properties {
         }
       }
 
+      if (name === 'getcontenttype') {
+        return (await this.resource.getMediaType()) ?? undefined;
+      }
+
       if (name.startsWith('nephele-encryption-')) {
         return undefined;
       }
@@ -61,6 +73,10 @@ export class EncryptionProxyProperties implements Properties {
   }
 
   async set(name: string, value: string | Object | Object[] | undefined) {
+    if (name.startsWith('nephele-encryption-')) {
+      throw new PropertyIsProtectedError('That property is protected.');
+    }
+
     return await this.targetProperties.set(name, value);
   }
 
@@ -69,6 +85,10 @@ export class EncryptionProxyProperties implements Properties {
     value: string | Object | Object[] | undefined,
     user: User
   ) {
+    if (name.startsWith('nephele-encryption-')) {
+      throw new PropertyIsProtectedError('That property is protected.');
+    }
+
     return await this.targetProperties.setByUser(name, value, user);
   }
 
@@ -81,6 +101,20 @@ export class EncryptionProxyProperties implements Properties {
   }
 
   async runInstructions(instructions: ['set' | 'remove', string, any][]) {
+    const encryptionInstructions = instructions.filter((instruction) =>
+      instruction[1].startsWith('nephele-encryption-')
+    );
+
+    if (encryptionInstructions.length) {
+      return encryptionInstructions.map(
+        (instruction) =>
+          [
+            instruction[1],
+            new PropertyIsProtectedError('That property is protected.'),
+          ] as [string, Error]
+      );
+    }
+
     return await this.targetProperties.runInstructions(instructions);
   }
 
@@ -88,6 +122,20 @@ export class EncryptionProxyProperties implements Properties {
     instructions: ['set' | 'remove', string, any][],
     user: User
   ) {
+    const encryptionInstructions = instructions.filter((instruction) =>
+      instruction[1].startsWith('nephele-encryption-')
+    );
+
+    if (encryptionInstructions.length) {
+      return encryptionInstructions.map(
+        (instruction) =>
+          [
+            instruction[1],
+            new PropertyIsProtectedError('That property is protected.'),
+          ] as [string, Error]
+      );
+    }
+
     return await this.targetProperties.runInstructionsByUser(
       instructions,
       user
@@ -105,6 +153,13 @@ export class EncryptionProxyProperties implements Properties {
           let size = props[name];
           if (typeof size === 'string' && typeof padding === 'string') {
             props[name] = `${parseFloat(size) - parseFloat(padding)}`;
+          }
+        }
+
+        if (name === 'getcontenttype') {
+          const mediaType = await this.resource.getMediaType();
+          if (mediaType != null) {
+            props[name] = mediaType;
           }
         }
 
@@ -128,6 +183,13 @@ export class EncryptionProxyProperties implements Properties {
           let size = props[name];
           if (typeof size === 'string' && typeof padding === 'string') {
             props[name] = `${parseFloat(size) - parseFloat(padding)}`;
+          }
+        }
+
+        if (name === 'getcontenttype') {
+          const mediaType = await this.resource.getMediaType();
+          if (mediaType != null) {
+            props[name] = mediaType;
           }
         }
 

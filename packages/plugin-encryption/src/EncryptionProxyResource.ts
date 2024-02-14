@@ -1,31 +1,38 @@
 import { Readable } from 'node:stream';
-import type { Adapter, Properties, Resource, User } from 'nephele';
+import { basename } from 'node:path';
+import type { Properties, Resource, User } from 'nephele';
 import { InternalServerError } from 'nephele';
-import { minimatch } from 'minimatch';
+import mime from 'mime';
 
 import type Plugin from './Plugin.js';
+import { EncryptionProxyAdapter } from './EncryptionProxyAdapter.js';
 import { EncryptionProxyProperties } from './EncryptionProxyProperties.js';
 import { BackPressureTransform } from './BackPressureTransform.js';
 
 export class EncryptionProxyResource implements Resource {
   plugin: Plugin;
-  adapter: Adapter;
+  adapter: EncryptionProxyAdapter;
   targetResource: Resource;
   baseUrl: URL;
-  key: Buffer;
+  keys: { content: Buffer; name: Buffer; nameIV: Buffer };
 
   constructor(
     plugin: Plugin,
-    adapter: Adapter,
+    adapter: EncryptionProxyAdapter,
     targetResource: Resource,
     baseUrl: URL,
-    key: Buffer
+    keys: { content: Buffer; name: Buffer; nameIV: Buffer }
   ) {
     this.plugin = plugin;
     this.adapter = adapter;
     this.targetResource = targetResource;
     this.baseUrl = baseUrl;
-    this.key = key;
+    this.keys = keys;
+  }
+
+  async shouldEncrypt() {
+    const path = await this.targetResource.getCanonicalPath();
+    return this.adapter.shouldEncryptPath(path);
   }
 
   async getLocks() {
@@ -89,7 +96,11 @@ export class EncryptionProxyResource implements Resource {
     // TODO: handle a range request that ends at the end of the file.
     // (need to request the padding at the end)
     const stream = await this.targetResource.getStream(range);
-    const cipher = await this.plugin.getDecryptedStream(stream, this.key, iv);
+    const cipher = await this.plugin.getDecryptedStream(
+      this.keys.content,
+      iv,
+      stream
+    );
 
     if (range) {
       // How many bytes we've discarded from the front of the encryption stream.
@@ -152,8 +163,8 @@ export class EncryptionProxyResource implements Resource {
 
     const properties = await this.targetResource.getProperties();
     const { stream, iv } = await this.plugin.getEncryptedStream(
+      this.keys.content,
       input,
-      this.key,
       async (paddingBytes: number) => {
         await properties.set('nephele-encryption-iv', iv);
         await properties.set(
@@ -175,17 +186,22 @@ export class EncryptionProxyResource implements Resource {
   }
 
   async copy(destination: URL, baseUrl: URL, user: User) {
-    return await this.targetResource.copy(destination, baseUrl, user);
+    return await this.targetResource.copy(
+      await this.adapter.encryptUrl(destination),
+      baseUrl,
+      user
+    );
   }
 
   async move(destination: URL, baseUrl: URL, user: User) {
-    return await this.targetResource.move(destination, baseUrl, user);
+    const destinationUrl = await this.adapter.encryptUrl(destination);
+    return await this.targetResource.move(destinationUrl, baseUrl, user);
   }
 
   async getLength() {
     const length = await this.targetResource.getLength();
 
-    if (!(await this.shouldEncrypt())) {
+    if (!(await this.shouldEncrypt()) || (await this.isCollection())) {
       return length;
     }
 
@@ -206,19 +222,46 @@ export class EncryptionProxyResource implements Resource {
   }
 
   async getMediaType() {
-    return await this.targetResource.getMediaType();
+    if (await this.isCollection()) {
+      return null;
+    }
+
+    const path = await this.getCanonicalPath();
+
+    const mediaType = mime.getType(basename(path));
+    if (!mediaType) {
+      return 'application/octet-stream';
+    } else if (Array.isArray(mediaType)) {
+      return typeof mediaType[0] === 'string'
+        ? mediaType[0]
+        : 'application/octet-stream';
+    } else if (typeof mediaType === 'string') {
+      return mediaType;
+    } else {
+      return 'application/octet-stream';
+    }
   }
 
   async getCanonicalName() {
-    return await this.targetResource.getCanonicalName();
+    const filename = await this.targetResource.getCanonicalName();
+    const path = await this.targetResource.getCanonicalPath();
+    return filename.startsWith('$NE$') && this.adapter.shouldEncryptPath(path)
+      ? await this.plugin.getDecryptedFilename(
+          this.keys.name,
+          this.keys.nameIV,
+          filename
+        )
+      : filename;
   }
 
   async getCanonicalPath() {
-    return await this.targetResource.getCanonicalPath();
+    const path = await this.targetResource.getCanonicalPath();
+    return await this.adapter.decryptPath(path);
   }
 
   async getCanonicalUrl() {
-    return await this.targetResource.getCanonicalUrl();
+    const url = await this.targetResource.getCanonicalUrl();
+    return await this.adapter.decryptUrl(url);
   }
 
   async isCollection() {
@@ -234,18 +277,8 @@ export class EncryptionProxyResource implements Resource {
           this.adapter,
           resource,
           this.baseUrl,
-          this.key
+          this.keys
         )
     );
-  }
-
-  async shouldEncrypt() {
-    const path = await this.getCanonicalPath();
-    for (let exclude of this.plugin.exclude) {
-      if (minimatch(path, exclude)) {
-        return false;
-      }
-    }
-    return true;
   }
 }

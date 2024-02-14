@@ -3,11 +3,16 @@ import {
   randomFill,
   createCipheriv,
   createDecipheriv,
+  createHash,
 } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import type { Request } from 'express';
 import type { Plugin as PluginInterface, AuthResponse } from 'nephele';
-import { ForbiddenError, UnauthorizedError } from 'nephele';
+import {
+  ForbiddenError,
+  UnauthorizedError,
+  InternalServerError,
+} from 'nephele';
 import basicAuth from 'basic-auth';
 
 import { EncryptionProxyAdapter } from './EncryptionProxyAdapter.js';
@@ -15,15 +20,27 @@ import { BackPressureTransform } from './BackPressureTransform.js';
 
 export type PluginConfig = {
   /**
-   * A list of glob patterns to exclude from the encryption/decryption process.
-   */
-  exclude?: string[];
-  /**
-   * The salt used with the passwords to generate encryption keys.
+   * The salt used to generate encryption keys.
    *
    * It should be a long random string. You can generate one with `npx uuid`.
    */
-  salt?: string;
+  salt: string;
+  /**
+   * The salt used to generate filename encryption keys.
+   *
+   * It should be different than the other salts.
+   */
+  filenameSalt: string;
+  /**
+   * The salt used to generate filename initialization vectors.
+   *
+   * It should be different than the other salts.
+   */
+  filenameIVSalt: string;
+  /**
+   * A list of glob patterns to exclude from the encryption/decryption process.
+   */
+  exclude?: string[];
 };
 
 /**
@@ -32,15 +49,19 @@ export type PluginConfig = {
  * This plugin encrypts filenames and file contents.
  */
 export default class Plugin implements PluginInterface {
+  baseUrl?: URL;
+  salt: string;
+  filenameSalt: string;
+  filenameIVSalt: string;
   exclude: string[] = [];
-  salt: string = '5de338e9a6c8465591821c4f5e1c5acf';
+  algorithm = 'aes-256-cbc';
 
-  constructor({ exclude, salt }: PluginConfig = {}) {
+  constructor({ salt, filenameSalt, filenameIVSalt, exclude }: PluginConfig) {
+    this.salt = salt;
+    this.filenameSalt = filenameSalt;
+    this.filenameIVSalt = filenameIVSalt;
     if (exclude != null) {
       this.exclude = exclude;
-    }
-    if (salt != null) {
-      this.salt = salt;
     }
   }
 
@@ -51,6 +72,13 @@ export default class Plugin implements PluginInterface {
     ) {
       return;
     }
+
+    if (!this.baseUrl) {
+      throw new InternalServerError(
+        'Encryption plugin was not provided baseUrl.'
+      );
+    }
+    const baseUrl = this.baseUrl;
 
     const authorization = request.get('Authorization');
 
@@ -69,33 +97,118 @@ export default class Plugin implements PluginInterface {
 
     const password = auth.pass.trim();
 
-    const key = await new Promise<Buffer>((resolve, reject) => {
-      scrypt(password, Buffer.from(this.salt), 32, (err, key) => {
-        if (err) {
-          reject(err);
-          return;
-        }
-        resolve(key);
-      });
-    });
+    // Generate a cryptographic hash of the password for the filename key
+    // generation. The filename key is much more likely to be broken than the
+    // content key, because of the reuse of the IV over and over. Therefore,
+    // it would be better to hash it even more.
+    const namePasswordHash = createHash('sha-224').update(password).digest();
+    // Do the same to that hash for the IV generation.
+    const nameIVHash = createHash('sha-224').update(namePasswordHash).digest();
+
+    const keys = {
+      // This key is used for file contents.
+      content: await new Promise<Buffer>((resolve, reject) => {
+        scrypt(password, Buffer.from(this.salt), 32, (err, key) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(key);
+        });
+      }),
+
+      // This key is used for filenames.
+      name: await new Promise<Buffer>((resolve, reject) => {
+        scrypt(
+          namePasswordHash,
+          Buffer.from(this.filenameSalt),
+          32,
+          (err, key) => {
+            if (err) {
+              reject(err);
+              return;
+            }
+            resolve(key);
+          }
+        );
+      }),
+
+      // This initialization vector is used for filenames.
+      nameIV: await new Promise<Buffer>((resolve, reject) => {
+        scrypt(nameIVHash, Buffer.from(this.filenameIVSalt), 16, (err, key) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(key);
+        });
+      }),
+    };
 
     const originalAdapter = response.locals.adapter;
     response.locals.adapter = new EncryptionProxyAdapter(
       this,
       originalAdapter,
-      key
+      keys,
+      baseUrl
     );
   }
 
-  // TODO: encrypt filenames
+  async getEncryptedFilename(
+    key: Buffer,
+    iv: Buffer,
+    filename: string
+  ): Promise<string> {
+    const cipher = createCipheriv(this.algorithm, key, iv);
+    cipher.setEncoding('base64url');
+
+    let output = '';
+    const promise = new Promise((resolve, reject) => {
+      cipher.on('error', reject);
+
+      cipher.on('data', (chunk) => (output += chunk));
+
+      cipher.on('end', resolve);
+    });
+
+    cipher.write(filename, 'utf8');
+    cipher.end();
+
+    await promise;
+
+    return '$NE$' + output;
+  }
+
+  async getDecryptedFilename(
+    key: Buffer,
+    iv: Buffer,
+    filename: string
+  ): Promise<string> {
+    const decipher = createDecipheriv(this.algorithm, key, iv);
+    decipher.setEncoding('utf8');
+
+    let output = '';
+    const promise = new Promise((resolve, reject) => {
+      decipher.on('error', reject);
+
+      decipher.on('data', (chunk) => (output += chunk));
+
+      decipher.on('end', resolve);
+    });
+
+    decipher.write(filename.replace(/^\$NE\$/, ''), 'base64url');
+    decipher.end();
+
+    await promise;
+
+    return output;
+  }
 
   async getEncryptedStream(
-    stream: Readable,
     key: Buffer,
+    stream: Readable,
     callback: (paddingBytes: number) => void
   ) {
-    const algorithm = 'aes-256-cbc';
-
     const iv = await new Promise<Uint8Array>((resolve, reject) => {
       randomFill(new Uint8Array(16), (err, iv) => {
         if (err) {
@@ -126,7 +239,7 @@ export default class Plugin implements PluginInterface {
       }
     });
 
-    const cipher = createCipheriv(algorithm, key, iv);
+    const cipher = createCipheriv(this.algorithm, key, iv);
 
     streamWithCounter.readable.pipe(cipher);
     streamWithCounter.readable.on('error', (err) => {
@@ -167,11 +280,9 @@ export default class Plugin implements PluginInterface {
     };
   }
 
-  async getDecryptedStream(stream: Readable, key: Buffer, iv: string) {
-    const algorithm = 'aes-256-cbc';
-
+  async getDecryptedStream(key: Buffer, iv: string, stream: Readable) {
     const decipher = createDecipheriv(
-      algorithm,
+      this.algorithm,
       key,
       new Uint8Array(Buffer.from(iv, 'base64'))
     );

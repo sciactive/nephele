@@ -229,7 +229,7 @@ export class Method {
     }
 
     const parentPath = decodeURI(path.dirname(url.pathname));
-    const { adapter: parentAdapter, baseUrl: parentBaseUrl } = getAdapter(
+    const { adapter: rawParentAdapter, baseUrl: parentBaseUrl } = getAdapter(
       parentPath.replace(/\/?$/, () => '/'),
       response.locals.adapterConfig
     );
@@ -243,6 +243,11 @@ export class Method {
       // If the new path is outside of the server's basepath, return undefined.
       return undefined;
     }
+
+    const parentAdapter =
+      parentBaseUrl === response.locals.baseUrl.pathname
+        ? response.locals.adapter
+        : rawParentAdapter;
 
     return await parentAdapter.getResource(
       new URL(newPath, `${request.protocol}://${request.headers.host}`),
