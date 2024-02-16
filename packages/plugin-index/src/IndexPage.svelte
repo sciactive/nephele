@@ -204,15 +204,14 @@
 
         function getCookie(cname) {
           let name = cname + '=';
-          let decodedCookie = decodeURIComponent(document.cookie);
-          let ca = decodedCookie.split(';');
+          let ca = document.cookie.split(';');
           for (let i = 0; i < ca.length; i++) {
             let c = ca[i];
             while (c.charAt(0) == ' ') {
               c = c.substring(1);
             }
             if (c.indexOf(name) == 0) {
-              return c.substring(name.length, c.length);
+              return decodeURIComponent(c.substring(name.length, c.length));
             }
           }
           return '';
@@ -272,10 +271,10 @@
 
           event.preventDefault();
 
-          document.cookie = `nephele-selected-path=${escape(
+          document.cookie = `nephele-selected-path=${encodeURIComponent(
             currentPath
           )}; path=/`;
-          document.cookie = `nephele-selected-file=${escape(
+          document.cookie = `nephele-selected-file=${encodeURIComponent(
             event.target.parentNode.dataset['name']
           )}; path=/`;
           checkCopyMoveCookie();
