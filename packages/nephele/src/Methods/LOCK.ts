@@ -367,13 +367,19 @@ export class LOCK extends Method {
       // If the resource is the root of another adapter, we need its copy of the
       // resource in order to continue looking for locks below.
       const resourceUrl = await resource.getCanonicalUrl();
-      if (await this.isAdapterRoot(request, response, resourceUrl)) {
+      if (
+        !firstLevel &&
+        (await this.isAdapterRoot(request, response, resourceUrl))
+      ) {
         const absoluteUrl = new URL(
           resourceUrl.toString().replace(/\/?$/, () => '/')
         );
         const adapter = await this.getAdapter(
+          request,
           response,
-          decodeURI(resourceUrl.pathname.substring(request.baseUrl.length))
+          decodeURIComponent(
+            resourceUrl.pathname.substring(request.baseUrl.length)
+          )
         );
         resource = await adapter.getResource(absoluteUrl, absoluteUrl);
       }
@@ -426,7 +432,7 @@ export class LOCK extends Method {
           const run = catchErrors(
             async () => {
               if (!multiStatus.statuses.length) {
-                await checkForPermissionAndLocksBelow(child);
+                await checkForPermissionAndLocksBelow(child, false);
               }
             },
             async (code, message, error) => {

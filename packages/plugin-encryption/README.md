@@ -94,6 +94,8 @@ This plugin requires a user password through [HTTP Basic authentication](https:/
 
 AES-256 is a well tested encryption standard that is used extensively in the industry. Many CPUs have dedicated hardware to handle AES encryption and decryption. Cipher Block Chaining mode allows AES-256 to act more like a stream cipher, and also allows Nephele to answer Range requests (non-sequential read access) even for encrypted files. This means, for example, your video streaming player will be able to start playing in the middle of a large video.
 
+If you copy a file through WebDAV, because of the way Nephele works, both files will have the same ciphertext, and thus a malicious actor could determine that they are the same file. If this is not acceptable, instead you should download the file, then reupload it.
+
 ## Filenames
 
 AES-256 in Cipher Block Chaining mode is also used, but with a different key than file contents and a constant initialization vector. Files and directories need to have a one to one mapping of ciphertext to plaintext to facilitate fast access. Otherwise, requesting a file might require scanning the entire directory tree to find it.

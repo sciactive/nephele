@@ -7,7 +7,7 @@ import {
 } from 'node:crypto';
 import type { Readable } from 'node:stream';
 import type { Request } from 'express';
-import type { Plugin as PluginInterface, AuthResponse } from 'nephele';
+import type { Plugin as PluginInterface, AuthResponse, Adapter } from 'nephele';
 import {
   ForbiddenError,
   UnauthorizedError,
@@ -65,7 +65,11 @@ export default class Plugin implements PluginInterface {
     }
   }
 
-  async begin(request: Request, response: AuthResponse) {
+  async prepareAdapter(
+    request: Request,
+    response: AuthResponse,
+    adapter: Adapter
+  ) {
     if (
       request.method === 'OPTIONS' &&
       request.path === response.locals.baseUrl.pathname
@@ -145,13 +149,7 @@ export default class Plugin implements PluginInterface {
       }),
     };
 
-    const originalAdapter = response.locals.adapter;
-    response.locals.adapter = new EncryptionProxyAdapter(
-      this,
-      originalAdapter,
-      keys,
-      baseUrl
-    );
+    return new EncryptionProxyAdapter(this, adapter, keys, baseUrl);
   }
 
   async getEncryptedFilename(

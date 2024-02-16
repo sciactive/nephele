@@ -83,13 +83,17 @@ export class COPY extends Method {
       throw new BadRequestError("Can't copy a resource to its own ancestor.");
     }
 
-    const adapter = await this.getAdapter(
-      response,
-      decodeURI(destination.pathname.substring(request.baseUrl.length))
-    );
-
-    // Can't copy to another adapter.
-    if (adapter !== response.locals.adapter) {
+    // Check that the adapter at the destination is the same as the adapter at
+    // the source. Can't copy to another adapter.
+    if (
+      !(await this.pathsHaveSameAdapter(
+        response,
+        decodeURIComponent(request.path),
+        decodeURIComponent(
+          destination.pathname.substring(request.baseUrl.length)
+        )
+      ))
+    ) {
       throw new ForbiddenError(
         'This resource cannot be copied to the destination.'
       );
@@ -129,13 +133,13 @@ export class COPY extends Method {
     let destResource: Resource;
     let destExists = true;
     try {
-      destResource = await adapter.getResource(
+      destResource = await response.locals.adapter.getResource(
         destination,
         response.locals.baseUrl
       );
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
-        destResource = await adapter.newResource(
+        destResource = await response.locals.adapter.newResource(
           destination,
           response.locals.baseUrl
         );
@@ -172,15 +176,20 @@ export class COPY extends Method {
     ) => {
       const run = catchErrors(
         async () => {
-          const adapter = await this.getAdapter(
-            response,
-            decodeURI(
-              destination.pathname.substring(request.baseUrl.length)
-            ).replace(/\/?$/, () => '/')
-          );
-
           // Can't copy to another adapter.
-          if (adapter !== response.locals.adapter) {
+          if (
+            !(await this.pathsHaveSameAdapter(
+              response,
+              decodeURIComponent(
+                (
+                  await resource.getCanonicalUrl()
+                ).pathname.substring(request.baseUrl.length)
+              ),
+              decodeURIComponent(
+                destination.pathname.substring(request.baseUrl.length)
+              ).replace(/\/?$/, () => '/')
+            ))
+          ) {
             throw new ForbiddenError(
               'This resource cannot be copied to the destination.'
             );

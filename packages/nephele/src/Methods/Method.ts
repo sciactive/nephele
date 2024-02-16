@@ -25,7 +25,7 @@ import {
   UnauthorizedError,
 } from '../Errors/index.js';
 import type { Options } from '../Options.js';
-import { getAdapter } from '../Options.js';
+import { getAdapter, _getAdapter } from '../Options.js';
 
 // The following regexes are used in parsing the If header.
 
@@ -152,20 +152,36 @@ export class Method {
     });
   }
 
-  async getAdapter(response: AuthResponse, unencodedPath: string) {
-    const { adapter } = getAdapter(
+  async getAdapter(
+    request: Request,
+    response: AuthResponse,
+    unencodedPath: string
+  ) {
+    const { adapter } = await getAdapter(
       unencodedPath.replace(/\/?$/, () => '/'),
-      response.locals.adapterConfig
+      response.locals.adapterConfig,
+      { request, response }
     );
     return adapter;
   }
 
   async getAdapterBaseUrl(response: AuthResponse, unencodedPath: string) {
-    const { baseUrl } = getAdapter(
+    const { baseUrl } = _getAdapter(
       unencodedPath.replace(/\/?$/, () => '/'),
       response.locals.adapterConfig
     );
     return baseUrl;
+  }
+
+  async pathsHaveSameAdapter(
+    response: AuthResponse,
+    unencodedPathA: string,
+    unencodedPathB: string
+  ) {
+    return (
+      (await this.getAdapterBaseUrl(response, unencodedPathA)) ===
+      (await this.getAdapterBaseUrl(response, unencodedPathB))
+    );
   }
 
   /**
@@ -179,30 +195,25 @@ export class Method {
       return true;
     }
 
-    const absoluteResource = await response.locals.adapter.getResource(
-      new URL(url.toString().replace(/\/?$/, () => '/')),
-      response.locals.baseUrl
-    );
-
-    const resourceAdapter = await this.getAdapter(
-      response,
-      decodeURI(
-        (
-          await absoluteResource.getCanonicalUrl()
-        ).pathname.substring(request.baseUrl.length)
-      )
-    );
-
-    const parentAdapter = await this.getAdapter(
-      response,
-      decodeURI(
-        path.dirname(
-          (
-            await absoluteResource.getCanonicalUrl()
-          ).pathname.substring(request.baseUrl.length)
+    const resourceAdapter = _getAdapter(
+      decodeURIComponent(
+        new URL(url.toString().replace(/\/?$/, () => '/')).pathname.substring(
+          request.baseUrl.length
         )
-      )
-    );
+      ),
+      response.locals.adapterConfig
+    ).adapter;
+
+    const parentAdapter = _getAdapter(
+      decodeURIComponent(
+        path.dirname(
+          new URL(url.toString().replace(/\/?$/, () => '/')).pathname.substring(
+            request.baseUrl.length
+          )
+        )
+      ),
+      response.locals.adapterConfig
+    ).adapter;
 
     return resourceAdapter !== parentAdapter;
   }
@@ -228,11 +239,13 @@ export class Method {
       return undefined;
     }
 
-    const parentPath = decodeURI(path.dirname(url.pathname));
-    const { adapter: rawParentAdapter, baseUrl: parentBaseUrl } = getAdapter(
-      parentPath.replace(/\/?$/, () => '/'),
-      response.locals.adapterConfig
-    );
+    const parentPath = decodeURIComponent(path.dirname(url.pathname));
+    const { adapter: rawParentAdapter, baseUrl: parentBaseUrl } =
+      await getAdapter(
+        parentPath.replace(/\/?$/, () => '/'),
+        response.locals.adapterConfig,
+        { request, response }
+      );
     const splitPath = url.pathname.replace(/\/?$/, '').split('/');
     const newPath = splitPath
       .slice(0, -1)
@@ -632,10 +645,15 @@ export class Method {
       if (needEtag || needTokens) {
         try {
           await this.checkAuthorization(request, response, 'GET', url);
-          const { adapter, baseUrl } = getAdapter(
-            decodeURI(url.pathname).replace(/\/?$/, () => '/'),
-            response.locals.adapterConfig
+          const { adapter: newAdapter, baseUrl } = await getAdapter(
+            decodeURIComponent(url.pathname).replace(/\/?$/, () => '/'),
+            response.locals.adapterConfig,
+            { request, response }
           );
+          const adapter =
+            baseUrl === response.locals.baseUrl.pathname
+              ? response.locals.adapter
+              : newAdapter;
           const resource = await adapter.getResource(
             url,
             new URL(

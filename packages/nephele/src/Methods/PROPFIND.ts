@@ -148,10 +148,12 @@ export class PROPFIND extends Method {
           const absoluteUrl = new URL(
             url.toString().replace(/\/?$/, () => '/')
           );
-          // TODO: run plugins on adapters returned by getAdapter
           const adapter = await this.getAdapter(
+            request,
             response,
-            decodeURI(absoluteUrl.pathname.substring(request.baseUrl.length))
+            decodeURIComponent(
+              absoluteUrl.pathname.substring(request.baseUrl.length)
+            )
           );
           resource = await adapter.getResource(absoluteUrl, absoluteUrl);
         }

@@ -86,19 +86,16 @@ export class MOVE extends Method {
     }
 
     // Check that the adapter at the destination is the same as the adapter at
-    // the source. We don't want to check `response.locals.adapter`, because
-    // plugins can proxy the real adapter by replacing it.
-    const sourceAdapter = await this.getAdapter(
-      response,
-      decodeURI(request.path.substring(request.baseUrl.length))
-    );
-    const destAdapter = await this.getAdapter(
-      response,
-      decodeURI(destination.pathname.substring(request.baseUrl.length))
-    );
-
-    // Can't move to another adapter.
-    if (destAdapter !== sourceAdapter) {
+    // the source. Can't move to another adapter.
+    if (
+      !(await this.pathsHaveSameAdapter(
+        response,
+        decodeURIComponent(request.path),
+        decodeURIComponent(
+          destination.pathname.substring(request.baseUrl.length)
+        )
+      ))
+    ) {
       throw new ForbiddenError(
         'This resource cannot be moved to the destination.'
       );
@@ -170,23 +167,20 @@ export class MOVE extends Method {
     ) => {
       const run = catchErrors(
         async () => {
-          const sourceAdapter = await this.getAdapter(
-            response,
-            decodeURI(
-              (
-                await resource.getCanonicalUrl()
-              ).pathname.substring(request.baseUrl.length)
-            )
-          );
-          const destAdapter = await this.getAdapter(
-            response,
-            decodeURI(
-              destination.pathname.substring(request.baseUrl.length)
-            ).replace(/\/?$/, () => '/')
-          );
-
           // Can't move to another adapter.
-          if (destAdapter !== sourceAdapter) {
+          if (
+            !(await this.pathsHaveSameAdapter(
+              response,
+              decodeURIComponent(
+                (
+                  await resource.getCanonicalUrl()
+                ).pathname.substring(request.baseUrl.length)
+              ),
+              decodeURIComponent(
+                destination.pathname.substring(request.baseUrl.length)
+              ).replace(/\/?$/, () => '/')
+            ))
+          ) {
             throw new ForbiddenError(
               'This resource cannot be moved to the destination.'
             );

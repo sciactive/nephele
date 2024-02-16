@@ -1,3 +1,4 @@
+import path from 'node:path';
 import { Request } from 'express';
 
 import type { ResourceNotModifiedError } from './Errors/index.js';
@@ -168,7 +169,7 @@ export const defaults: Options = {
   },
 };
 
-export function getAdapter(
+export function _getAdapter(
   unencodedPath: string,
   config: AdapterConfig
 ): { adapter: Adapter; baseUrl: string } {
@@ -186,6 +187,51 @@ export function getAdapter(
 
     return { adapter: config[key], baseUrl: key };
   }
+}
+
+export async function getAdapter(
+  unencodedPath: string,
+  config: AdapterConfig,
+  environment: {
+    request: Request;
+    response: AuthResponse;
+    /**
+     * Don't provide plugins if the adapter is not the one for the actual
+     * request. They will be found for you.
+     */
+    plugins?: Plugins;
+  }
+): Promise<{ adapter: Adapter; baseUrl: string }> {
+  let adapter = _getAdapter(unencodedPath, config);
+  let plugins = environment.plugins;
+
+  if (plugins == null) {
+    const parsedPlugins = getPlugins(
+      unencodedPath,
+      environment.response.locals.pluginsConfig
+    );
+    plugins = parsedPlugins.plugins;
+    const baseUrl = new URL(
+      path.join(environment.request.baseUrl || '/', parsedPlugins.baseUrl),
+      `${environment.request.protocol}://${environment.request.headers.host}`
+    );
+    plugins.forEach((plugin) => (plugin.baseUrl = baseUrl));
+  }
+
+  for (let plugin of plugins) {
+    if ('prepareAdapter' in plugin && plugin.prepareAdapter) {
+      const result = await plugin.prepareAdapter(
+        environment.request,
+        environment.response,
+        adapter.adapter
+      );
+      if (result != null) {
+        adapter.adapter = result;
+      }
+    }
+  }
+
+  return adapter;
 }
 
 export function getAuthenticator(

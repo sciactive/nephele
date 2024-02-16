@@ -3,9 +3,10 @@ import type { Request } from 'express';
 import type { Method } from '../Methods/Method.js';
 
 import type { AuthResponse } from './Authenticator.js';
-import { Properties } from './Properties.js';
-import { Resource } from './Resource.js';
-import { Lock } from './Lock.js';
+import type { Adapter } from './Adapter.js';
+import type { Properties } from './Properties.js';
+import type { Resource } from './Resource.js';
+import type { Lock } from './Lock.js';
 
 export type PluginEvent = Exclude<keyof Plugin, 'baseUrl'>;
 
@@ -14,6 +15,29 @@ export interface Plugin {
    * The root of the plugin's namespace.
    */
   baseUrl?: URL;
+
+  //
+  // Adapter Overriding
+  //
+
+  /**
+   * Run after an adapter has been retrieved.
+   *
+   * This callback can replace the adapter by returning a new one, but it should
+   * not modify `response.locals`, since the adapter it's given might just be
+   * loaded to check something.
+   *
+   * If you need to make changes to response.locals, you should do that in
+   * one of the lifecycle events, which are only run for the original request.
+   *
+   * You shouldn't _modify_ the adapter, but instead return a new adapter that
+   * proxies calls to the original.
+   */
+  prepareAdapter?: (
+    request: Request,
+    response: AuthResponse,
+    adapter: Adapter
+  ) => Promise<Adapter | undefined>;
 
   //
   // Request Lifecycle Related Events

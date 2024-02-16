@@ -210,9 +210,14 @@ export default function createServer(
         ? await adapter(request, response)
         : adapter;
     response.locals.adapterConfig = adapt;
-    const parsedAdapter = getAdapter(
+    const parsedAdapter = await getAdapter(
       decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-      adapt
+      adapt,
+      {
+        request,
+        response,
+        plugins: response.locals.plugins,
+      }
     );
     response.locals.adapter = parsedAdapter.adapter;
     response.locals.baseUrl = new URL(
