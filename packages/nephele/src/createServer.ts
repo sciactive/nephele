@@ -147,6 +147,7 @@ export default function createServer(
         },
         async (code, message, error) => {
           await opts.errorHandler(code, message, request, response, error);
+          ended = true;
         }
       )();
       if (!ended) {
@@ -192,6 +193,7 @@ export default function createServer(
         },
         async (code, message, error) => {
           await opts.errorHandler(code, message, request, response, error);
+          ended = true;
         }
       )();
       if (!ended) {
@@ -291,6 +293,7 @@ export default function createServer(
         },
         async (code, message, error) => {
           await opts.errorHandler(code, message, request, response, error);
+          ended = true;
         }
       )();
       if (!ended) {
@@ -377,6 +380,7 @@ export default function createServer(
         },
         async (code, message, error) => {
           await opts.errorHandler(code, message, request, response, error);
+          ended = true;
         }
       )();
       if (!ended) {
