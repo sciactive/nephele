@@ -104,7 +104,17 @@ This does have the drawback that two files with the same plaintext name will hav
 
 Since AES-256 is a block cipher, this does have the benefit that a malicious actor would not be able to tell how long the plaintext filename is only knowing the ciphertext filename. If a ciphertext filename is `n` bytes long, the plaintext filename could be any length between `n - 15` and `n` bytes.
 
-One last note is that filename ciphertext is encoded in [Base64](https://en.wikipedia.org/wiki/Base64) and prepended with the text "$NE$" (so that this plugin can tell what names have been encrypted) before being passed to the storage backend. This causes a filename length overhead of roughly 33%-37%. There is additional overhead from the padding to bring the text up to a whole number of blocks for the cipher. Therefore, if your storage backend has a [maximum filename length](https://en.wikipedia.org/wiki/Comparison_of_file_systems#Limits), it will be reduced by this overhead amount when going through Nephele with this plugin.
+One last note is that filename ciphertext is encoded in a modified [Ascii85](https://en.wikipedia.org/wiki/Ascii85) and prepended with the text "$E$" (so that this plugin can tell what names have been encrypted) before being passed to the storage backend. This causes a filename length overhead of roughly 25%. There is additional overhead from the padding to bring the text up to a whole number of blocks for the cipher. Therefore, if your storage backend has a [maximum filename length](https://en.wikipedia.org/wiki/Comparison_of_file_systems#Limits), it will be reduced by this overhead amount when going through Nephele with this plugin.
+
+### Filename Characters
+
+The filenames this plugin generates include the following characters:
+
+```
+0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ¡-;+=^!_¿'&`~()[]{}@%$#
+```
+
+These should work on any filesystem.
 
 # License
 

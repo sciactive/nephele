@@ -47,6 +47,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "base85": "^3.1.0",
     "basic-auth": "^2.0.1",
     "mime": "^4.0.1",
     "minimatch": "^9.0.3",

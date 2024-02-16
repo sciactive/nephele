@@ -14,9 +14,30 @@ import {
   InternalServerError,
 } from 'nephele';
 import basicAuth from 'basic-auth';
+import base85 from 'base85';
 
 import { EncryptionProxyAdapter } from './EncryptionProxyAdapter.js';
 import { BackPressureTransform } from './BackPressureTransform.js';
+
+function escapeRegExp(input: string) {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function makeRegex(find: string) {
+  return new RegExp(escapeRegExp(find), 'g');
+}
+
+const FILENAME_CONVERSIONS: [string, string, RegExp, RegExp][] = [
+  ['/', '_'],
+  ['<', '`'],
+  ['>', '~'],
+  [':', ';'],
+  ['?', "'"],
+  ['*', '¿'],
+  ['.', '¡'],
+].map(([from, to]) => [from, to, makeRegex(from), makeRegex(to)]);
+
+// 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ¡-;+=^!_¿'&`~()[]{}@%$#
 
 export type PluginConfig = {
   /**
@@ -67,29 +88,18 @@ export default class Plugin implements PluginInterface {
 
   async prepareAdapter(
     request: Request,
-    response: AuthResponse,
+    _response: AuthResponse,
     adapter: Adapter
   ) {
-    if (
-      request.method === 'OPTIONS' &&
-      request.path === response.locals.baseUrl.pathname
-    ) {
-      return;
-    }
-
     if (!this.baseUrl) {
-      throw new InternalServerError(
-        'Encryption plugin was not provided baseUrl.'
-      );
+      return;
     }
     const baseUrl = this.baseUrl;
 
     const authorization = request.get('Authorization');
 
     if (!authorization) {
-      throw new ForbiddenError(
-        "You don't have permission to access this resource."
-      );
+      return;
     }
 
     const auth = basicAuth.parse(authorization);
@@ -152,19 +162,57 @@ export default class Plugin implements PluginInterface {
     return new EncryptionProxyAdapter(this, adapter, keys, baseUrl);
   }
 
+  async begin(request: Request, response: AuthResponse) {
+    if (
+      request.method === 'OPTIONS' &&
+      request.path === response.locals.baseUrl.pathname
+    ) {
+      return;
+    }
+
+    if (!this.baseUrl) {
+      throw new InternalServerError(
+        'Encryption plugin was not provided baseUrl.'
+      );
+    }
+
+    const authorization = request.get('Authorization');
+
+    if (!authorization) {
+      throw new ForbiddenError(
+        "You don't have permission to access this resource."
+      );
+    }
+  }
+
+  escapeFilename(filename: Buffer) {
+    let result = base85.encode(filename);
+    for (let [_from, to, from] of FILENAME_CONVERSIONS) {
+      result = result.replace(from, to);
+    }
+    return result;
+  }
+
+  unescapeFilename(filename: string) {
+    let result = filename;
+    for (let [from, _to, _from, to] of FILENAME_CONVERSIONS) {
+      result = result.replace(to, from);
+    }
+    return base85.decode(result) as Buffer;
+  }
+
   async getEncryptedFilename(
     key: Buffer,
     iv: Buffer,
     filename: string
   ): Promise<string> {
     const cipher = createCipheriv(this.algorithm, key, iv);
-    cipher.setEncoding('base64url');
 
-    let output = '';
+    let output = Buffer.from([]);
     const promise = new Promise((resolve, reject) => {
       cipher.on('error', reject);
 
-      cipher.on('data', (chunk) => (output += chunk));
+      cipher.on('data', (chunk) => (output = Buffer.concat([output, chunk])));
 
       cipher.on('end', resolve);
     });
@@ -174,7 +222,7 @@ export default class Plugin implements PluginInterface {
 
     await promise;
 
-    return '$NE$' + output;
+    return '$E$' + this.escapeFilename(output);
   }
 
   async getDecryptedFilename(
@@ -183,23 +231,22 @@ export default class Plugin implements PluginInterface {
     filename: string
   ): Promise<string> {
     const decipher = createDecipheriv(this.algorithm, key, iv);
-    decipher.setEncoding('utf8');
 
-    let output = '';
+    let output = Buffer.from([]);
     const promise = new Promise((resolve, reject) => {
       decipher.on('error', reject);
 
-      decipher.on('data', (chunk) => (output += chunk));
+      decipher.on('data', (chunk) => (output = Buffer.concat([output, chunk])));
 
       decipher.on('end', resolve);
     });
 
-    decipher.write(filename.replace(/^\$NE\$/, ''), 'base64url');
+    decipher.write(this.unescapeFilename(filename.replace(/^\$E\$/, '')));
     decipher.end();
 
     await promise;
 
-    return output;
+    return output.toString('utf8');
   }
 
   async getEncryptedStream(
