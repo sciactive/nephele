@@ -27,17 +27,15 @@ function makeRegex(find: string) {
   return new RegExp(escapeRegExp(find), 'g');
 }
 
-const FILENAME_CONVERSIONS: [string, string, RegExp, RegExp][] = [
+const Z85_CONVERSIONS: [string, string, RegExp, RegExp][] = [
   ['/', '_'],
   ['<', '`'],
   ['>', '~'],
   [':', ';'],
   ['?', "'"],
-  ['*', '¿'],
-  ['.', '¡'],
+  ['*', '\xBF'],
+  ['.', '\xA1'],
 ].map(([from, to]) => [from, to, makeRegex(from), makeRegex(to)]);
-
-// 0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ¡-;+=^!_¿'&`~()[]{}@%$#
 
 export type PluginConfig = {
   /**
@@ -59,6 +57,43 @@ export type PluginConfig = {
    */
   filenameIVSalt: string;
   /**
+   * The encoding to use for filenames ('base64' or 'ascii85').
+   *
+   * Filenames are encrypted into a cyphertext, which is raw binary data. File
+   * systems don't expect raw binary as file names though, so it needs to be
+   * encoded. This plugin offers two encodings, each suitable to different
+   * scenarios.
+   *
+   * Base64, actually Base64URL, is suitable for all file systems and web-based
+   * storage backends (like Amazon S3, Azure Blob Store, etc). It incurs an
+   * overhead of roughly 35%.
+   *
+   * Ascii85, actually a modified version of Z85, is suitable for almost all
+   * file systems (ext4, NTFS, exFAT, Btrfs, etc). Unlike what the name implies,
+   * it does use Ascii characters above 127, so it is not suitable for file
+   * systems which expect only valid UTF-8 names. It is also not suitable for
+   * web-based storage backends. It incurs an overhead of roughly 25%, so you
+   * can use this if your adapter supports it to allow files with longer
+   * filenames to be uploaded.
+   */
+  filenameEncoding?: 'base64' | 'ascii85';
+  /**
+   * A password to use globally instead of user passwords.
+   *
+   * The reason you'd want to use this is if you trust the environment your
+   * Nephele server is running in, but you don't trust the environment your data
+   * backend is running in. For example, if you are running Nephele in a server
+   * in your home, but you are using Amazon S3 as your storage backend.
+   *
+   * If you use this option, it is no longer required that a user be logged in.
+   * Additionally, if a user changes their password, they can still access their
+   * files.
+   *
+   * You can set this to a long, random string, just like `salt`. You can
+   * generate one with `npx uuid`.
+   */
+  globalPassword?: string;
+  /**
    * A list of glob patterns to exclude from the encryption/decryption process.
    */
   exclude?: string[];
@@ -74,13 +109,28 @@ export default class Plugin implements PluginInterface {
   salt: string;
   filenameSalt: string;
   filenameIVSalt: string;
+  filenameEncoding: 'base64' | 'ascii85' = 'base64';
+  globalPassword?: string;
   exclude: string[] = [];
   algorithm = 'aes-256-cbc';
 
-  constructor({ salt, filenameSalt, filenameIVSalt, exclude }: PluginConfig) {
+  constructor({
+    salt,
+    filenameSalt,
+    filenameIVSalt,
+    filenameEncoding,
+    globalPassword,
+    exclude,
+  }: PluginConfig) {
     this.salt = salt;
     this.filenameSalt = filenameSalt;
     this.filenameIVSalt = filenameIVSalt;
+    if (filenameEncoding != null) {
+      this.filenameEncoding = filenameEncoding;
+    }
+    if (globalPassword != null) {
+      this.globalPassword = globalPassword;
+    }
     if (exclude != null) {
       this.exclude = exclude;
     }
@@ -96,20 +146,26 @@ export default class Plugin implements PluginInterface {
     }
     const baseUrl = this.baseUrl;
 
-    const authorization = request.get('Authorization');
+    let password: string;
 
-    if (!authorization) {
-      return;
+    if (this.globalPassword == null) {
+      const authorization = request.get('Authorization');
+
+      if (!authorization) {
+        return;
+      }
+
+      const auth = basicAuth.parse(authorization);
+      if (!auth || auth.pass.trim() === '') {
+        throw new UnauthorizedError(
+          'Authentication is required to use this server.'
+        );
+      }
+
+      password = auth.pass.trim();
+    } else {
+      password = this.globalPassword;
     }
-
-    const auth = basicAuth.parse(authorization);
-    if (!auth || auth.pass.trim() === '') {
-      throw new UnauthorizedError(
-        'Authentication is required to use this server.'
-      );
-    }
-
-    const password = auth.pass.trim();
 
     // Generate a cryptographic hash of the password for the filename key
     // generation. The filename key is much more likely to be broken than the
@@ -176,29 +232,39 @@ export default class Plugin implements PluginInterface {
       );
     }
 
-    const authorization = request.get('Authorization');
+    if (this.globalPassword == null) {
+      const authorization = request.get('Authorization');
 
-    if (!authorization) {
-      throw new ForbiddenError(
-        "You don't have permission to access this resource."
-      );
+      if (!authorization) {
+        throw new ForbiddenError(
+          "You don't have permission to access this resource."
+        );
+      }
     }
   }
 
   escapeFilename(filename: Buffer) {
-    let result = base85.encode(filename);
-    for (let [_from, to, from] of FILENAME_CONVERSIONS) {
-      result = result.replace(from, to);
+    if (this.filenameEncoding === 'ascii85') {
+      let result = base85.encode(filename);
+      for (let [_from, to, from] of Z85_CONVERSIONS) {
+        result = result.replace(from, to);
+      }
+      return result;
+    } else {
+      return filename.toString('base64url');
     }
-    return result;
   }
 
   unescapeFilename(filename: string) {
-    let result = filename;
-    for (let [from, _to, _from, to] of FILENAME_CONVERSIONS) {
-      result = result.replace(to, from);
+    if (this.filenameEncoding === 'ascii85') {
+      let result = filename;
+      for (let [from, _to, _from, to] of Z85_CONVERSIONS) {
+        result = result.replace(to, from);
+      }
+      return base85.decode(result) as Buffer;
+    } else {
+      return Buffer.from(filename, 'base64url');
     }
-    return base85.decode(result) as Buffer;
   }
 
   async getEncryptedFilename(
@@ -222,7 +288,7 @@ export default class Plugin implements PluginInterface {
 
     await promise;
 
-    return '$E$' + this.escapeFilename(output);
+    return '_E_' + this.escapeFilename(output);
   }
 
   async getDecryptedFilename(
@@ -241,7 +307,7 @@ export default class Plugin implements PluginInterface {
       decipher.on('end', resolve);
     });
 
-    decipher.write(this.unescapeFilename(filename.replace(/^\$E\$/, '')));
+    decipher.write(this.unescapeFilename(filename.replace(/^_E_/, '')));
     decipher.end();
 
     await promise;

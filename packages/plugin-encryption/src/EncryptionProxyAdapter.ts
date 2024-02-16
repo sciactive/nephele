@@ -79,7 +79,7 @@ export class EncryptionProxyAdapter implements Adapter {
 
     for (let part of parts) {
       if (
-        part.startsWith('$E$') &&
+        part.startsWith('_E_') &&
         this.shouldEncryptPath(['', ...newparts, part].join('/'))
       ) {
         newparts.push(

@@ -40,6 +40,7 @@ const virtual = !!process.env.VIRTUALFS;
 const envuser = process.env.USERNAME || process.env.USER;
 const envpass = process.env.PASSWORD;
 const userpassdefined = !!(envuser && envpass);
+const encryption = process.env.ENCRYPTION;
 
 app.use(
   '/',
@@ -95,14 +96,17 @@ app.use(
         plugins.push(new ReadOnlyPlugin());
       }
 
-      plugins.push(
-        new EncryptionPlugin({
-          salt: '5de338e9a6c8465591821c4f5e1c5acf',
-          filenameSalt: '3ac159a27a3342c0bb106affac46812f',
-          filenameIVSalt: '7f3bf86e561d46bcbba06702eb0d7718',
-          exclude: ['/.htpasswd'],
-        })
-      );
+      if (encryption) {
+        plugins.push(
+          new EncryptionPlugin({
+            salt: '5de338e9a6c8465591821c4f5e1c5acf',
+            filenameSalt: '3ac159a27a3342c0bb106affac46812f',
+            filenameIVSalt: '7f3bf86e561d46bcbba06702eb0d7718',
+            exclude: ['/.htpasswd'],
+            ...(htpasswd || pam ? {} : { globalPassword: encryption }),
+          })
+        );
+      }
 
       return plugins;
     },

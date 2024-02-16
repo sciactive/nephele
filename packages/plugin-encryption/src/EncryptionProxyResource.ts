@@ -245,7 +245,7 @@ export class EncryptionProxyResource implements Resource {
   async getCanonicalName() {
     const filename = await this.targetResource.getCanonicalName();
     const path = await this.targetResource.getCanonicalPath();
-    return filename.startsWith('$E$') && this.adapter.shouldEncryptPath(path)
+    return filename.startsWith('_E_') && this.adapter.shouldEncryptPath(path)
       ? await this.plugin.getDecryptedFilename(
           this.keys.name,
           this.keys.nameIV,
