@@ -3,11 +3,11 @@ import { basename } from 'node:path';
 import type { Properties, Resource, User } from 'nephele';
 import { InternalServerError } from 'nephele';
 import mime from 'mime';
+import { BackPressureTransform } from '@sciactive/back-pressure-transform';
 
 import type Plugin from './Plugin.js';
 import { EncryptionProxyAdapter } from './EncryptionProxyAdapter.js';
 import { EncryptionProxyProperties } from './EncryptionProxyProperties.js';
-import { BackPressureTransform } from './BackPressureTransform.js';
 
 export class EncryptionProxyResource implements Resource {
   plugin: Plugin;

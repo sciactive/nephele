@@ -11,9 +11,9 @@ import type { Plugin as PluginInterface, AuthResponse, Adapter } from 'nephele';
 import { UnauthorizedError, InternalServerError } from 'nephele';
 import basicAuth from 'basic-auth';
 import base85 from 'base85';
+import { BackPressureTransform } from '@sciactive/back-pressure-transform';
 
 import { EncryptionProxyAdapter } from './EncryptionProxyAdapter.js';
-import { BackPressureTransform } from './BackPressureTransform.js';
 
 function escapeRegExp(input: string) {
   return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

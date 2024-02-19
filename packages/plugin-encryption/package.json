@@ -47,6 +47,7 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
+    "@sciactive/back-pressure-transform": "^0.0.1",
     "base85": "^3.1.0",
     "basic-auth": "^2.0.1",
     "mime": "^4.0.1",
