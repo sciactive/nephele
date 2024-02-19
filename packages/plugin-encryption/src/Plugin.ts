@@ -8,11 +8,7 @@ import {
 import type { Readable } from 'node:stream';
 import type { Request } from 'express';
 import type { Plugin as PluginInterface, AuthResponse, Adapter } from 'nephele';
-import {
-  ForbiddenError,
-  UnauthorizedError,
-  InternalServerError,
-} from 'nephele';
+import { UnauthorizedError, InternalServerError } from 'nephele';
 import basicAuth from 'basic-auth';
 import base85 from 'base85';
 
@@ -218,6 +214,12 @@ export default class Plugin implements PluginInterface {
     return new EncryptionProxyAdapter(this, adapter, keys, baseUrl);
   }
 
+  async beforeAuth(_request: Request, response: AuthResponse) {
+    if (response.locals.adapter instanceof EncryptionProxyAdapter) {
+      response.locals.adapter.encryption = false;
+    }
+  }
+
   async begin(request: Request, response: AuthResponse) {
     if (
       request.method === 'OPTIONS' &&
@@ -232,13 +234,15 @@ export default class Plugin implements PluginInterface {
       );
     }
 
-    if (this.globalPassword == null) {
-      const authorization = request.get('Authorization');
+    if (response.locals.adapter instanceof EncryptionProxyAdapter) {
+      if (this.globalPassword != null) {
+        response.locals.adapter.encryption = true;
+      } else {
+        const authorization = request.get('Authorization');
 
-      if (!authorization) {
-        throw new ForbiddenError(
-          "You don't have permission to access this resource."
-        );
+        if (authorization) {
+          response.locals.adapter.encryption = true;
+        }
       }
     }
   }

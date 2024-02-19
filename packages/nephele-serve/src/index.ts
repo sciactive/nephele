@@ -16,6 +16,7 @@ import CustomAuthenticator, {
 import HtpasswdAuthenticator from '@nephele/authenticator-htpasswd';
 import InsecureAuthenticator from '@nephele/authenticator-none';
 import IndexPlugin from '@nephele/plugin-index';
+import EncryptionPlugin from '@nephele/plugin-encryption';
 import updateNotifier from 'update-notifier';
 
 type Hosts = {
@@ -50,6 +51,13 @@ type Conf = {
   authUserFile?: string;
   authUsername?: string;
   authPassword?: string;
+  encryption: boolean;
+  encryptionSalt?: string;
+  encryptionFilenameSalt?: string;
+  encryptionFilenameIvSalt?: string;
+  encryptionFilenameEncoding?: 'base64' | 'ascii85';
+  encryptionGlobalPassword?: string;
+  encryptionExclude?: string;
   updateCheck: boolean;
   directory?: string;
 };
@@ -138,6 +146,31 @@ program
     '--auth-password <password>',
     'Authenticate with a given password instead.'
   )
+  .option('--encryption', 'Enable filename and file contents encryption.')
+  .option(
+    '--encryption-salt <salt>',
+    'The salt used to generate file content encryption keys.'
+  )
+  .option(
+    '--encryption-filename-salt <salt>',
+    'The salt used to generate filename encryption keys.'
+  )
+  .option(
+    '--encryption-filename-iv-salt <salt>',
+    'The salt used to generate filename initialization vectors.'
+  )
+  .option(
+    '--encryption-filename-encoding <encoding>',
+    "The encoding to use for filenames ('base64' or 'ascii85')."
+  )
+  .option(
+    '--encryption-global-password <password>',
+    'A password to use globally instead of user passwords.'
+  )
+  .option(
+    '--encryption-exclude <globlist>',
+    'A list of glob patterns to exclude from the encryption/decryption process.'
+  )
   .option('--no-update-check', "Don't check for updates.")
   .argument(
     '[directory]',
@@ -148,30 +181,69 @@ program.addHelpText(
   'after',
   `
 Environment Variables:
-  HOST                 Same as --host.
-  PORT                 Same as --port.
-  REDIRECT_PORT        Same as --redirect-port.
-  TIMEOUT              Same as --timeout.
-  KEEPALIVETIMEOUT     Same as --keep-alive-timeout.
-  REALM                Same as --realm.
-  CERT_FILE            Same as --cert.
-  CERT                 Text of a cert in PEM format.
-  KEY_FILE             Same as --key.
-  KEY                  Text of a key in PEM format.
-  HOME_DIRECTORIES     Same as --home-directories when set to "true", "on" or "1".
-  USER_DIRECTORIES     Same as --user-directories when set to "true", "on" or "1".
-  SERVE_INDEXES        Same as --serve-indexes when set to "true", "on" or "1".
-  SERVE_LISTINGS       Same as --serve-listings when set to "true", "on" or "1".
-  AUTH                 Same as --no-auth when set to "false", "off" or "0".
-  PAM_AUTH             Same as --pam-auth when set to "true", "on" or "1".
-  AUTH_USER_FILENAME   Same as --auth-user-filename.
-  AUTH_USER_FILE       Same as --auth-user-file.
-  AUTH_USERNAME        Same as --auth-username.
-  AUTH_PASSWORD        Same as --auth-password.
-  UPDATE_CHECK         Same as --no-update-check when set to "false", "off" or "0".
-  SERVER_ROOT          Same as [directory].
+  HOST                         Same as --host.
+  PORT                         Same as --port.
+  REDIRECT_PORT                Same as --redirect-port.
+  TIMEOUT                      Same as --timeout.
+  KEEPALIVETIMEOUT             Same as --keep-alive-timeout.
+  REALM                        Same as --realm.
+  CERT_FILE                    Same as --cert.
+  CERT                         Text of a cert in PEM format.
+  KEY_FILE                     Same as --key.
+  KEY                          Text of a key in PEM format.
+  HOME_DIRECTORIES             Same as --home-directories when set to "true", "on" or "1".
+  USER_DIRECTORIES             Same as --user-directories when set to "true", "on" or "1".
+  SERVE_INDEXES                Same as --serve-indexes when set to "true", "on" or "1".
+  SERVE_LISTINGS               Same as --serve-listings when set to "true", "on" or "1".
+  AUTH                         Same as --no-auth when set to "false", "off" or "0".
+  PAM_AUTH                     Same as --pam-auth when set to "true", "on" or "1".
+  AUTH_USER_FILENAME           Same as --auth-user-filename.
+  AUTH_USER_FILE               Same as --auth-user-file.
+  AUTH_USERNAME                Same as --auth-username.
+  AUTH_PASSWORD                Same as --auth-password.
+  ENCRYPTION                   Same as --encryption when set to "true", "on" or "1".
+  ENCRYPTION_SALT              Same as --encryption-salt.
+  ENCRYPTION_FILENAME_SALT     Same as --encryption-filename-salt.
+  ENCRYPTION_FILENAME_IV_SALT  Same as --encryption-filename-iv-salt.
+  ENCRYPTION_FILENAME_ENCODING Same as --encryption-filename-encoding.
+  ENCRYPTION_GLOBAL_PASSWORD   Same as --encryption-global-password.
+  ENCRYPTION_EXCLUDE           Same as --encryption-exclude.
+  UPDATE_CHECK                 Same as --no-update-check when set to "false", "off" or "0".
+  SERVER_ROOT                  Same as [directory].
 
 Options given on the command line take precedence over options from an environment variable.`
+);
+
+program.addHelpText(
+  'after',
+  `
+Encryption:
+  Nephele supports file encryption. It uses either a global encryption password
+  or user passwords to encrypt your files.
+
+  To enable encryption, set the encryption option and provide three long,
+  random, unique strings for the salt, filename salt, and filename IV salt. You
+  can generate long random strings here: https://www.uuidgenerator.net/
+
+  If you use username passwords for encryption, you can't change a user's
+  password or their files will no longer be accessible.
+
+  If you disable auth, you must set a global encryption password to use
+  encryption. If you then change this global password, your files will no longer
+  be accessible.
+
+  Likewise, if you change any of the salts, your files will no longer be
+  accessible.
+
+  You also have a choice of filename encodings. You can set this to 'ascii85' if
+  you know your file system supports non UTF-8 filenames. This will allow files
+  with longer filenames.
+
+  You can also exclude files from encryption by providing a comma separated list
+  of glob patterns.
+
+  You can find more information about Nephele's file encryption here:
+  https://github.com/sciactive/nephele/blob/master/packages/plugin-encryption/README.md`
 );
 
 program.addHelpText(
@@ -219,6 +291,13 @@ try {
     authUserFile,
     authUsername,
     authPassword,
+    encryption,
+    encryptionSalt,
+    encryptionFilenameSalt,
+    encryptionFilenameIvSalt,
+    encryptionFilenameEncoding,
+    encryptionGlobalPassword,
+    encryptionExclude,
     updateCheck,
     directory,
   } = {
@@ -248,6 +327,15 @@ try {
     authUserFile: process.env.AUTH_USER_FILE,
     authUsername: process.env.AUTH_USERNAME,
     authPassword: process.env.AUTH_PASSWORD,
+    encryption: ['true', 'on', '1'].includes(
+      (process.env.ENCRYPTION || '').toLowerCase()
+    ),
+    encryptionSalt: process.env.ENCRYPTION_SALT,
+    encryptionFilenameSalt: process.env.ENCRYPTION_FILENAME_SALT,
+    encryptionFilenameIvSalt: process.env.ENCRYPTION_FILENAME_IV_SALT,
+    encryptionFilenameEncoding: process.env.ENCRYPTION_FILENAME_ENCODING,
+    encryptionGlobalPassword: process.env.ENCRYPTION_GLOBAL_PASSWORD,
+    encryptionExclude: process.env.ENCRYPTION_EXCLUDE,
     updateCheck: !['false', 'off', '0'].includes(
       (process.env.UPDATE_CHECK || '').toLowerCase()
     ),
@@ -341,6 +429,24 @@ try {
       ' ⚠  ',
       ' BREAKING CHANGE: nephele-serve 1.0.0-alpha.34 and above require the `@nephele/authenticator-pam` package and `--pam-auth` option to authenticate with system users.'
     );
+  }
+
+  if (encryption) {
+    if (!encryptionSalt) {
+      throw new Error('You must provide a salt to use file encryption.');
+    }
+
+    if (!encryptionFilenameSalt) {
+      throw new Error(
+        'You must provide a filename salt to use file encryption.'
+      );
+    }
+
+    if (!encryptionFilenameIvSalt) {
+      throw new Error(
+        'You must provide a filename IV salt to use file encryption.'
+      );
+    }
   }
 
   if (directory != null && !fs.statSync(directory).isDirectory()) {
@@ -475,9 +581,39 @@ try {
       },
 
       plugins: [
-        ...(!serveIndexes && !serveListings
-          ? []
-          : [new IndexPlugin({ serveIndexes, serveListings })]),
+        ...(encryption &&
+        encryptionSalt &&
+        encryptionFilenameSalt &&
+        encryptionFilenameIvSalt
+          ? [
+              new EncryptionPlugin({
+                salt: encryptionSalt,
+                filenameSalt: encryptionFilenameSalt,
+                filenameIVSalt: encryptionFilenameIvSalt,
+                filenameEncoding: encryptionFilenameEncoding ?? undefined,
+                globalPassword: encryptionGlobalPassword ?? undefined,
+                exclude: [
+                  ...(encryptionExclude?.split(',') ?? []),
+                  // Exclude the .htpasswd file if it's used.
+                  ...(!pamAuth &&
+                  auth &&
+                  !(
+                    authUsername != null &&
+                    authUsername.trim() !== '' &&
+                    authPassword != null
+                  ) &&
+                  !homeDirectories &&
+                  !userDirectories &&
+                  !authUserFile
+                    ? [`/${authUserFilename ?? '.htpasswd'}`]
+                    : []),
+                ],
+              }),
+            ]
+          : []),
+        ...(serveIndexes || serveListings
+          ? [new IndexPlugin({ serveIndexes, serveListings })]
+          : []),
       ],
     })
   );

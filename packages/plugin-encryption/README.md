@@ -102,7 +102,7 @@ This plugin does not provide [end-to-end encryption](https://en.wikipedia.org/wi
 
 This plugin does not provide [deniable encryption](https://en.wikipedia.org/wiki/Deniable_encryption). Anyone with access to your files can see that they are encrypted, as well as their exact content lengths and the approximate lengths of their filenames. This data _could_ be used to infer certain information about your files, but the likelihood that that would generate usable information is quite small.
 
-If you have not set `globalPassword`, this plugin will require a user password through [HTTP Basic authentication](https://en.wikipedia.org/wiki/Basic_access_authentication). As such, it cannot be used for any anonymously accessible namespaces without a global password, and will return a 403 Forbidden response when no credentials are provided and no Authenticator is configured.
+If you have not set `globalPassword`, this plugin will require a user password through [HTTP Basic authentication](https://en.wikipedia.org/wiki/Basic_access_authentication). As such, it cannot be used for any anonymously accessible namespaces without a global password (or else there will be no encryption/decryption).
 
 # Encryption
 

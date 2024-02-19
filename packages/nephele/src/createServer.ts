@@ -176,32 +176,6 @@ export default function createServer(
   // Get the authenticator.
   app.use(loadAuthenticator);
 
-  // Run plugin beforeAuth.
-  app.use(
-    async (request: Request, response: AuthResponse, next: NextFunction) => {
-      let ended = false;
-      await catchErrors(
-        async () => {
-          for (let plugin of response.locals.plugins) {
-            if ('beforeAuth' in plugin && plugin.beforeAuth) {
-              const result = await plugin.beforeAuth(request, response);
-              if (result === false) {
-                ended = true;
-              }
-            }
-          }
-        },
-        async (code, message, error) => {
-          await opts.errorHandler(code, message, request, response, error);
-          ended = true;
-        }
-      )();
-      if (!ended) {
-        next();
-      }
-    }
-  );
-
   async function loadAdapter(
     request: Request,
     response: AuthResponse,
@@ -231,6 +205,32 @@ export default function createServer(
 
   // Get the initial adapter (before authentication).
   app.use(loadAdapter);
+
+  // Run plugin beforeAuth.
+  app.use(
+    async (request: Request, response: AuthResponse, next: NextFunction) => {
+      let ended = false;
+      await catchErrors(
+        async () => {
+          for (let plugin of response.locals.plugins) {
+            if ('beforeAuth' in plugin && plugin.beforeAuth) {
+              const result = await plugin.beforeAuth(request, response);
+              if (result === false) {
+                ended = true;
+              }
+            }
+          }
+        },
+        async (code, message, error) => {
+          await opts.errorHandler(code, message, request, response, error);
+          ended = true;
+        }
+      )();
+      if (!ended) {
+        next();
+      }
+    }
+  );
 
   async function authenticate(
     request: Request,
@@ -272,9 +272,6 @@ export default function createServer(
 
   // Authenticate before the request.
   app.use(authenticate);
-
-  // Get the adapter.
-  app.use(loadAdapter);
 
   // Run plugin afterAuth.
   app.use(
@@ -362,6 +359,9 @@ export default function createServer(
       }
     );
   };
+
+  // Get the final adapter (after authentication).
+  app.use(loadAdapter);
 
   // Run plugin begin.
   app.use(

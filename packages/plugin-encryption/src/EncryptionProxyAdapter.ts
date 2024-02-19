@@ -9,6 +9,8 @@ import { EncryptionProxyResource } from './EncryptionProxyResource.js';
  * A proxy adapter that handles encryption.
  */
 export class EncryptionProxyAdapter implements Adapter {
+  encryption = true;
+
   plugin: Plugin;
   targetAdapter: Adapter;
   keys: { content: Buffer; name: Buffer; nameIV: Buffer };
@@ -114,6 +116,10 @@ export class EncryptionProxyAdapter implements Adapter {
   }
 
   shouldEncryptUrl(url: URL) {
+    if (!this.encryption) {
+      return false;
+    }
+
     const path = url.pathname
       .split('/')
       .map((part) => decodeURIComponent(part))
@@ -122,6 +128,10 @@ export class EncryptionProxyAdapter implements Adapter {
   }
 
   shouldEncryptPath(path: string) {
+    if (!this.encryption) {
+      return false;
+    }
+
     for (let exclude of this.plugin.exclude) {
       if (minimatch(path, exclude)) {
         return false;

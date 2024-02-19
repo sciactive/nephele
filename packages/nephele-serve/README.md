@@ -123,59 +123,101 @@ Here's a copy of the help output:
 ```
 Usage: nephele-serve [options] [directory]
 
-Run Nephele WebDAV server to serve local files.
+Command line WebDAV server with browser support for local users to access files remotely.
 
 Arguments:
-  directory                            The path of the directory to use as the server root.
+  directory                                  The path of the directory to use as the server root.
 
 Options:
-  -v, --version                        Print the current version
-  -h, --host <host>                    A host address to listen on. The default is to listen on all external hosts. (default: "::")
-  -r, --realm <realm>                  The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.
-  --cert <cert_file>                   The filename of a certificate to use for HTTPS in PEM format.
-  --key <key_file>                     The filename of a private key to use for HTTPS in PEM format.
-  -p, --port <port>                    The port to listen on. Defaults to 443 if a cert is provided, 80 otherwise.
-  --redirect-port <redirect_port>      The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
-  -t, --timeout <milliseconds>         Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.
-  --keep-alive-timeout <milliseconds>  Server will wait this long for additional data after writing its last response.
-  --home-directories                   Serve users' home directories to them when they log in. (Impies --pam-auth.)
-  --user-directories                   Serve users their own directory under the server root when they log in.
-  --serve-indexes                      Serve index.html and index.htm files when the user requests a directory.
-  --serve-listings                     Serve directory listings with file management forms when the user requests a directory.
-  --no-auth                            Don't require authentication. (Not compatible with --home-directories or --user-directories.)
-  --pam-auth                           Use PAM authentication. (Requires PAM libraries.)
-  --auth-user-filename                 htpasswd filename. (Defaults to '.htpasswd'.)
-  --auth-user-file                     A specific htpasswd file to use for every request.
-  --auth-username <username>           Authenticate with a given username instead.
-  --auth-password <password>           Authenticate with a given password instead.
-  --no-update-check                    Don't check for updates.
-  --help                               display help for command
+  -v, --version                              Print the current version
+  -h, --host <host>                          A host address to listen on. The default is to listen on all external hosts. (default: "::")
+  -r, --realm <realm>                        The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.
+  --cert <cert_file>                         The filename of a certificate to use for HTTPS in PEM format.
+  --key <key_file>                           The filename of a private key to use for HTTPS in PEM format.
+  -p, --port <port>                          The port to listen on. Defaults to 443 if a cert is provided, 80 otherwise.
+  --redirect-port <redirect_port>            The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
+  -t, --timeout <milliseconds>               Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.
+  --keep-alive-timeout <milliseconds>        Server will wait this long for additional data after writing its last response.
+  --home-directories                         Serve users' home directories to them when they log in. (Impies --pam-auth.)
+  --user-directories                         Serve users their own directory under the server root when they log in.
+  --serve-indexes                            Serve index.html and index.htm files when the user requests a directory.
+  --serve-listings                           Serve directory listings with file management forms when the user requests a directory.
+  --no-auth                                  Don't require authentication. (Not compatible with --home-directories or --user-directories.)
+  --pam-auth                                 Use PAM authentication. (Requires PAM libraries.)
+  --auth-user-filename                       htpasswd filename. (Defaults to '.htpasswd'.)
+  --auth-user-file                           A specific htpasswd file to use for every request.
+  --auth-username <username>                 Authenticate with a given username instead.
+  --auth-password <password>                 Authenticate with a given password instead.
+  --encryption                               Enable filename and file contents encryption.
+  --encryption-salt <salt>                   The salt used to generate file content encryption keys.
+  --encryption-filename-salt <salt>          The salt used to generate filename encryption keys.
+  --encryption-filename-iv-salt <salt>       The salt used to generate filename initialization vectors.
+  --encryption-filename-encoding <encoding>  The encoding to use for filenames ('base64' or 'ascii85').
+  --encryption-global-password <password>    A password to use globally instead of user passwords.
+  --encryption-exclude <globlist>            A list of glob patterns to exclude from the encryption/decryption process.
+  --no-update-check                          Don't check for updates.
+  --help                                     display help for command
 
 Environment Variables:
-  HOST                                 Same as --host.
-  PORT                                 Same as --port.
-  REDIRECT_PORT                        Same as --redirect-port.
-  TIMEOUT                              Same as --timeout.
-  KEEPALIVETIMEOUT                     Same as --keep-alive-timeout.
-  REALM                                Same as --realm.
-  CERT_FILE                            Same as --cert.
-  CERT                                 Text of a cert in PEM format.
-  KEY_FILE                             Same as --key.
-  KEY                                  Text of a key in PEM format.
-  HOME_DIRECTORIES                     Same as --home-directories when set to "true", "on" or "1".
-  USER_DIRECTORIES                     Same as --user-directories when set to "true", "on" or "1".
-  SERVE_INDEXES                        Same as --serve-indexes when set to "true", "on" or "1".
-  SERVE_LISTINGS                       Same as --serve-listings when set to "true", "on" or "1".
-  AUTH                                 Same as --no-auth when set to "false", "off" or "0".
-  PAM_AUTH                             Same as --pam-auth when set to "true", "on" or "1".
-  AUTH_USER_FILENAME                   Same as --auth-user-filename.
-  AUTH_USER_FILE                       Same as --auth-user-file.
-  AUTH_USERNAME                        Same as --auth-username.
-  AUTH_PASSWORD                        Same as --auth-password.
-  UPDATE_CHECK                         Same as --no-update-check when set to "false", "off" or "0".
-  SERVER_ROOT                          Same as [directory].
+  HOST                                       Same as --host.
+  PORT                                       Same as --port.
+  REDIRECT_PORT                              Same as --redirect-port.
+  TIMEOUT                                    Same as --timeout.
+  KEEPALIVETIMEOUT                           Same as --keep-alive-timeout.
+  REALM                                      Same as --realm.
+  CERT_FILE                                  Same as --cert.
+  CERT                                       Text of a cert in PEM format.
+  KEY_FILE                                   Same as --key.
+  KEY                                        Text of a key in PEM format.
+  HOME_DIRECTORIES                           Same as --home-directories when set to "true", "on" or "1".
+  USER_DIRECTORIES                           Same as --user-directories when set to "true", "on" or "1".
+  SERVE_INDEXES                              Same as --serve-indexes when set to "true", "on" or "1".
+  SERVE_LISTINGS                             Same as --serve-listings when set to "true", "on" or "1".
+  AUTH                                       Same as --no-auth when set to "false", "off" or "0".
+  PAM_AUTH                                   Same as --pam-auth when set to "true", "on" or "1".
+  AUTH_USER_FILENAME                         Same as --auth-user-filename.
+  AUTH_USER_FILE                             Same as --auth-user-file.
+  AUTH_USERNAME                              Same as --auth-username.
+  AUTH_PASSWORD                              Same as --auth-password.
+  ENCRYPTION                                 Same as --encryption when set to "true", "on" or "1".
+  ENCRYPTION_SALT                            Same as --encryption-salt.
+  ENCRYPTION_FILENAME_SALT                   Same as --encryption-filename-salt.
+  ENCRYPTION_FILENAME_IV_SALT                Same as --encryption-filename-iv-salt.
+  ENCRYPTION_FILENAME_ENCODING               Same as --encryption-filename-encoding.
+  ENCRYPTION_GLOBAL_PASSWORD                 Same as --encryption-global-password.
+  ENCRYPTION_EXCLUDE                         Same as --encryption-exclude.
+  UPDATE_CHECK                               Same as --no-update-check when set to "false", "off" or "0".
+  SERVER_ROOT                                Same as [directory].
 
 Options given on the command line take precedence over options from an environment variable.
+
+Encryption:
+  Nephele supports file encryption. It uses either a global encryption password
+  or user passwords to encrypt your files.
+
+  To enable encryption, set the encryption option and provide three long,
+  random, unique strings for the salt, filename salt, and filename IV salt. You
+  can generate long random strings here: https://www.uuidgenerator.net/
+
+  If you use username passwords for encryption, you can't change a user's
+  password or their files will no longer be accessible.
+
+  If you disable auth, you must set a global encryption password to use
+  encryption. If you then change this global password, your files will no longer
+  be accessible.
+
+  Likewise, if you change any of the salts, your files will no longer be
+  accessible.
+
+  You also have a choice of filename encodings. You can set this to 'ascii85' if
+  you know your file system supports non UTF-8 filenames. This will allow files
+  with longer filenames.
+
+  You can also exclude files from encryption by providing a comma separated list
+  of glob patterns.
+
+  You can find more information about Nephele's file encryption here:
+  https://github.com/sciactive/nephele/blob/master/packages/plugin-encryption/README.md
 
 Nephele repo: https://github.com/sciactive/nephele
 Copyright (C) 2022-2024 SciActive, Inc

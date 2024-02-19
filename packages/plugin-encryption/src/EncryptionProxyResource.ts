@@ -31,6 +31,10 @@ export class EncryptionProxyResource implements Resource {
   }
 
   async shouldEncrypt() {
+    if (!this.adapter.encryption) {
+      return false;
+    }
+
     const path = await this.targetResource.getCanonicalPath();
     return this.adapter.shouldEncryptPath(path);
   }
