@@ -339,7 +339,7 @@ export default class Plugin implements PluginInterface {
 
     // Use counter streams to calculate how much padding was added.
     const streamWithCounter = new BackPressureTransform(async (chunk) => {
-      streamLength += chunk.length;
+      streamLength += chunk?.length ?? 0;
       return chunk;
     });
     stream.pipe(streamWithCounter.writable);
@@ -369,7 +369,7 @@ export default class Plugin implements PluginInterface {
     });
 
     const cipherWithCounter = new BackPressureTransform(async (chunk) => {
-      cipherLength += chunk.length;
+      cipherLength += chunk?.length ?? 0;
       return chunk;
     });
     cipher.pipe(cipherWithCounter.writable);

@@ -3,5 +3,6 @@ node_modules
 /.vscode
 /docs
 /testroot
+/testroot-s3
 /packages/*/dist
 /packages/*/bin

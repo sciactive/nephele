@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  minio:
+    image: 'minio/minio'
+    restart: on-failure
+    command: server /data --console-address ":9001" --address ":80"
+    ports:
+      - '8081:80'
+      - '9001:9001'
+    volumes:
+      - ./testroot-s3:/data

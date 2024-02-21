@@ -4,7 +4,7 @@
  * env NODE_OPTIONS='--experimental-specifier-resolution=node' npx tsx testserver.ts testroot
  */
 import { hostname } from 'node:os';
-import { dirname, resolve } from 'node:path';
+import { dirname, resolve, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Request } from 'express';
 import express from 'express';
@@ -14,6 +14,7 @@ import type { AuthResponse, Plugin } from './packages/nephele/dist/index.js';
 import server from './packages/nephele/dist/index.js';
 import FileSystemAdapter from './packages/adapter-file-system/dist/index.js';
 import VirtualAdapter from './packages/adapter-virtual/dist/index.js';
+import S3Adapter from './packages/adapter-s3/dist/index.js';
 import PamAuthenticator from './packages/authenticator-pam/dist/index.js';
 import HtpasswdAuthenticator from './packages/authenticator-htpasswd/dist/index.js';
 import CustomAuthenticator, {
@@ -37,26 +38,54 @@ const htpasswd = !!process.env.HTPASSWD;
 const pam = !process.env.NOPAM;
 const unauthorized = !!process.env.UNAUTHORIZED;
 const virtual = !!process.env.VIRTUALFS;
+const s3Endpoint = process.env.S3ENDPOINT;
+const s3Region = process.env.S3REGION ?? 'us-east-1';
+const s3AccessKey = process.env.S3ACCESSKEY;
+const s3SecretKey = process.env.S3SECRETKEY;
+const s3Bucket = process.env.S3BUCKET;
 const envuser = process.env.USERNAME || process.env.USER;
 const envpass = process.env.PASSWORD;
 const userpassdefined = !!(envuser && envpass);
 const encryption = process.env.ENCRYPTION;
+const userDirs = !!process.env.USERDIRS;
 
 app.use(
   '/',
   server({
-    adapter: virtual
-      ? new VirtualAdapter({
-          files: {
-            properties: {
-              creationdate: new Date(),
-              getlastmodified: new Date(),
+    adapter: async (_request, response) =>
+      virtual
+        ? new VirtualAdapter({
+            files: {
+              properties: {
+                creationdate: new Date(),
+                getlastmodified: new Date(),
+              },
+              locks: {},
+              children: [],
             },
-            locks: {},
-            children: [],
-          },
-        })
-      : new FileSystemAdapter({ root }),
+          })
+        : s3Endpoint && s3AccessKey && s3SecretKey && s3Bucket
+        ? new S3Adapter({
+            s3Config: {
+              endpoint: s3Endpoint,
+              region: s3Region,
+              credentials: {
+                accessKeyId: s3AccessKey,
+                secretAccessKey: s3SecretKey,
+              },
+            },
+            bucket: s3Bucket,
+            root:
+              userDirs && response.locals.user
+                ? response.locals.user.username
+                : '',
+          })
+        : new FileSystemAdapter({
+            root:
+              userDirs && response.locals.user
+                ? join(root, response.locals.user.username)
+                : root,
+          }),
     authenticator: userpassdefined
       ? new CustomAuthenticator({
           getUser: async (username) => {

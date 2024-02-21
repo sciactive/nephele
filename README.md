@@ -89,6 +89,22 @@ You can also run the `nephele-serve` script like this.
 ./packages/nephele-serve/nephele-serve.cjs --no-auth -p 8080 ./testroot/
 ```
 
+## S3
+
+Nephele uses the MinIO S3 compatible object storage server for testing. To bring it up with Docker, run this.
+
+```
+docker compose -f testserver-docker-compose.yml up -d
+```
+
+Then use the MinIO console at http://127.0.0.1:9001 to create a bucket called "nephele". The username and password are both "minioadmin".
+
+Then bring up the Nephele test server like this.
+
+```
+env S3ENDPOINT="http://127.0.0.1:8081" S3ACCESSKEY="minioadmin" S3SECRETKEY="minioadmin" S3BUCKET="nephele" NOPAM=true USERNAME="admin" PASSWORD="password" DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx tsx testserver.ts
+```
+
 # License
 
 Copyright 2022-2024 SciActive Inc
