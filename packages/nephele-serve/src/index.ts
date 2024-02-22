@@ -7,8 +7,10 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { program, Option } from 'commander';
 import express from 'express';
-import nepheleServer from 'nephele';
+import type { Adapter } from 'nephele';
+import nepheleServer, { ResourceNotFoundError } from 'nephele';
 import FileSystemAdapter from '@nephele/adapter-file-system';
+import S3Adapter from '@nephele/adapter-s3';
 import VirtualAdapter from '@nephele/adapter-virtual';
 import CustomAuthenticator, {
   User as CustomUser,
@@ -58,6 +60,11 @@ type Conf = {
   encryptionFilenameEncoding?: 'base64' | 'ascii85';
   encryptionGlobalPassword?: string;
   encryptionExclude?: string;
+  s3Endpoint?: string;
+  s3Region?: string;
+  s3AccessKey?: string;
+  s3SecretKey?: string;
+  s3Bucket?: string;
   updateCheck: boolean;
   directory?: string;
 };
@@ -171,45 +178,55 @@ program
     '--encryption-exclude <globlist>',
     'A list of glob patterns to exclude from the encryption/decryption process.'
   )
+  .option('--s3-endpoint <endpoint-url>', 'The S3 endpoint URL to connect to.')
+  .option('--s3-region <region>', 'The S3 region.')
+  .option('--s3-access-key <access-key>', 'The S3 access key.')
+  .option('--s3-secret-key <secret-key>', 'The S3 secret key.')
+  .option('--s3-bucket <bucket-name>', 'The S3 bucket.')
   .option('--no-update-check', "Don't check for updates.")
   .argument(
     '[directory]',
-    'The path of the directory to use as the server root.'
+    'The path of the directory to use as the server root. When using S3, this is the path within the bucket.'
   );
 
 program.addHelpText(
   'after',
   `
 Environment Variables:
-  HOST                         Same as --host.
-  PORT                         Same as --port.
-  REDIRECT_PORT                Same as --redirect-port.
-  TIMEOUT                      Same as --timeout.
-  KEEPALIVETIMEOUT             Same as --keep-alive-timeout.
-  REALM                        Same as --realm.
-  CERT_FILE                    Same as --cert.
-  CERT                         Text of a cert in PEM format.
-  KEY_FILE                     Same as --key.
-  KEY                          Text of a key in PEM format.
-  HOME_DIRECTORIES             Same as --home-directories when set to "true", "on" or "1".
-  USER_DIRECTORIES             Same as --user-directories when set to "true", "on" or "1".
-  SERVE_INDEXES                Same as --serve-indexes when set to "true", "on" or "1".
-  SERVE_LISTINGS               Same as --serve-listings when set to "true", "on" or "1".
-  AUTH                         Same as --no-auth when set to "false", "off" or "0".
-  PAM_AUTH                     Same as --pam-auth when set to "true", "on" or "1".
-  AUTH_USER_FILENAME           Same as --auth-user-filename.
-  AUTH_USER_FILE               Same as --auth-user-file.
-  AUTH_USERNAME                Same as --auth-username.
-  AUTH_PASSWORD                Same as --auth-password.
-  ENCRYPTION                   Same as --encryption when set to "true", "on" or "1".
-  ENCRYPTION_SALT              Same as --encryption-salt.
-  ENCRYPTION_FILENAME_SALT     Same as --encryption-filename-salt.
-  ENCRYPTION_FILENAME_IV_SALT  Same as --encryption-filename-iv-salt.
-  ENCRYPTION_FILENAME_ENCODING Same as --encryption-filename-encoding.
-  ENCRYPTION_GLOBAL_PASSWORD   Same as --encryption-global-password.
-  ENCRYPTION_EXCLUDE           Same as --encryption-exclude.
-  UPDATE_CHECK                 Same as --no-update-check when set to "false", "off" or "0".
-  SERVER_ROOT                  Same as [directory].
+  HOST                                       Same as --host.
+  PORT                                       Same as --port.
+  REDIRECT_PORT                              Same as --redirect-port.
+  TIMEOUT                                    Same as --timeout.
+  KEEPALIVETIMEOUT                           Same as --keep-alive-timeout.
+  REALM                                      Same as --realm.
+  CERT_FILE                                  Same as --cert.
+  CERT                                       Text of a cert in PEM format.
+  KEY_FILE                                   Same as --key.
+  KEY                                        Text of a key in PEM format.
+  HOME_DIRECTORIES                           Same as --home-directories when set to "true", "on" or "1".
+  USER_DIRECTORIES                           Same as --user-directories when set to "true", "on" or "1".
+  SERVE_INDEXES                              Same as --serve-indexes when set to "true", "on" or "1".
+  SERVE_LISTINGS                             Same as --serve-listings when set to "true", "on" or "1".
+  AUTH                                       Same as --no-auth when set to "false", "off" or "0".
+  PAM_AUTH                                   Same as --pam-auth when set to "true", "on" or "1".
+  AUTH_USER_FILENAME                         Same as --auth-user-filename.
+  AUTH_USER_FILE                             Same as --auth-user-file.
+  AUTH_USERNAME                              Same as --auth-username.
+  AUTH_PASSWORD                              Same as --auth-password.
+  ENCRYPTION                                 Same as --encryption when set to "true", "on" or "1".
+  ENCRYPTION_SALT                            Same as --encryption-salt.
+  ENCRYPTION_FILENAME_SALT                   Same as --encryption-filename-salt.
+  ENCRYPTION_FILENAME_IV_SALT                Same as --encryption-filename-iv-salt.
+  ENCRYPTION_FILENAME_ENCODING               Same as --encryption-filename-encoding.
+  ENCRYPTION_GLOBAL_PASSWORD                 Same as --encryption-global-password.
+  ENCRYPTION_EXCLUDE                         Same as --encryption-exclude.
+  S3_ENDPOINT                                Same as --s3-endpoint.
+  S3_REGION                                  Same as --s3-region.
+  S3_ACCESS_KEY                              Same as --s3-access-key.
+  S3_SECRET_KEY                              Same as --s3-secret-key.
+  S3_BUCKET                                  Same as --s3-bucket.
+  UPDATE_CHECK                               Same as --no-update-check when set to "false", "off" or "0".
+  SERVER_ROOT                                Same as [directory].
 
 Options given on the command line take precedence over options from an environment variable.`
 );
@@ -244,6 +261,42 @@ Encryption:
 
   You can find more information about Nephele's file encryption here:
   https://github.com/sciactive/nephele/blob/master/packages/plugin-encryption/README.md`
+);
+
+program.addHelpText(
+  'after',
+  `
+S3 Object Store:
+  Nephele supports using an S3 object store as its storage backend.
+
+  S3 and S3 compatible servers are essentially key-value stores. Nephele can
+  present this store as a hierarchical file structure by using the file path and
+  filename as the key. This is a common practice and is often supported by the
+  native object browser of the store.
+
+  By combining an S3 backend with Nephele's encryption feature, you can get the
+  benefits of cloud storage while maintaining your privacy and security.
+
+  An important note is that an S3 key has a maximum length of 1024 bytes using
+  UTF-8 encoding. This means the entire file path, including the slash
+  characters that separate directories, can only be 1024 bytes long, so you may
+  run into problems with deeply nested file structures.
+
+  You can find more information about S3 keys here:
+  https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html
+
+  WebDAV properties and locks are stored in the metadata of objects. There is no
+  support for properties or locks on a directory, since S3 doesn't really have
+  "real" directories.
+
+  S3 does not have the concept of an empty directory, since "directories" are
+  just common prefixes among keys. As such, Nephele represents an empty
+  directory in S3 by creating an empty object under the directory with the name
+  ".nepheleempty". It is safe to delete these objects. It is the same as
+  deleting the empty directory.
+
+  You can find more information about Nephele's S3 adapter here:
+  https://github.com/sciactive/nephele/blob/master/packages/adapter-s3/README.md`
 );
 
 program.addHelpText(
@@ -298,6 +351,11 @@ try {
     encryptionFilenameEncoding,
     encryptionGlobalPassword,
     encryptionExclude,
+    s3Endpoint,
+    s3Region,
+    s3AccessKey,
+    s3SecretKey,
+    s3Bucket,
     updateCheck,
     directory,
   } = {
@@ -336,6 +394,11 @@ try {
     encryptionFilenameEncoding: process.env.ENCRYPTION_FILENAME_ENCODING,
     encryptionGlobalPassword: process.env.ENCRYPTION_GLOBAL_PASSWORD,
     encryptionExclude: process.env.ENCRYPTION_EXCLUDE,
+    s3Endpoint: process.env.S3_ENDPOINT,
+    s3Region: process.env.S3_REGION,
+    s3AccessKey: process.env.S3_ACCESS_KEY,
+    s3SecretKey: process.env.S3_SECRET_KEY,
+    s3Bucket: process.env.S3_BUCKET,
     updateCheck: !['false', 'off', '0'].includes(
       (process.env.UPDATE_CHECK || '').toLowerCase()
     ),
@@ -403,13 +466,19 @@ try {
     throw new Error("Can't serve both a directory and home directories.");
   }
 
-  if (userDirectories && directory == null) {
-    throw new Error('Serving user directories requires a root directory.');
+  if (s3Endpoint != null && homeDirectories) {
+    throw new Error("Can't serve home directories using S3.");
   }
 
-  if (directory == null && !homeDirectories) {
+  if (userDirectories && directory == null && s3Endpoint == null) {
     throw new Error(
-      'A root directory or the --home-directories option is required.'
+      'Serving user directories requires a root directory or an S3 endpoint.'
+    );
+  }
+
+  if (directory == null && !homeDirectories && s3Endpoint == null) {
+    throw new Error(
+      'A root directory, an S3 endpoint, or the --home-directories option is required.'
     );
   }
 
@@ -417,6 +486,14 @@ try {
     throw new Error(
       'The --home-directories and --user-directories options require authentication.'
     );
+  }
+
+  if (s3Endpoint != null && s3Region == null) {
+    throw new Error('The --s3-region option is required to use S3.');
+  }
+
+  if (s3Endpoint != null && s3Bucket == null) {
+    throw new Error('The --s3-bucket option is required to use S3.');
   }
 
   if (homeDirectories) {
@@ -449,7 +526,11 @@ try {
     }
   }
 
-  if (directory != null && !fs.statSync(directory).isDirectory()) {
+  if (
+    directory != null &&
+    s3Endpoint == null &&
+    !fs.statSync(directory).isDirectory()
+  ) {
     throw new Error('Provided server root is not an accessible directory.');
   }
 
@@ -507,32 +588,102 @@ try {
             return new FileSystemAdapter({ root });
           }
 
-          if (directory == null || !fs.statSync(directory).isDirectory()) {
-            throw new Error('Server root is not an accessible directory.');
-          }
+          let adapter: Adapter;
 
-          if (userDirectories && response.locals.user != null) {
-            const root = path.join(
-              directory,
-              response.locals.user.username.replace(/\//g, '_')
-            );
-
-            try {
-              fs.accessSync(root);
-            } catch (e: any) {
-              fs.mkdirSync(root);
-              if (pamAuth) {
-                const { ids } = await import('userid');
-                const { uid, gid } = ids(response.locals.user.username);
-                fs.chownSync(root, uid, gid);
-                fs.chmodSync(root, 0o750);
-              }
+          if (s3Endpoint == null) {
+            if (directory == null || !fs.statSync(directory).isDirectory()) {
+              throw new Error('Server root is not an accessible directory.');
             }
 
-            return new FileSystemAdapter({ root });
+            if (userDirectories && response.locals.user != null) {
+              const root = path.join(
+                directory,
+                response.locals.user.username.replace(/\//g, '_')
+              );
+
+              try {
+                fs.accessSync(root);
+              } catch (e: any) {
+                fs.mkdirSync(root);
+                if (pamAuth) {
+                  const { ids } = await import('userid');
+                  const { uid, gid } = ids(response.locals.user.username);
+                  fs.chownSync(root, uid, gid);
+                  fs.chmodSync(root, 0o750);
+                }
+              }
+
+              adapter = new FileSystemAdapter({ root });
+            } else {
+              adapter = new FileSystemAdapter({ root: directory });
+            }
+          } else {
+            if (s3Bucket == null) {
+              throw new Error('S3 bucket is required.');
+            }
+
+            if (directory) {
+              directory = directory
+                .split('/')
+                .map(encodeURIComponent)
+                .join('/');
+            }
+
+            adapter = new S3Adapter({
+              s3Config: {
+                endpoint: s3Endpoint,
+                region: s3Region,
+                ...(s3AccessKey != null && s3SecretKey != null
+                  ? {
+                      credentials: {
+                        accessKeyId: s3AccessKey,
+                        secretAccessKey: s3SecretKey,
+                      },
+                    }
+                  : {}),
+              },
+              bucket: s3Bucket,
+              root: directory,
+            });
+
+            if (userDirectories && response.locals.user != null) {
+              const userPath = encodeURIComponent(
+                response.locals.user.username.replace(/\//g, '_')
+              );
+              const baseUrl = new URL(`http://localhost/`);
+              const url = new URL(userPath, baseUrl);
+
+              try {
+                await adapter.getResource(url, baseUrl);
+              } catch (e: any) {
+                if (!(e instanceof ResourceNotFoundError)) {
+                  throw e;
+                }
+
+                const userDir = await adapter.newCollection(url, baseUrl);
+                await userDir.create(response.locals.user);
+              }
+
+              adapter = new S3Adapter({
+                s3Config: {
+                  endpoint: s3Endpoint,
+                  region: s3Region,
+                  ...(s3AccessKey != null && s3SecretKey != null
+                    ? {
+                        credentials: {
+                          accessKeyId: s3AccessKey,
+                          secretAccessKey: s3SecretKey,
+                        },
+                      }
+                    : {}),
+                },
+                bucket: s3Bucket,
+                root: directory ? `${directory}/${userPath}` : userPath,
+              });
+            }
           }
 
-          return new FileSystemAdapter({ root: directory });
+          return adapter;
         } catch (e) {
           throw new Error("Couldn't mount server root.");
         }

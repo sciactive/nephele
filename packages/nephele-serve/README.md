@@ -1,6 +1,6 @@
-# Nephele Serve - File System Backed WebDAV Server
+# Nephele Serve - File System or S3 Backed WebDAV Server
 
-Run Nephele WebDAV server to serve files from a file system.
+Run Nephele WebDAV server to serve files from either a file system or an S3 compatible object store.
 
 # What is WebDAV
 
@@ -75,6 +75,24 @@ If you want to run it without root, you can do that too, but you must set the po
 nephele-serve -p 8080 .
 ```
 
+Serve an S3 compatible object store bucket.
+
+```sh
+sudo nephele-serve --s3-endpoint "https://mys3endpoint/" --s3-region us-east-1 --s3-access-key "mys3accesskey" --s3-secret-key "mys3secretkeyshhdonttell" --s3-bucket "MyBucket"
+```
+
+Serve a specific path (prefix) within an S3 compatible object store bucket.
+
+```sh
+sudo nephele-serve --s3-endpoint "https://mys3endpoint/" --s3-region us-east-1 --s3-access-key "mys3accesskey" --s3-secret-key "mys3secretkeyshhdonttell" --s3-bucket "MyBucket" path/to/my/storage/
+```
+
+Serve an S3 compatible object store bucket, using file encryption to keep your data private. (Use https://www.uuidgenerator.net/ to generate your own 3 salt values and global encryption password.)
+
+```sh
+sudo nephele-serve --s3-endpoint "https://mys3endpoint/" --s3-region us-east-1 --s3-access-key "mys3accesskey" --s3-secret-key "mys3secretkeyshhdonttell" --s3-bucket "MyBucket" --encryption --encryption-salt mylongsaltvalue --encryption-filename-salt myotherlongsaltvalue --encryption-filename-iv-salt mylastlongsaltvalue --encryption-global-password supersecretglobalpassword
+```
+
 Only regular users (UIDs 500-59999) are allowed to log in.
 
 ## Cluster with PM2
@@ -123,10 +141,10 @@ Here's a copy of the help output:
 ```
 Usage: nephele-serve [options] [directory]
 
-Command line WebDAV server with browser support for local users to access files remotely.
+Command line WebDAV server with browser support. Serves from file system or S3 compatible object store.
 
 Arguments:
-  directory                                  The path of the directory to use as the server root.
+  directory                                  The path of the directory to use as the server root. When using S3, this is the path within the bucket.
 
 Options:
   -v, --version                              Print the current version
@@ -155,6 +173,11 @@ Options:
   --encryption-filename-encoding <encoding>  The encoding to use for filenames ('base64' or 'ascii85').
   --encryption-global-password <password>    A password to use globally instead of user passwords.
   --encryption-exclude <globlist>            A list of glob patterns to exclude from the encryption/decryption process.
+  --s3-endpoint <endpoint-url>               The S3 endpoint URL to connect to.
+  --s3-region <region>                       The S3 region.
+  --s3-access-key <access-key>               The S3 access key.
+  --s3-secret-key <secret-key>               The S3 secret key.
+  --s3-bucket <bucket-name>                  The S3 bucket.
   --no-update-check                          Don't check for updates.
   --help                                     display help for command
 
@@ -186,6 +209,11 @@ Environment Variables:
   ENCRYPTION_FILENAME_ENCODING               Same as --encryption-filename-encoding.
   ENCRYPTION_GLOBAL_PASSWORD                 Same as --encryption-global-password.
   ENCRYPTION_EXCLUDE                         Same as --encryption-exclude.
+  S3_ENDPOINT                                Same as --s3-endpoint.
+  S3_REGION                                  Same as --s3-region.
+  S3_ACCESS_KEY                              Same as --s3-access-key.
+  S3_SECRET_KEY                              Same as --s3-secret-key.
+  S3_BUCKET                                  Same as --s3-bucket.
   UPDATE_CHECK                               Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT                                Same as [directory].
 
@@ -218,6 +246,38 @@ Encryption:
 
   You can find more information about Nephele's file encryption here:
   https://github.com/sciactive/nephele/blob/master/packages/plugin-encryption/README.md
+
+S3 Object Store:
+  Nephele supports using an S3 object store as its storage backend.
+
+  S3 and S3 compatible servers are essentially key-value stores. Nephele can
+  present this store as a hierarchical file structure by using the file path and
+  filename as the key. This is a common practice and is often supported by the
+  native object browser of the store.
+
+  By combining an S3 backend with Nephele's encryption feature, you can get the
+  benefits of cloud storage while maintaining your privacy and security.
+
+  An important note is that an S3 key has a maximum length of 1024 bytes using
+  UTF-8 encoding. This means the entire file path, including the slash
+  characters that separate directories, can only be 1024 bytes long, so you may
+  run into problems with deeply nested file structures.
+
+  You can find more information about S3 keys here:
+  https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-keys.html
+
+  WebDAV properties and locks are stored in the metadata of objects. There is no
+  support for properties or locks on a directory, since S3 doesn't really have
+  "real" directories.
+
+  S3 does not have the concept of an empty directory, since "directories" are
+  just common prefixes among keys. As such, Nephele represents an empty
+  directory in S3 by creating an empty object under the directory with the name
+  ".nepheleempty". It is safe to delete these objects. It is the same as
+  deleting the empty directory.
+
+  You can find more information about Nephele's S3 adapter here:
+  https://github.com/sciactive/nephele/blob/master/packages/adapter-s3/README.md
 
 Nephele repo: https://github.com/sciactive/nephele
 Copyright (C) 2022-2024 SciActive, Inc

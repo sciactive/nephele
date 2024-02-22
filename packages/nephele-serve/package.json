@@ -1,7 +1,7 @@
 {
   "name": "nephele-serve",
   "version": "1.0.0-alpha.37",
-  "description": "Command line WebDAV server with browser support for local users to access files remotely.",
+  "description": "Command line WebDAV server with browser support. Serves from file system or S3 compatible object store.",
   "type": "module",
   "bin": {
     "nephele-serve": "nephele-serve.cjs"
@@ -35,6 +35,13 @@
     "personal cloud",
     "local file server",
     "file share",
+    "s3",
+    "aws s3",
+    "s3 file server",
+    "object store",
+    "object storage",
+    "blob store",
+    "blob storage",
     "nas",
     "network storage",
     "nephele"
@@ -56,6 +63,7 @@
   },
   "dependencies": {
     "@nephele/adapter-file-system": "^1.0.0-alpha.37",
+    "@nephele/adapter-s3": "^1.0.0-alpha.37",
     "@nephele/adapter-virtual": "^1.0.0-alpha.37",
     "@nephele/authenticator-custom": "^1.0.0-alpha.37",
     "@nephele/authenticator-htpasswd": "^1.0.0-alpha.37",
