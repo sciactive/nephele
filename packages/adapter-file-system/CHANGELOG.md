@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.38](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.37...v1.0.0-alpha.38) (2024-02-22)
+
+
+### Bug Fixes
+
+* issue with moving nephelemeta files during move operation ([ae9aa80](https://github.com/sciactive/nephele/commit/ae9aa807025602f5f6fbda63eedc1a13374d68b3))
+
+
+### Features
+
+* new file encryption plugin ([5f18364](https://github.com/sciactive/nephele/commit/5f18364275ec520fdd50bf456086bc0820ae98d2))
+
+
+
+
+
 # [1.0.0-alpha.37](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.36...v1.0.0-alpha.37) (2024-01-27)
 
 

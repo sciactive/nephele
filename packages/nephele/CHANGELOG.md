@@ -3,6 +3,26 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.38](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.37...v1.0.0-alpha.38) (2024-02-22)
+
+
+### Bug Fixes
+
+* end response on errors thrown from plugins ([d0270ff](https://github.com/sciactive/nephele/commit/d0270ff2a6d3e8b2034112735729cb83cb1b1f02))
+* run plugins on adapters through getAdapter ([6ba0d68](https://github.com/sciactive/nephele/commit/6ba0d68d3742646efb204cfa96393870a12aeda0))
+
+
+### Features
+
+* add file encryption support to nephele-serve ([37bac30](https://github.com/sciactive/nephele/commit/37bac308b75fd660ebbbe0d93ed86b504237d20c))
+* add filename encryption to encryption plugin ([945ba4b](https://github.com/sciactive/nephele/commit/945ba4bcf29ff2a91c00226d87049ed79094b452))
+* new file encryption plugin ([5f18364](https://github.com/sciactive/nephele/commit/5f18364275ec520fdd50bf456086bc0820ae98d2))
+* save media type in s3 uploads ([e1e4f86](https://github.com/sciactive/nephele/commit/e1e4f869db9645a26ca53c357dbdb04f25b87d2f))
+
+
+
+
+
 # [1.0.0-alpha.37](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.36...v1.0.0-alpha.37) (2024-01-27)
 
 **Note:** Version bump only for package nephele

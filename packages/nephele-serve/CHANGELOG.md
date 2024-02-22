@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.38](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.37...v1.0.0-alpha.38) (2024-02-22)
+
+
+### Features
+
+* add file encryption support to nephele-serve ([37bac30](https://github.com/sciactive/nephele/commit/37bac308b75fd660ebbbe0d93ed86b504237d20c))
+* add s3 support to nephele-serve ([45d7ce3](https://github.com/sciactive/nephele/commit/45d7ce395234806a9e13715de2e580aa736e4268))
+
+
+
+
+
 # [1.0.0-alpha.37](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.36...v1.0.0-alpha.37) (2024-01-27)
 
 

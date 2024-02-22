@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.38](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.37...v1.0.0-alpha.38) (2024-02-22)
+
+
+### Bug Fixes
+
+* can't copy or move files with multibyte utf8 string in web client ([6d4f31f](https://github.com/sciactive/nephele/commit/6d4f31f32cc7b77f29363dbec19d5abf2d2d5f6b))
+
+
+### Features
+
+* new file encryption plugin ([5f18364](https://github.com/sciactive/nephele/commit/5f18364275ec520fdd50bf456086bc0820ae98d2))
+
+
+
+
+
 # [1.0.0-alpha.37](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.36...v1.0.0-alpha.37) (2024-01-27)
 
 **Note:** Version bump only for package @nephele/plugin-index
