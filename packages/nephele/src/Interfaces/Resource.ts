@@ -68,7 +68,7 @@ export interface Resource {
    * If the resource is a collection, and it can't accept a stream (like a
    * folder on a filesystem), a MethodNotSupportedError may be thrown.
    */
-  setStream(input: Readable, user: User): Promise<void>;
+  setStream(input: Readable, user: User, mediaType?: string): Promise<void>;
 
   /**
    * Create the resource.

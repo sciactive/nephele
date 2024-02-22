@@ -177,7 +177,7 @@ export default class Resource implements ResourceInterface {
     }
   }
 
-  async setStream(input: Readable, _user: User) {
+  async setStream(input: Readable, _user: User, mediaType?: string) {
     if (!(await this.resourceTreeExists())) {
       throw new ResourceTreeNotCompleteError(
         'One or more intermediate collections must be created before this resource.'
@@ -199,12 +199,13 @@ export default class Resource implements ResourceInterface {
       reject = rej;
     });
 
-    debug('Upload', this.key);
+    debug('Upload', this.key, mediaType);
     const parallelUpload = new Upload({
       client: this.adapter.s3,
       params: {
         Bucket: this.adapter.bucket,
         Key: this.key,
+        ContentType: mediaType,
         Body: input,
         Metadata: this.translateMetadata(meta),
       },

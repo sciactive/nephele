@@ -160,9 +160,9 @@ export class EncryptionProxyResource implements Resource {
     return cipher;
   }
 
-  async setStream(input: Readable, user: User) {
+  async setStream(input: Readable, user: User, mediaType?: string) {
     if (!(await this.shouldEncrypt())) {
-      return await this.targetResource.setStream(input, user);
+      return await this.targetResource.setStream(input, user, mediaType);
     }
 
     const properties = await this.targetResource.getProperties();
