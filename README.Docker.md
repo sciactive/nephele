@@ -74,7 +74,87 @@ Nephele Serve has a number of options available as environment variables. Some o
 
 ## Examples
 
-Serve the current directory.
+### Docker Compose
+
+Here is an example Docker Compose file configured to serve user directories from a local directory `htdocs`. In this case, you would create a `.htpasswd` file in the `htdocs` directory.
+
+```yaml
+version: '3.8'
+services:
+  nephele:
+    image: 'sciactive/nephele'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      - ./htdocs:/data
+    environment:
+      REALM: example.com
+      USER_DIRECTORIES: 'on'
+      SERVE_LISTINGS: 'on'
+```
+
+And here is how you would enable HTTPS with a Let's Encrypt certificate.
+
+```yaml
+version: '3.8'
+services:
+  nephele:
+    image: 'sciactive/nephele'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./htdocs:/data
+      - /etc/letsencrypt/:/cert/
+    environment:
+      REALM: example.com
+      PORT: 443
+      REDIRECT_PORT: 80
+      CERT_FILE: /cert/live/example.com/fullchain.pem
+      KEY_FILE: /cert/live/example.com/privkey.pem
+      USER_DIRECTORIES: 'on'
+      SERVE_LISTINGS: 'on'
+```
+
+Here is an example configured to serve user directories from an S3 bucket and use file encryption. In this case, you would upload a `.htpasswd` file in the root of the bucket.
+
+```yaml
+version: '3.8'
+services:
+  nephele:
+    image: 'sciactive/nephele'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - /etc/letsencrypt/:/cert/
+    environment:
+      REALM: example.com
+      PORT: 443
+      REDIRECT_PORT: 80
+      CERT_FILE: /cert/live/example.com/fullchain.pem
+      KEY_FILE: /cert/live/example.com/privkey.pem
+      USER_DIRECTORIES: 'on'
+      SERVE_LISTINGS: 'on'
+      ENCRYPTION: 'on'
+      ENCRYPTION_SALT: a57d3f15-c287-4be7-a8cf-c4b89fe31ebf
+      ENCRYPTION_FILENAME_SALT: 0dadb21a-37f0-406f-9620-25298c558c47
+      ENCRYPTION_FILENAME_IV_SALT: 7baffe09-45b5-472c-a542-b35eb19f875d
+      ENCRYPTION_GLOBAL_PASSWORD: 8235dc58-c9ec-4f8b-8ebc-5b8ca16805d3
+      S3_ENDPOINT: https://mys3serverendpointurl/
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY: mys3accesskey
+      S3_SECRET_KEY: mys3secretkeyshhdonttell
+      S3_BUCKET: MyBucket
+      SERVER_ROOT: ''
+```
+
+### Docker Command
+
+Serve the current directory with the current user's UID/GID.
 
 ```sh
 docker run \
@@ -87,7 +167,7 @@ docker run \
   sciactive/nephele
 ```
 
-Serve the current directory with a specific username and password (not .htpasswd file).
+Serve the current directory with a specific username and password (not `.htpasswd` file).
 
 ```sh
 docker run \
@@ -150,70 +230,6 @@ docker run \
   -v ./:/data/ \
   -v /etc/letsencrypt/:/cert/ \
   sciactive/nephele
-```
-
-### Docker Compose
-
-Here is an example Docker Compose file configured to serve user directories from a local file system. In this case, you would create a '.htpasswd' file in the "htdocs" directory.
-
-```yaml
-version: '3.8'
-services:
-  nephele:
-    image: 'sciactive/nephele'
-    restart: unless-stopped
-    user: '1000:1000'
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - ./htdocs:/data
-      - /etc/letsencrypt/:/cert/
-    environment:
-      WORKERS: 8
-      REALM: example.com
-      PORT: 443
-      REDIRECT_PORT: 80
-      CERT_FILE: /cert/live/example.com/fullchain.pem
-      KEY_FILE: /cert/live/example.com/privkey.pem
-      USER_DIRECTORIES: 'on'
-      SERVE_LISTINGS: 'on'
-```
-
-Here is an example Docker Compose file configured to serve user directories from an S3 bucket and use file encryption. In this case, you would upload a '.htpasswd' file in the root of the bucket.
-
-```yaml
-version: '3.8'
-services:
-  nephele:
-    image: 'sciactive/nephele'
-    restart: unless-stopped
-    user: '1000:1000'
-    ports:
-      - '80:80'
-      - '443:443'
-    volumes:
-      - /etc/letsencrypt/:/cert/
-    environment:
-      WORKERS: 8
-      REALM: example.com
-      PORT: 443
-      REDIRECT_PORT: 80
-      CERT_FILE: /cert/live/example.com/fullchain.pem
-      KEY_FILE: /cert/live/example.com/privkey.pem
-      USER_DIRECTORIES: 'on'
-      SERVE_LISTINGS: 'on'
-      ENCRYPTION: 'on'
-      ENCRYPTION_SALT: a57d3f15-c287-4be7-a8cf-c4b89fe31ebf
-      ENCRYPTION_FILENAME_SALT: 0dadb21a-37f0-406f-9620-25298c558c47
-      ENCRYPTION_FILENAME_IV_SALT: 7baffe09-45b5-472c-a542-b35eb19f875d
-      ENCRYPTION_GLOBAL_PASSWORD: 8235dc58-c9ec-4f8b-8ebc-5b8ca16805d3
-      S3_ENDPOINT: https://mys3serverendpointurl/
-      S3_REGION: us-east-1
-      S3_ACCESS_KEY: mys3accesskey
-      S3_SECRET_KEY: mys3secretkeyshhdonttell
-      S3_BUCKET: MyBucket
-      SERVER_ROOT: ''
 ```
 
 ## Encryption
