@@ -1,6 +1,6 @@
 {
   "name": "@nephele/adapter-s3",
-  "version": "1.0.0-alpha.38",
+  "version": "1.0.0-alpha.39",
   "description": "S3 (or compatible) object storage adapter for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -50,7 +50,7 @@
     "@aws-sdk/client-s3": "^3.515.0",
     "@aws-sdk/lib-storage": "^3.515.0",
     "debug": "^4.3.4",
-    "nephele": "^1.0.0-alpha.38"
+    "nephele": "^1.0.0-alpha.39"
   },
   "engines": {
     "node": ">=18"

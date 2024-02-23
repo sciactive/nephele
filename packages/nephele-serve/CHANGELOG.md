@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.39](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.38...v1.0.0-alpha.39) (2024-02-23)
+
+
+### Bug Fixes
+
+* require encryption plugin in nephele-serve ([8438b22](https://github.com/sciactive/nephele/commit/8438b22d56417a271815bc514b68873f31cd85b7))
+
+
+
+
+
 # [1.0.0-alpha.38](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.37...v1.0.0-alpha.38) (2024-02-22)
 
 
