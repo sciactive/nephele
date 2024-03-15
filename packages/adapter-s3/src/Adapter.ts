@@ -29,6 +29,10 @@ export type AdapterConfig = {
    */
   bucket: string;
   /**
+   * The number of chunks to upload simultaneously to the storage.
+   */
+  uploadQueueSize?: number;
+  /**
    * The path in the S3 bucket to be the root of the adapter. '' means the root
    * of the bucket.
    */
@@ -41,11 +45,15 @@ export type AdapterConfig = {
 export default class Adapter implements AdapterInterface {
   s3: S3;
   bucket: string;
+  uploadQueueSize = 4;
   root = '';
 
-  constructor({ s3Config, bucket, root }: AdapterConfig) {
+  constructor({ s3Config, bucket, uploadQueueSize, root }: AdapterConfig) {
     this.s3 = new S3(s3Config);
     this.bucket = bucket;
+    if (uploadQueueSize != null) {
+      this.uploadQueueSize = uploadQueueSize;
+    }
     if (root != null) {
       this.root = root.split('/').map(encodeURIComponent).join('/');
     }

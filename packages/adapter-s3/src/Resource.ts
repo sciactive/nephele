@@ -208,7 +208,7 @@ export default class Resource implements ResourceInterface {
         Body: input,
         Metadata: this.translateMetadata(meta),
       },
-      queueSize: 1,
+      queueSize: this.adapter.uploadQueueSize,
       leavePartsOnError: true,
     });
 

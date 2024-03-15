@@ -50,6 +50,7 @@ app.listen(port, () => {
 
 - `s3Config`: The S3 client config object.
 - `bucket`: The S3 bucket.
+- `uploadQueueSize` = `4`: The number of chunks to upload simultaneously to the storage.
 - `root` = `''`: The path in the S3 bucket to be the root of the adapter. '' means the root of the bucket.
 
 ## s3Config
