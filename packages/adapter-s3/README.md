@@ -2,7 +2,7 @@
 
 A Nephele adapter that uses an S3 or S3 compatible object storage service as the storage backend.
 
-It is tested using [MinIO](https://min.io/), which is an S3 compatible object storage server, but it should also work with AWS S3, Digital Ocean Spaces, Backblaze B2, Ceph, etc. If you encounter any issues with an S3 compatible object store, please file a bug report in the Nephele repository.
+It is tested using [MinIO](https://min.io/), which is an S3 compatible object storage server, but it should also work with AWS S3, Cloudflare R2, Backblaze B2, Digital Ocean Spaces, Ceph, etc. If you encounter any issues with an S3 compatible object store, please file a bug report in the Nephele repository.
 
 # Installation
 
