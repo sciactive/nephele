@@ -280,22 +280,26 @@ export default class Resource implements ResourceInterface {
       throw new ResourceNotFoundError("This resource couldn't be found.");
     }
 
-    debug('DeleteObjectCommand', this.key);
-    const command = new DeleteObjectCommand({
-      Bucket: this.adapter.bucket,
-      Key: this.key,
-    });
+    if ((await this.isCollection()) && (await this.isEmpty())) {
+      await this.deleteEmptyDir(this.key);
+    } else {
+      debug('DeleteObjectCommand', this.key);
+      const command = new DeleteObjectCommand({
+        Bucket: this.adapter.bucket,
+        Key: this.key,
+      });
 
-    await this.adapter.s3.send(command);
+      await this.adapter.s3.send(command);
+
+      try {
+        this.createEmptyDir(path.dirname(this.key));
+      } catch (e: any) {
+        // Ignore errors trying to recreate empty dir file.
+      }
+    }
 
     this.etag = undefined;
     this.inStorage = false;
-
-    try {
-      this.createEmptyDir(path.dirname(this.key));
-    } catch (e: any) {
-      // Ignore errors trying to recreate empty dir file.
-    }
   }
 
   async copy(destination: URL, baseUrl: URL, user: User) {
@@ -651,7 +655,7 @@ export default class Resource implements ResourceInterface {
     );
 
     for await (let key of keys) {
-      if (key) {
+      if (key && key.key !== `${this.key}/.nepheleempty`) {
         return false;
       }
     }
@@ -740,6 +744,8 @@ export default class Resource implements ResourceInterface {
       return this.inStorage;
     }
 
+    await this.metaReadyPromise;
+
     try {
       debug('HeadObjectCommand', key);
       const command = new HeadObjectCommand({
@@ -751,7 +757,17 @@ export default class Resource implements ResourceInterface {
 
       if (key === this.key) {
         this.etag = response.ETag;
+        this.size = response.ContentLength;
+        this.contentType = response.ContentType;
         this.lastModified = response.LastModified;
+
+        this.meta = {};
+        this.meta.props = JSON.parse(
+          response.Metadata?.['nephele-properties'] ?? '{}'
+        );
+        this.meta.locks = JSON.parse(
+          response.Metadata?.['nephele-locks'] ?? '{}'
+        );
       }
     } catch (e: any) {
       if (e instanceof NoSuchKey || e instanceof NotFound) {
@@ -873,8 +889,11 @@ export default class Resource implements ResourceInterface {
       this.meta.locks = JSON.parse(
         response.Metadata?.['nephele-locks'] ?? '{}'
       );
+
+      this.inStorage = true;
     } catch (e: any) {
       if (!(e instanceof NotFound || e instanceof NoSuchKey)) {
+        this.inStorage = false;
         throw e;
       }
     }
