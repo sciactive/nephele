@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.40](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.39...v1.0.0-alpha.40) (2024-03-15)
+
+
+### Bug Fixes
+
+* support s3 implementations that don't implement GetObjectAttributesCommand ([ee4b50f](https://github.com/sciactive/nephele/commit/ee4b50ffc1c68b6cdd2068b3e5b86432bc3b7f95))
+
+
+
+
+
 # [1.0.0-alpha.39](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.38...v1.0.0-alpha.39) (2024-02-23)
 
 **Note:** Version bump only for package @nephele/adapter-s3

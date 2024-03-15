@@ -1,6 +1,6 @@
 {
   "name": "nephele-serve",
-  "version": "1.0.0-alpha.39",
+  "version": "1.0.0-alpha.40",
   "description": "Command line WebDAV server with browser support. Serves from file system or S3 compatible object store.",
   "type": "module",
   "bin": {
@@ -62,21 +62,21 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@nephele/adapter-file-system": "^1.0.0-alpha.39",
-    "@nephele/adapter-s3": "^1.0.0-alpha.39",
-    "@nephele/adapter-virtual": "^1.0.0-alpha.39",
-    "@nephele/authenticator-custom": "^1.0.0-alpha.39",
-    "@nephele/authenticator-htpasswd": "^1.0.0-alpha.39",
-    "@nephele/authenticator-none": "^1.0.0-alpha.39",
-    "@nephele/plugin-encryption": "^1.0.0-alpha.39",
-    "@nephele/plugin-index": "^1.0.0-alpha.39",
+    "@nephele/adapter-file-system": "^1.0.0-alpha.40",
+    "@nephele/adapter-s3": "^1.0.0-alpha.40",
+    "@nephele/adapter-virtual": "^1.0.0-alpha.40",
+    "@nephele/authenticator-custom": "^1.0.0-alpha.40",
+    "@nephele/authenticator-htpasswd": "^1.0.0-alpha.40",
+    "@nephele/authenticator-none": "^1.0.0-alpha.40",
+    "@nephele/plugin-encryption": "^1.0.0-alpha.40",
+    "@nephele/plugin-index": "^1.0.0-alpha.40",
     "commander": "^11.0.0",
     "express": "^4.18.2",
-    "nephele": "^1.0.0-alpha.39",
+    "nephele": "^1.0.0-alpha.40",
     "update-notifier": "^6.0.2"
   },
   "optionalDependencies": {
-    "@nephele/authenticator-pam": "^1.0.0-alpha.39",
+    "@nephele/authenticator-pam": "^1.0.0-alpha.40",
     "userhomepath": "^1.0.6",
     "userid": "^1.2.5"
   },
