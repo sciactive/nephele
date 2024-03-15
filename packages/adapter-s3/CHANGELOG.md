@@ -3,6 +3,22 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.41](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.40...v1.0.0-alpha.41) (2024-03-15)
+
+
+### Bug Fixes
+
+* deleting empty collections in s3 adapter ([dd6d10e](https://github.com/sciactive/nephele/commit/dd6d10ebf7a7779fd93b225182b482428a7d3b33))
+
+
+### Features
+
+* add upload queue size option to s3 adapter ([2a385d4](https://github.com/sciactive/nephele/commit/2a385d44d0546dcf5acd8bc30b062d8f554b2604))
+
+
+
+
+
 # [1.0.0-alpha.40](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.39...v1.0.0-alpha.40) (2024-03-15)
 
 
