@@ -4,7 +4,6 @@ import {
   ListObjectsV2Command,
   PutObjectCommand,
   GetObjectCommand,
-  GetObjectAttributesCommand,
   DeleteObjectCommand,
   HeadObjectCommand,
   CopyObjectCommand,
@@ -170,7 +169,7 @@ export default class Resource implements ResourceInterface {
 
       return body as Readable;
     } catch (e: any) {
-      if (e instanceof NoSuchKey) {
+      if (e instanceof NoSuchKey || e instanceof NotFound) {
         throw new ResourceNotFoundError();
       }
       throw e;
@@ -742,11 +741,10 @@ export default class Resource implements ResourceInterface {
     }
 
     try {
-      debug('GetObjectAttributesCommand', key);
-      const command = new GetObjectAttributesCommand({
+      debug('HeadObjectCommand', key);
+      const command = new HeadObjectCommand({
         Bucket: this.adapter.bucket,
         Key: key,
-        ObjectAttributes: ['ETag'],
       });
 
       const response = await this.adapter.s3.send(command);
@@ -756,7 +754,7 @@ export default class Resource implements ResourceInterface {
         this.lastModified = response.LastModified;
       }
     } catch (e: any) {
-      if (e instanceof NoSuchKey) {
+      if (e instanceof NoSuchKey || e instanceof NotFound) {
         if (key === this.key) {
           this.inStorage = false;
         }
@@ -794,7 +792,7 @@ export default class Resource implements ResourceInterface {
     //     dirname = path.dirname(dirname);
     //   }
     // } catch (e: any) {
-    //   if (e instanceof NoSuchKey) {
+    //   if (e instanceof NoSuchKey || e instanceof NotFound) {
     //     return false;
     //   }
     //   throw e;
@@ -876,7 +874,7 @@ export default class Resource implements ResourceInterface {
         response.Metadata?.['nephele-locks'] ?? '{}'
       );
     } catch (e: any) {
-      if (!(e instanceof NotFound)) {
+      if (!(e instanceof NotFound || e instanceof NoSuchKey)) {
         throw e;
       }
     }
@@ -922,7 +920,7 @@ export default class Resource implements ResourceInterface {
 
       this.meta = meta;
     } catch (e: any) {
-      if (!(e instanceof NoSuchKey)) {
+      if (!(e instanceof NoSuchKey || e instanceof NotFound)) {
         throw e;
       }
     }
