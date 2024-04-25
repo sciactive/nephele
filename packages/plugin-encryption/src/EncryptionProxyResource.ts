@@ -166,11 +166,13 @@ export class EncryptionProxyResource implements Resource {
     }
 
     const properties = await this.targetResource.getProperties();
-    const { stream, iv } = await this.plugin.getEncryptedStream(
+    const { stream } = await this.plugin.getEncryptedStream(
       this.keys.content,
       input,
-      async (paddingBytes: number) => {
+      async (iv: string) => {
         await properties.set('nephele-encryption-iv', iv);
+      },
+      async (paddingBytes: number) => {
         await properties.set(
           'nephele-encryption-padding-bytes',
           `${paddingBytes}`

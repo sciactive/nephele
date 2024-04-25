@@ -83,6 +83,10 @@ export default class Resource implements ResourceInterface {
     this.path = pathname;
     this.key = this.adapter.relativePathToKey(this.path);
 
+    if (exists === false) {
+      this.inStorage = false;
+    }
+
     if (collection) {
       this.createCollection = !exists;
       this.collection = true;
@@ -920,6 +924,11 @@ export default class Resource implements ResourceInterface {
 
     await this.metaReadyPromise;
 
+    if (this.inStorage === false) {
+      this.meta = meta;
+      return;
+    }
+
     try {
       // Changing metadata in S3 is accomplished by copying an object to its own
       // key and updating the metadata during copy.
@@ -939,7 +948,9 @@ export default class Resource implements ResourceInterface {
 
       this.meta = meta;
     } catch (e: any) {
-      if (!(e instanceof NoSuchKey || e instanceof NotFound)) {
+      if (e instanceof NoSuchKey || e instanceof NotFound) {
+        this.meta = meta;
+      } else {
         throw e;
       }
     }

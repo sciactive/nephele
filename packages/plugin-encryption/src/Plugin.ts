@@ -322,7 +322,8 @@ export default class Plugin implements PluginInterface {
   async getEncryptedStream(
     key: Buffer,
     stream: Readable,
-    callback: (paddingBytes: number) => void
+    ivCallback: (iv: string) => Promise<void>,
+    doneCallback: (paddingBytes: number) => void
   ) {
     const iv = await new Promise<Uint8Array>((resolve, reject) => {
       randomFill(new Uint8Array(16), (err, iv) => {
@@ -333,6 +334,8 @@ export default class Plugin implements PluginInterface {
         resolve(iv);
       });
     });
+
+    await ivCallback(Buffer.from(iv.buffer).toString('base64'));
 
     let streamLength = 0;
     let cipherLength = 0;
@@ -386,7 +389,7 @@ export default class Plugin implements PluginInterface {
 
     cipherWithCounter.readable.on('close', () => {
       // Report the amount of padding.
-      callback(cipherLength - streamLength);
+      doneCallback(cipherLength - streamLength);
     });
 
     return {
