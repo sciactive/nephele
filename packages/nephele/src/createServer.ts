@@ -71,6 +71,7 @@ export default function createServer(
     response.locals.debug(
       `IP: ${request.ip}, Method: ${request.method}, URL: ${request.originalUrl}`
     );
+    response.locals.errors = [];
     next();
   }
 
@@ -87,9 +88,10 @@ export default function createServer(
         `Response: ${response.statusCode} ${response.statusMessage || ''}`
       );
 
-      if (response.locals.error) {
+      for (let error of response.locals.errors) {
         response.locals.debug(
-          `Error Message: ${response.locals.error.message}`
+          'Error Message: %s',
+          'message' in error ? error.message : error
         );
       }
     });
@@ -249,7 +251,7 @@ export default function createServer(
       }
     } catch (e: any) {
       response.locals.debug(`Auth failed.`);
-      response.locals.error = e;
+      response.locals.errors.push(e);
       if (e instanceof UnauthorizedError) {
         response.status(401);
         opts.errorHandler(401, 'Unauthorized.', request, response, e);

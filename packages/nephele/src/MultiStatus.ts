@@ -20,6 +20,12 @@ export class PropStatStatus {
     }
   }
 
+  toString() {
+    return `PropStatStatus: ${this.statusCode} ${this.statusMessage}${
+      this.description ? ` (${this.description})` : ''
+    }`;
+  }
+
   /**
    * Add an xml2js compatible body to the element.
    *
@@ -104,6 +110,12 @@ export class Status {
     } else {
       this.statusMessage = '';
     }
+  }
+
+  toString() {
+    return `Status: ${this.statusCode} ${this.statusMessage}${
+      this.description ? ` (${this.description})` : ''
+    }`;
   }
 
   setDescription(description: string | undefined) {

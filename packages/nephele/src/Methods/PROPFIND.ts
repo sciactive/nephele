@@ -160,6 +160,7 @@ export class PROPFIND extends Method {
       } catch (e: any) {
         const error = new Status(url, 500);
         error.description = 'An internal server error occurred.';
+        response.locals.errors.push(error);
         multiStatus.addStatus(error);
         return;
       }
@@ -177,6 +178,7 @@ export class PROPFIND extends Method {
         const error = new Status(url, 401);
         error.description =
           'The user is not authorized to get properties for this resource.';
+        response.locals.errors.push(error);
         multiStatus.addStatus(error);
         return;
       }
@@ -283,6 +285,7 @@ export class PROPFIND extends Method {
             propStatStatus.setProp(
               Object.fromEntries(forbiddenProps.map((name) => [name, {}]))
             );
+            response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);
           }
 
@@ -296,6 +299,7 @@ export class PROPFIND extends Method {
             propStatStatus.setProp(
               Object.fromEntries(unauthorizedProps.map((name) => [name, {}]))
             );
+            response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);
           }
 
@@ -309,6 +313,7 @@ export class PROPFIND extends Method {
             propStatStatus.setProp(
               Object.fromEntries(notFoundProps.map((name) => [name, {}]))
             );
+            response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);
           }
 
@@ -320,12 +325,14 @@ export class PROPFIND extends Method {
             propStatStatus.setProp(
               Object.fromEntries(errorProps.map((name) => [name, {}]))
             );
+            response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);
           }
         }
       } catch (e: any) {
         const propStatStatus = new PropStatStatus(500);
         propStatStatus.description = 'An internal server error occurred.';
+        response.locals.errors.push(propStatStatus);
         status.addPropStatStatus(propStatStatus);
       }
 

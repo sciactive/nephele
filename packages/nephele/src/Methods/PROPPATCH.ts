@@ -204,6 +204,8 @@ export class PROPPATCH extends Method {
             }
 
             propStatStatus.setProp({ [name]: {} });
+
+            response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);
           }
         );

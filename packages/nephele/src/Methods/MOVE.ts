@@ -371,6 +371,7 @@ export class MOVE extends Method {
             status.description = message;
           }
 
+          response.locals.errors.push(status);
           multiStatus.addStatus(status);
         }
       );

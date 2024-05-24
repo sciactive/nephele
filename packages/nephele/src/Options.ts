@@ -130,7 +130,7 @@ export const defaults: Options = {
     }
 
     if (error) {
-      response.locals.error = error;
+      response.locals.errors.push(error);
     }
 
     if (code === 500 && error) {

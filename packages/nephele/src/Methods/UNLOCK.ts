@@ -101,6 +101,7 @@ export class UNLOCK extends Method {
 
       let status = new Status(url, 412); // Precondition Failed
       status.setBody({ error: [{ 'lock-token-matches-request-uri': {} }] });
+      response.locals.errors.push(status);
       multiStatus.addStatus(status);
 
       const responseXml = await this.renderXml(multiStatus.render());

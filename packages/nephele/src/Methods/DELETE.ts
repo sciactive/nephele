@@ -224,6 +224,7 @@ export class DELETE extends Method {
               status.setBody({ error: [{ 'lock-token-submitted': {} }] });
             }
 
+            response.locals.errors.push(status);
             multiStatus.addStatus(status);
 
             allDeleted = false;
@@ -244,6 +245,8 @@ export class DELETE extends Method {
       if (e.message) {
         error.description = e.message;
       }
+
+      response.locals.errors.push(error);
       multiStatus.addStatus(error);
 
       return false;

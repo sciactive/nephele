@@ -344,6 +344,7 @@ export class COPY extends Method {
             status.description = message;
           }
 
+          response.locals.errors.push(status);
           multiStatus.addStatus(status);
         }
       );
