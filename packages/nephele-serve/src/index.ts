@@ -7,9 +7,12 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { program, Option } from 'commander';
 import express from 'express';
+import { Nymph } from '@nymphjs/nymph';
+import { SQLite3Driver } from '@nymphjs/driver-sqlite3';
 import type { Adapter } from 'nephele';
 import nepheleServer, { ResourceNotFoundError } from 'nephele';
 import FileSystemAdapter from '@nephele/adapter-file-system';
+import NymphAdapter from '@nephele/adapter-nymph';
 import S3Adapter from '@nephele/adapter-s3';
 import VirtualAdapter from '@nephele/adapter-virtual';
 import CustomAuthenticator, {
@@ -65,6 +68,7 @@ type Conf = {
   s3AccessKey?: string;
   s3SecretKey?: string;
   s3Bucket?: string;
+  dedupe: boolean;
   updateCheck: boolean;
   directory?: string;
 };
@@ -183,6 +187,10 @@ program
   .option('--s3-access-key <access-key>', 'The S3 access key.')
   .option('--s3-secret-key <secret-key>', 'The S3 secret key.')
   .option('--s3-bucket <bucket-name>', 'The S3 bucket.')
+  .option(
+    '--dedupe',
+    'Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.)'
+  )
   .option('--no-update-check', "Don't check for updates.")
   .argument(
     '[directory]',
@@ -225,6 +233,7 @@ Environment Variables:
   S3_ACCESS_KEY                              Same as --s3-access-key.
   S3_SECRET_KEY                              Same as --s3-secret-key.
   S3_BUCKET                                  Same as --s3-bucket.
+  DEDUPE                                     Same as --dedupe when set to "true", "on" or "1".
   UPDATE_CHECK                               Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT                                Same as [directory].
 
@@ -300,6 +309,16 @@ S3 Object Store:
 );
 
 program.addHelpText(
+  'after',
+  `
+File Deduplication:
+  TODO: add documentation for Nymph adapter.
+
+  You can find more information about Nephele's Nymph.js adapter here:
+  https://github.com/sciactive/nephele/blob/master/packages/adapter-nymph/README.md`
+);
+
+program.addHelpText(
   'afterAll',
   `
 Nephele repo: https://github.com/sciactive/nephele
@@ -356,6 +375,7 @@ try {
     s3AccessKey,
     s3SecretKey,
     s3Bucket,
+    dedupe,
     updateCheck,
     directory,
   } = {
@@ -399,6 +419,9 @@ try {
     s3AccessKey: process.env.S3_ACCESS_KEY,
     s3SecretKey: process.env.S3_SECRET_KEY,
     s3Bucket: process.env.S3_BUCKET,
+    dedupe: ['true', 'on', '1'].includes(
+      (process.env.DEDUPE || '').toLowerCase()
+    ),
     updateCheck: !['false', 'off', '0'].includes(
       (process.env.UPDATE_CHECK || '').toLowerCase()
     ),
@@ -496,6 +519,41 @@ try {
     throw new Error('The --s3-bucket option is required to use S3.');
   }
 
+  if (dedupe && homeDirectories) {
+    throw new Error(
+      'The --dedupe option is not compatible with --home-directories.'
+    );
+  }
+
+  if (dedupe && userDirectories) {
+    throw new Error(
+      'The --dedupe option is not compatible with --user-directories.'
+    );
+  }
+
+  if (
+    dedupe &&
+    auth &&
+    !pamAuth &&
+    (authUsername == null || authPassword == null)
+  ) {
+    throw new Error(
+      'The --dedupe option requires auth to be set with --pam-auth or --auth-username and --auth-password.'
+    );
+  }
+
+  if (dedupe && encryption) {
+    throw new Error('The --dedupe option is not compatible with --encryption.');
+  }
+
+  if (dedupe && s3Endpoint != null) {
+    throw new Error('The --dedupe option is not compatible with S3.');
+  }
+
+  if (dedupe && directory == null) {
+    throw new Error('The --dedupe option requires a root directory.');
+  }
+
   if (homeDirectories) {
     pamAuth = true;
   }
@@ -563,6 +621,17 @@ try {
     throw new Error('No hosts to listen on.');
   }
 
+  let nymph: Nymph;
+  if (dedupe && directory) {
+    nymph = new Nymph(
+      {},
+      new SQLite3Driver({
+        filename: path.resolve(directory, 'nephele.db'),
+        wal: true,
+      })
+    );
+  }
+
   app.use(
     '/',
     nepheleServer({
@@ -590,7 +659,13 @@ try {
 
           let adapter: Adapter;
 
-          if (s3Endpoint == null) {
+          if (dedupe) {
+            if (directory == null || !fs.statSync(directory).isDirectory()) {
+              throw new Error('Server root is not an accessible directory.');
+            }
+
+            adapter = new NymphAdapter({ root: directory, nymph });
+          } else if (s3Endpoint == null) {
             if (directory == null || !fs.statSync(directory).isDirectory()) {
               throw new Error('Server root is not an accessible directory.');
             }
@@ -684,8 +759,8 @@ try {
           }
 
           return adapter;
-        } catch (e) {
-          throw new Error("Couldn't mount server root.");
+        } catch (e: any) {
+          throw new Error(`Couldn't mount server root: ${e.message}`);
         }
       },
 

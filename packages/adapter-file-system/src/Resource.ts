@@ -141,11 +141,11 @@ export default class Resource implements ResourceInterface {
     const handle = await fsp.open(this.absolutePath, 'r');
 
     const stream = handle.createReadStream(range ? range : undefined);
-    stream.on('error', () => {
-      handle.close();
+    stream.on('error', async () => {
+      await handle.close();
     });
-    stream.on('close', () => {
-      handle.close();
+    stream.on('close', async () => {
+      await handle.close();
     });
 
     return stream;
@@ -202,25 +202,25 @@ export default class Resource implements ResourceInterface {
     //   }
     // });
 
-    // input.on('end', () => {
-    //   stream.close();
+    // input.on('end', async () => {
+    //   await stream.close();
     // });
 
     return new Promise<void>((resolve, reject) => {
-      stream.on('close', () => {
-        handle.close();
+      stream.on('close', async () => {
+        await handle.close();
         resolve();
       });
 
-      stream.on('error', (err) => {
+      stream.on('error', async (err) => {
         input.destroy(err);
-        handle.close();
+        await handle.close();
         reject(err);
       });
 
-      input.on('error', (err) => {
+      input.on('error', async (err) => {
         stream.destroy(err);
-        handle.close();
+        await handle.close();
         reject(err);
       });
     });
@@ -647,7 +647,7 @@ export default class Resource implements ResourceInterface {
       // Check if we can open the file.
       try {
         const handle = await fsp.open(this.absolutePath, 'r');
-        handle.close();
+        await handle.close();
       } catch (e: any) {
         throw new Error('Resource is not accessible.');
       }
