@@ -48,9 +48,9 @@
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@nymphjs/driver-sqlite3": "^1.0.0-beta.52",
-    "@nymphjs/nymph": "^1.0.0-beta.52",
-    "@nymphjs/tilmeld": "^1.0.0-beta.52",
+    "@nymphjs/driver-sqlite3": "^1.0.0-beta.55",
+    "@nymphjs/nymph": "^1.0.0-beta.55",
+    "@nymphjs/tilmeld": "^1.0.0-beta.55",
     "@sciactive/back-pressure-transform": "^0.0.2",
     "check-disk-space": "^3.4.0",
     "file-type": "^19.0.0",

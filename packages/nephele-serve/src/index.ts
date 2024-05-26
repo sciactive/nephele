@@ -7,8 +7,10 @@ import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { program, Option } from 'commander';
 import express from 'express';
-import { Nymph } from '@nymphjs/nymph';
+import { Nymph, type NymphDriver } from '@nymphjs/nymph';
 import { SQLite3Driver } from '@nymphjs/driver-sqlite3';
+import { MySQLDriver } from '@nymphjs/driver-mysql';
+import { PostgreSQLDriver } from '@nymphjs/driver-postgresql';
 import {
   enforceTilmeld,
   User as NymphUser,
@@ -83,6 +85,23 @@ type Conf = {
   nymphRestPath?: string;
   nymphSetupPath?: string;
   nymphRegistration: boolean;
+  nymphExport?: string;
+  nymphImport?: string;
+  nymphDbDriver?: string;
+  nymphMysqlHost?: string;
+  nymphMysqlPort?: number;
+  nymphMysqlDatabase?: string;
+  nymphMysqlUsername?: string;
+  nymphMysqlPassword?: string;
+  nymphMysqlPrefix?: string;
+  nymphPostgresHost?: string;
+  nymphPostgresPort?: number;
+  nymphPostgresDatabase?: string;
+  nymphPostgresUsername?: string;
+  nymphPostgresPassword?: string;
+  nymphPostgresPrefix?: string;
+  nymphSqliteCacheSize?: number;
+  nymphSqlitePrefix?: string;
   updateCheck: boolean;
   directory?: string;
 };
@@ -221,6 +240,78 @@ program
     '--no-nymph-registration',
     "Don't allow new user registration through the Nymph user setup app."
   )
+  .option(
+    '--nymph-export <filename>',
+    'Export the Nymph database to a NEX file.'
+  )
+  .option(
+    '--nymph-import <filename>',
+    'Import the Nymph database from a NEX file.'
+  )
+  .option(
+    '--nymph-db-driver <db_driver>',
+    'The type of the DB driver to use. (Can be "mysql", "postgres", or "sqlite". Defaults to "sqlite").'
+  )
+  .option(
+    '--nymph-mysql-host <host>',
+    'The MySQL host if the DB driver is "mysql". (Defaults to "localhost".)'
+  )
+  .addOption(
+    new Option(
+      '--nymph-mysql-port <port>',
+      'The MySQL port if the DB driver is "mysql". (Defaults to 3306.)'
+    ).argParser(parseInt)
+  )
+  .option(
+    '--nymph-mysql-database <database>',
+    'The MySQL database if the DB driver is "mysql". (Defaults to "nymph".)'
+  )
+  .option(
+    '--nymph-mysql-username <username>',
+    'The MySQL username if the DB driver is "mysql". (Defaults to "nymph".)'
+  )
+  .option(
+    '--nymph-mysql-password <password>',
+    'The MySQL password if the DB driver is "mysql". (Defaults to "password".)'
+  )
+  .option(
+    '--nymph-mysql-prefix <prefix>',
+    'The MySQL table prefix if the DB driver is "mysql". (Defaults to "nymph_".)'
+  )
+  .option(
+    '--nymph-postgres-host <host>',
+    'The PostgreSQL host if the DB driver is "postgres". (Defaults to "localhost".)'
+  )
+  .addOption(
+    new Option(
+      '--nymph-postgres-port <port>',
+      'The PostgreSQL port if the DB driver is "postgres". (Defaults to 5432.)'
+    ).argParser(parseInt)
+  )
+  .option(
+    '--nymph-postgres-database <database>',
+    'The PostgreSQL database if the DB driver is "postgres". (Defaults to "nymph".)'
+  )
+  .option(
+    '--nymph-postgres-username <username>',
+    'The PostgreSQL username if the DB driver is "postgres". (Defaults to "nymph".)'
+  )
+  .option(
+    '--nymph-postgres-password <password>',
+    'The PostgreSQL password if the DB driver is "postgres". (Defaults to "password".)'
+  )
+  .option(
+    '--nymph-postgres-prefix <prefix>',
+    'The PostgreSQL table prefix if the DB driver is "postgres". (Defaults to "nymph_".)'
+  )
+  .option(
+    '--nymph-sqlite-cache-size <kilobytes>',
+    'The SQLite cache size to maintain in memory. (Defaults to 100MB).'
+  )
+  .option(
+    '--nymph-sqlite-prefix <prefix>',
+    'The SQLite table prefix if the DB driver is "sqlite". (Defaults to "nymph_".)'
+  )
   .option('--no-update-check', "Don't check for updates.")
   .argument(
     '[directory]',
@@ -268,6 +359,23 @@ Environment Variables:
   NYMPH_REST_PATH                            Same as --nymph-rest-path.
   NYMPH_SETUP_PATH                           Same as --nymph-setup-path.
   NYMPH_REGISTRATION                         Same as --no-nymph-registration when set to "false", "off" or "0".
+  NYMPH_EXPORT                               Same as --nymph-export.
+  NYMPH_IMPORT                               Same as --nymph-import.
+  NYMPH_DB_DRIVER                            Same as --nymph-db-driver.
+  NYMPH_MYSQL_HOST                           Same as --nymph-mysql-host.
+  NYMPH_MYSQL_PORT                           Same as --nymph-mysql-port.
+  NYMPH_MYSQL_DATABASE                       Same as --nymph-mysql-database.
+  NYMPH_MYSQL_USERNAME                       Same as --nymph-mysql-username.
+  NYMPH_MYSQL_PASSWORD                       Same as --nymph-mysql-password.
+  NYMPH_MYSQL_PREFIX                         Same as --nymph-mysql-prefix.
+  NYMPH_POSTGRES_HOST                        Same as --nymph-postgres-host.
+  NYMPH_POSTGRES_PORT                        Same as --nymph-postgres-port.
+  NYMPH_POSTGRES_DATABASE                    Same as --nymph-postgres-database.
+  NYMPH_POSTGRES_USERNAME                    Same as --nymph-postgres-username.
+  NYMPH_POSTGRES_PASSWORD                    Same as --nymph-postgres-password.
+  NYMPH_POSTGRES_PREFIX                      Same as --nymph-postgres-prefix.
+  NYMPH_SQLITE_CACHE_SIZE                    Same as --nymph-sqlite-cache-size.
+  NYMPH_SQLITE_PREFIX                        Same as --nymph-sqlite-prefix.
   UPDATE_CHECK                               Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT                                Same as [directory].
 
@@ -345,15 +453,36 @@ S3 Object Store:
 program.addHelpText(
   'after',
   `
-File Deduplication:
-  TODO: add documentation for Nymph adapter.
+Nymph and File Deduplication:
+  When Nephele is loaded with the Nymph adapter, it will use a deduplicating
+  file storage method. File metadata is stored in the Nymph database, which can
+  be a SQLite3, MySQL, or PostgreSQL database, and file contents are stored on
+  disk using their SHA-384 hash for deduplication.
 
   When using the Nymph adapter, unless auth is disable, PAM auth is enabled, or
   a global username/password is set, the Nymph authenticator will be loaded.
-  This authenticator uses Tilmeld, which is a user/group manager for Nymph.
+  This authenticator uses Tilmeld, which is a user/group manager for Nymph. The
+  first user you create will be the admin user, then you should turn off
+  registration.
+
+  The SQLite3 driver is easier to set up, because the DB can be stored in a file
+  alongside the file blobs, but it is considerably slower if you have many files
+  in your server. It also must be on a local disk, because it uses SQLite's
+  write ahead log.
+
+  The MySQL and PostgreSQL drivers are much faster. If you start with a SQLite
+  DB and end up outgrowing it, you can export your Nymph DB to a NEX file, then
+  import it into a new database. The import can take a long time (many hours),
+  so plan for downtime if you do this.
+
+  Because the files are deduplicated, this can be a great option if you store
+  something like regular backups, where many files have the same contents.
 
   You can find more information about Nephele's Nymph.js adapter here:
-  https://github.com/sciactive/nephele/blob/master/packages/adapter-nymph/README.md`
+  https://github.com/sciactive/nephele/blob/master/packages/adapter-nymph/README.md
+
+  You can find more information about Nymph.js:
+  https://nymph.io`
 );
 
 program.addHelpText(
@@ -418,6 +547,23 @@ try {
     nymphRestPath,
     nymphSetupPath,
     nymphRegistration,
+    nymphExport,
+    nymphImport,
+    nymphDbDriver,
+    nymphMysqlHost,
+    nymphMysqlPort,
+    nymphMysqlDatabase,
+    nymphMysqlUsername,
+    nymphMysqlPassword,
+    nymphMysqlPrefix,
+    nymphPostgresHost,
+    nymphPostgresPort,
+    nymphPostgresDatabase,
+    nymphPostgresUsername,
+    nymphPostgresPassword,
+    nymphPostgresPrefix,
+    nymphSqliteCacheSize,
+    nymphSqlitePrefix,
     updateCheck,
     directory,
   } = {
@@ -470,6 +616,23 @@ try {
     nymphRegistration: !['false', 'off', '0'].includes(
       (process.env.NYMPH_REGISTRATION || '').toLowerCase()
     ),
+    nymphExport: process.env.NYMPH_EXPORT,
+    nymphImport: process.env.NYMPH_IMPORT,
+    nymphDbDriver: process.env.NYMPH_DB_DRIVER,
+    nymphMysqlHost: process.env.NYMPH_MYSQL_HOST,
+    nymphMysqlPort: process.env.NYMPH_MYSQL_PORT,
+    nymphMysqlDatabase: process.env.NYMPH_MYSQL_DATABASE,
+    nymphMysqlUsername: process.env.NYMPH_MYSQL_USERNAME,
+    nymphMysqlPassword: process.env.NYMPH_MYSQL_PASSWORD,
+    nymphMysqlPrefix: process.env.NYMPH_MYSQL_PREFIX,
+    nymphPostgresHost: process.env.NYMPH_POSTGRES_HOST,
+    nymphPostgresPort: process.env.NYMPH_POSTGRES_PORT,
+    nymphPostgresDatabase: process.env.NYMPH_POSTGRES_DATABASE,
+    nymphPostgresUsername: process.env.NYMPH_POSTGRES_USERNAME,
+    nymphPostgresPassword: process.env.NYMPH_POSTGRES_PASSWORD,
+    nymphPostgresPrefix: process.env.NYMPH_POSTGRES_PREFIX,
+    nymphSqliteCacheSize: process.env.NYMPH_SQLITE_CACHE_SIZE,
+    nymphSqlitePrefix: process.env.NYMPH_SQLITE_PREFIX,
     updateCheck: !['false', 'off', '0'].includes(
       (process.env.UPDATE_CHECK || '').toLowerCase()
     ),
@@ -547,7 +710,13 @@ try {
     );
   }
 
-  if (directory == null && !homeDirectories && s3Endpoint == null) {
+  if (
+    directory == null &&
+    !homeDirectories &&
+    s3Endpoint == null &&
+    nymphExport == null &&
+    nymphImport == null
+  ) {
     throw new Error(
       'A root directory, an S3 endpoint, or the --home-directories option is required.'
     );
@@ -685,15 +854,80 @@ try {
   }
 
   let nymphInstance: Nymph | undefined = undefined;
-  if (nymph && directory) {
-    nymphInstance = new Nymph(
-      {},
-      new SQLite3Driver({
+  let nymphDriver: NymphDriver | undefined = undefined;
+  if (nymph) {
+    if (nymphDbDriver === 'mysql') {
+      nymphDriver = new MySQLDriver({
+        ...(nymphMysqlHost != null ? { host: nymphMysqlHost } : {}),
+        ...(nymphMysqlPort != null ? { port: nymphMysqlPort } : {}),
+        ...(nymphMysqlDatabase != null ? { database: nymphMysqlDatabase } : {}),
+        ...(nymphMysqlUsername != null ? { user: nymphMysqlUsername } : {}),
+        ...(nymphMysqlPassword != null ? { password: nymphMysqlPassword } : {}),
+        ...(nymphMysqlPrefix != null ? { prefix: nymphMysqlPrefix } : {}),
+      });
+    } else if (nymphDbDriver === 'postgres') {
+      nymphDriver = new PostgreSQLDriver({
+        ...(nymphPostgresHost != null ? { host: nymphPostgresHost } : {}),
+        ...(nymphPostgresPort != null ? { port: nymphPostgresPort } : {}),
+        ...(nymphPostgresUsername != null
+          ? { user: nymphPostgresUsername }
+          : {}),
+        ...(nymphPostgresPassword != null
+          ? { password: nymphPostgresPassword }
+          : {}),
+        ...(nymphPostgresDatabase != null
+          ? { database: nymphPostgresDatabase }
+          : {}),
+        ...(nymphPostgresPrefix != null ? { prefix: nymphPostgresPrefix } : {}),
+      });
+    } else if (directory) {
+      nymphDriver = new SQLite3Driver({
         filename: path.resolve(directory, 'nephele.db'),
         wal: true,
-      }),
+        pragmas: [
+          `cache_size = -${nymphSqliteCacheSize ?? '100000'};`,
+          'synchronous = NORMAL;',
+        ],
+        ...(nymphSqlitePrefix != null ? { prefix: nymphSqlitePrefix } : {}),
+      });
+    } else {
+      throw new Error('Nymph database misconfigured.');
+    }
+
+    nymphInstance = new Nymph(
+      {
+        cache: true,
+        cacheThreshold: 1,
+      },
+      nymphDriver,
       tilmeld
     );
+
+    if (nymphExport) {
+      console.log('Nymph DB export started...');
+      if (await nymphInstance.export(nymphExport)) {
+        console.log('Nymph DB export finished.');
+        process.exit(0);
+      } else {
+        console.error('Nymph DB export error.');
+        process.exit(1);
+      }
+    }
+
+    if (nymphImport) {
+      console.log('Nymph DB import started...');
+      if (await nymphInstance.import(nymphImport)) {
+        console.log('Nymph DB import finished.');
+        process.exit(0);
+      } else {
+        console.error('Nymph DB import error.');
+        process.exit(1);
+      }
+    }
+
+    if (directory == null) {
+      throw new Error('Directory is required when using Nymph adapter.');
+    }
   }
 
   if (nymphInstance && tilmeld) {

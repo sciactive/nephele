@@ -36,22 +36,26 @@ export default class Resource implements ResourceInterface {
   baseUrl: URL;
   path: string;
   nymphResource: NymphResource & NymphResourceData;
+  rootResource: NymphResource & NymphResourceData;
 
   constructor({
     adapter,
     baseUrl,
     path,
     nymphResource,
+    rootResource,
   }: {
     adapter: Adapter;
     baseUrl: URL;
     path: string;
     nymphResource: NymphResource & NymphResourceData;
+    rootResource?: NymphResource & NymphResourceData;
   }) {
     this.adapter = adapter;
     this.baseUrl = baseUrl;
     this.path = path;
     this.nymphResource = nymphResource;
+    this.rootResource = rootResource ?? nymphResource;
   }
 
   async getLocks() {
@@ -347,8 +351,9 @@ export default class Resource implements ResourceInterface {
       );
     }
 
-    const destinationParent = await this.adapter.getParent(
-      destinationPathParts
+    const destinationParent = await this.adapter.getNymphParent(
+      destinationPathParts,
+      this.rootResource
     );
 
     if (!destinationParent) {
@@ -450,8 +455,9 @@ export default class Resource implements ResourceInterface {
       );
     }
 
-    const destinationParent = await this.adapter.getParent(
-      destinationPathParts
+    const destinationParent = await this.adapter.getNymphParent(
+      destinationPathParts,
+      this.rootResource
     );
 
     if (!destinationParent) {
@@ -592,6 +598,7 @@ export default class Resource implements ResourceInterface {
           baseUrl: this.baseUrl,
           adapter: this.adapter,
           nymphResource,
+          rootResource: this.rootResource,
         })
       );
     }

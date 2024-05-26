@@ -120,6 +120,12 @@ export class Resource extends Entity<ResourceData> {
       if (!(await newNymphResource.$save())) {
         throw new InternalServerError("Couldn't save destination resource.");
       }
+
+      await tnymph.commit(transaction);
+      this.$setNymph(nymph);
+      if (existingResource) {
+        existingResource.$setNymph(nymph);
+      }
     } catch (e: any) {
       await tnymph.rollback(transaction);
       this.$setNymph(nymph);
@@ -129,7 +135,6 @@ export class Resource extends Entity<ResourceData> {
       try {
         // Refresh the entity, since there might be referenced entities that
         // think they're deleted, but aren't really because of the rollback.
-        await this.$refresh();
         if (existingResource) {
           existingResource.$refresh();
         }
@@ -209,6 +214,12 @@ export class Resource extends Entity<ResourceData> {
 
       if (!(await this.$save())) {
         throw new InternalServerError("Couldn't save destination resource.");
+      }
+
+      await tnymph.commit(transaction);
+      this.$setNymph(nymph);
+      if (existingResource) {
+        existingResource.$setNymph(nymph);
       }
     } catch (e: any) {
       await tnymph.rollback(transaction);

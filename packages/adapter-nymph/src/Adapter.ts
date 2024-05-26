@@ -3,7 +3,12 @@ import fs from 'node:fs';
 import { constants } from 'node:fs';
 import type { Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { Nymph, TilmeldAccessLevels } from '@nymphjs/nymph';
+import {
+  Nymph,
+  type Options,
+  type Selector,
+  TilmeldAccessLevels,
+} from '@nymphjs/nymph';
 import { SQLite3Driver } from '@nymphjs/driver-sqlite3';
 import {
   Tilmeld,
@@ -70,6 +75,7 @@ export default class Adapter implements AdapterInterface {
   getRootResource: () => Promise<NymphResource & NymphResourceData>;
   NymphLock: typeof NymphLock;
   NymphResource: typeof NymphResource;
+  _rootResource: (NymphResource & NymphResourceData) | null = null;
 
   get tempRoot() {
     return path.resolve(this.root, 'temp');
@@ -84,15 +90,11 @@ export default class Adapter implements AdapterInterface {
       new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
       () => path.sep
     );
-    this.nymph =
-      nymph ||
-      new Nymph(
-        {},
-        new SQLite3Driver({
-          filename: path.resolve(this.root, 'nephele.db'),
-          wal: true,
-        })
-      );
+    const driver = new SQLite3Driver({
+      filename: path.resolve(this.root, 'nephele.db'),
+      wal: true,
+    });
+    this.nymph = nymph || new Nymph({}, driver);
 
     try {
       this.NymphLock = this.nymph.getEntityClass(NymphLock);
@@ -108,32 +110,37 @@ export default class Adapter implements AdapterInterface {
     this.getRootResource =
       getRootResource ??
       (async () => {
-        let rootResource = await this.nymph.getEntity(
-          { class: this.NymphResource },
-          {
-            type: '&',
-            '!defined': 'parent',
-            equal: ['collection', true],
-          }
-        );
+        if (this._rootResource == null) {
+          let rootResource = await this.nymph.getEntity(
+            { class: this.NymphResource },
+            {
+              type: '&',
+              '!defined': 'parent',
+              equal: ['collection', true],
+            }
+          );
 
-        if (rootResource == null) {
-          rootResource = await this.NymphResource.factory();
-          rootResource.name = uuidv4();
-          rootResource.size = 0;
-          rootResource.contentType = 'inode/directory';
-          rootResource.collection = true;
-          rootResource.hash = EMPTY_HASH;
+          if (rootResource == null) {
+            rootResource = await this.NymphResource.factory();
+            rootResource.name = uuidv4();
+            rootResource.size = 0;
+            rootResource.contentType = 'inode/directory';
+            rootResource.collection = true;
+            rootResource.hash = EMPTY_HASH;
 
-          if (!(await rootResource.$save())) {
-            throw new InternalServerError(
-              'Root resource could not be created.'
-            );
+            if (!(await rootResource.$save())) {
+              throw new InternalServerError(
+                'Root resource could not be created.'
+              );
+            }
           }
+
+          this._rootResource = rootResource;
         }
 
-        return rootResource;
+        return this._rootResource;
       });
+
     try {
       fs.accessSync(this.root, constants.R_OK);
     } catch (e: any) {
@@ -253,45 +260,36 @@ export default class Adapter implements AdapterInterface {
     }
 
     try {
-      let curParent: NymphResource & NymphResourceData =
+      let rootResource: NymphResource & NymphResourceData =
         await this.getRootResource();
 
-      for (let i = 0; i < pathParts.length; i++) {
-        const curResource: (NymphResource & NymphResourceData) | null =
-          await this.nymph.getEntity(
-            { class: this.NymphResource },
-            {
-              type: '&',
-              equal: ['name', pathParts[i]],
-              ref: ['parent', curParent],
-            }
-          );
+      const parent = await this.getNymphParent(pathParts, rootResource);
 
-        if (curResource == null) {
-          if (i < pathParts.length - 1) {
-            // This is before the last path part, so the resource tree is not
-            // complete.
-            return false;
+      if (!parent || parent.collection !== true) {
+        // The resource tree is not complete.
+        return false;
+      }
+
+      const curResource: (NymphResource & NymphResourceData) | null =
+        await this.nymph.getEntity(
+          { class: this.NymphResource },
+          {
+            type: '&',
+            equal: ['name', pathParts[pathParts.length - 1]],
+            ref: ['parent', parent],
           }
+        );
 
-          // This is the last path part, and the resource doesn't exist, so
-          // check if we have at most write permission to the parent.
-          return tilmeld.checkPermissions(
-            curParent,
-            Math.max(access, TilmeldAccessLevels.WRITE_ACCESS),
-            user
-          );
-        } else if (i === pathParts.length - 1) {
-          // This is the last path part, so this is the resource we need to
-          // check.
-          return tilmeld.checkPermissions(curResource, access, user);
-        } else if (curResource.collection !== true) {
-          // One of the resources in the resource tree is not a collection.
-          return false;
-        } else {
-          // Keep going down the resource tree.
-          curParent = curResource;
-        }
+      if (curResource == null) {
+        // Check the parent for at least write permission.
+        return tilmeld.checkPermissions(
+          parent,
+          Math.max(access, TilmeldAccessLevels.WRITE_ACCESS),
+          user
+        );
+      } else {
+        // Check the resoure itself.
+        return tilmeld.checkPermissions(curResource, access, user);
       }
     } catch (e: any) {
       if (e instanceof AccessControlError) {
@@ -305,45 +303,76 @@ export default class Adapter implements AdapterInterface {
     return false;
   }
 
-  async getParent(pathParts: string[]) {
-    let curParent: NymphResource & NymphResourceData =
-      await this.getRootResource();
-
-    if (pathParts.length <= 1) {
-      return curParent;
+  async getNymphResource(
+    pathParts: string[],
+    rootResource: NymphResource & NymphResourceData
+  ) {
+    if (pathParts.length === 0) {
+      return rootResource;
     }
 
-    for (let i = 0; i < pathParts.length; i++) {
-      if (i === pathParts.length - 1) {
-        // This is the last path part.
-        return curParent;
-      }
+    let query = [
+      { class: this.NymphResource },
+      {
+        type: '&',
+        guid: rootResource.guid,
+      },
+    ] as [Options<typeof NymphResource>, ...Selector[]];
 
-      const curResource: (NymphResource & NymphResourceData) | null =
-        await this.nymph.getEntity(
+    let depth = 0;
+    for (let i = 0; i < pathParts.length; i++) {
+      if (depth === 2) {
+        const resource = await this.nymph.getEntity(...query);
+        if (resource == null) {
+          return resource;
+        }
+        query = [
           { class: this.NymphResource },
           {
             type: '&',
-            equal: [
-              ['name', pathParts[i]],
-              ['collection', true],
-            ],
-            ref: ['parent', curParent],
-          }
-        );
-
-      if (curResource == null) {
-        // This is before the last path part, so the resource tree is not
-        // complete.
-        return false;
+            guid: resource.guid,
+          },
+        ] as [Options<typeof NymphResource>, ...Selector[]];
+        depth = 0;
       }
 
-      // Keep going down the resource tree.
-      curParent = curResource;
+      const part = pathParts[i];
+      query = [
+        { class: this.NymphResource },
+        {
+          type: '&',
+          equal: [
+            ['name', part],
+            ...(i < pathParts.length - 1 ? [['collection', true]] : []),
+          ],
+          qref: ['parent', query],
+        },
+      ] as [Options<typeof NymphResource>, ...Selector[]];
+
+      depth++;
     }
 
-    // We shouldn't ever get here, but just in case.
-    return curParent;
+    return await this.nymph.getEntity(...query);
+  }
+
+  async getNymphParent(
+    pathParts: string[],
+    rootResource: NymphResource & NymphResourceData
+  ) {
+    if (pathParts.length <= 1) {
+      return rootResource;
+    }
+
+    const resource = await this.getNymphResource(
+      pathParts.slice(0, -1),
+      rootResource
+    );
+
+    if (resource == null || resource.collection !== true) {
+      return false;
+    }
+
+    return resource;
   }
 
   async getResource(url: URL, baseUrl: URL) {
@@ -356,28 +385,21 @@ export default class Adapter implements AdapterInterface {
     }
 
     try {
+      const rootResource = await this.getRootResource();
+
       if (pathParts.length === 0) {
         return new Resource({
           adapter: this,
           baseUrl,
           path: '/',
-          nymphResource: await this.getRootResource(),
+          nymphResource: rootResource,
+          rootResource,
         });
       }
 
-      const parent = await this.getParent(pathParts);
-
-      if (parent === false) {
-        throw new ResourceNotFoundError('Resource not found.');
-      }
-
-      const nymphResource = await this.nymph.getEntity(
-        { class: this.NymphResource },
-        {
-          type: '&',
-          equal: ['name', pathParts[pathParts.length - 1]],
-          ref: ['parent', parent],
-        }
+      const nymphResource = await this.getNymphResource(
+        pathParts,
+        rootResource
       );
 
       if (nymphResource == null) {
@@ -389,6 +411,7 @@ export default class Adapter implements AdapterInterface {
         baseUrl,
         path: `/${pathParts.join('/')}`,
         nymphResource,
+        rootResource,
       });
 
       return resource;
@@ -409,16 +432,19 @@ export default class Adapter implements AdapterInterface {
       );
     }
 
+    const rootResource = await this.getRootResource();
+
     if (pathParts.length === 0) {
       return new Resource({
         adapter: this,
         baseUrl,
         path: '/',
-        nymphResource: await this.getRootResource(),
+        nymphResource: rootResource,
+        rootResource,
       });
     }
 
-    const parent = await this.getParent(pathParts);
+    const parent = await this.getNymphParent(pathParts, rootResource);
 
     if (!parent) {
       throw new ResourceTreeNotCompleteError(
@@ -450,6 +476,7 @@ export default class Adapter implements AdapterInterface {
         baseUrl,
         path: `/${pathParts.join('/')}`,
         nymphResource: newResource,
+        rootResource,
       });
     }
 
@@ -458,6 +485,7 @@ export default class Adapter implements AdapterInterface {
       baseUrl,
       path: `/${pathParts.join('/')}`,
       nymphResource,
+      rootResource,
     });
   }
 
@@ -470,16 +498,19 @@ export default class Adapter implements AdapterInterface {
       );
     }
 
+    const rootResource = await this.getRootResource();
+
     if (pathParts.length === 0) {
       return new Resource({
         adapter: this,
         baseUrl,
         path: '/',
-        nymphResource: await this.getRootResource(),
+        nymphResource: rootResource,
+        rootResource,
       });
     }
 
-    const parent = await this.getParent(pathParts);
+    const parent = await this.getNymphParent(pathParts, rootResource);
 
     if (!parent) {
       throw new ResourceTreeNotCompleteError(
@@ -511,6 +542,7 @@ export default class Adapter implements AdapterInterface {
         baseUrl,
         path: `/${pathParts.join('/')}`,
         nymphResource: newResource,
+        rootResource,
       });
     }
 
@@ -519,6 +551,7 @@ export default class Adapter implements AdapterInterface {
       baseUrl,
       path: `/${pathParts.join('/')}`,
       nymphResource,
+      rootResource,
     });
   }
 
