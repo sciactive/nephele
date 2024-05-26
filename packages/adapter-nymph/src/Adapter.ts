@@ -5,7 +5,12 @@ import type { Request } from 'express';
 import { v4 as uuidv4 } from 'uuid';
 import { Nymph, TilmeldAccessLevels } from '@nymphjs/nymph';
 import { SQLite3Driver } from '@nymphjs/driver-sqlite3';
-import { Tilmeld, User as NymphUser, enforceTilmeld } from '@nymphjs/tilmeld';
+import {
+  Tilmeld,
+  User as NymphUser,
+  enforceTilmeld,
+  AccessControlError,
+} from '@nymphjs/tilmeld';
 import type {
   Adapter as AdapterInterface,
   AuthResponse,
@@ -236,54 +241,64 @@ export default class Adapter implements AdapterInterface {
     // First make sure the server process and user has access to all
     // directories in the tree.
     const pathParts = this.urlToPathParts(url, baseUrl);
+
     if (pathParts == null) {
+      // Not managed by this adapter.
       return false;
     }
 
-    let curParent: NymphResource & NymphResourceData =
-      await this.getRootResource();
-    for (let i = 0; i < pathParts.length; i++) {
-      const curResource: (NymphResource & NymphResourceData) | null =
-        await this.nymph.getEntity(
-          { class: this.NymphResource },
-          {
-            type: '&',
-            equal: ['name', pathParts[i]],
-            ref: ['parent', curParent],
+    if (pathParts.length === 0) {
+      // The user only has access to change their root, not delete or move it.
+      return access <= TilmeldAccessLevels.WRITE_ACCESS;
+    }
+
+    try {
+      let curParent: NymphResource & NymphResourceData =
+        await this.getRootResource();
+
+      for (let i = 0; i < pathParts.length; i++) {
+        const curResource: (NymphResource & NymphResourceData) | null =
+          await this.nymph.getEntity(
+            { class: this.NymphResource },
+            {
+              type: '&',
+              equal: ['name', pathParts[i]],
+              ref: ['parent', curParent],
+            }
+          );
+
+        if (curResource == null) {
+          if (i < pathParts.length - 1) {
+            // This is before the last path part, so the resource tree is not
+            // complete.
+            return false;
           }
-        );
 
-      if (curResource == null) {
-        if (i < pathParts.length - 1) {
-          // This is before the last path part, so the resource tree is not
-          // complete.
-          return false;
-        }
-
-        // This is the last path part, and the resource doesn't exist, so check
-        // if we have write permission to the parent.
-        return (
-          curParent == null ||
-          tilmeld.checkPermissions(
+          // This is the last path part, and the resource doesn't exist, so
+          // check if we have at most write permission to the parent.
+          return tilmeld.checkPermissions(
             curParent,
-            TilmeldAccessLevels.WRITE_ACCESS,
+            Math.max(access, TilmeldAccessLevels.WRITE_ACCESS),
             user
-          )
-        );
-      } else if (i === pathParts.length - 1) {
-        // This is the last path part, so this is the resource we need to check.
-        return tilmeld.checkPermissions(
-          curResource,
-          TilmeldAccessLevels.WRITE_ACCESS,
-          user
-        );
-      } else if (curResource.collection !== true) {
-        // One of the resources in the resource tree is not a collection.
-        return false;
-      } else {
-        // Keep going down the resource tree.
-        curParent = curResource;
+          );
+        } else if (i === pathParts.length - 1) {
+          // This is the last path part, so this is the resource we need to
+          // check.
+          return tilmeld.checkPermissions(curResource, access, user);
+        } else if (curResource.collection !== true) {
+          // One of the resources in the resource tree is not a collection.
+          return false;
+        } else {
+          // Keep going down the resource tree.
+          curParent = curResource;
+        }
       }
+    } catch (e: any) {
+      if (e instanceof AccessControlError) {
+        return false;
+      }
+
+      throw e;
     }
 
     // We shouldn't ever get here, but just in case, return false.
@@ -340,42 +355,49 @@ export default class Adapter implements AdapterInterface {
       );
     }
 
-    if (pathParts.length === 0) {
-      return new Resource({
+    try {
+      if (pathParts.length === 0) {
+        return new Resource({
+          adapter: this,
+          baseUrl,
+          path: '/',
+          nymphResource: await this.getRootResource(),
+        });
+      }
+
+      const parent = await this.getParent(pathParts);
+
+      if (parent === false) {
+        throw new ResourceNotFoundError('Resource not found.');
+      }
+
+      const nymphResource = await this.nymph.getEntity(
+        { class: this.NymphResource },
+        {
+          type: '&',
+          equal: ['name', pathParts[pathParts.length - 1]],
+          ref: ['parent', parent],
+        }
+      );
+
+      if (nymphResource == null) {
+        throw new ResourceNotFoundError('Resource not found.');
+      }
+
+      const resource = new Resource({
         adapter: this,
         baseUrl,
-        path: '/',
-        nymphResource: await this.getRootResource(),
+        path: `/${pathParts.join('/')}`,
+        nymphResource,
       });
-    }
 
-    const parent = await this.getParent(pathParts);
-
-    if (parent === false) {
-      throw new ResourceNotFoundError('Resource not found.');
-    }
-
-    const nymphResource = await this.nymph.getEntity(
-      { class: this.NymphResource },
-      {
-        type: '&',
-        equal: ['name', pathParts[pathParts.length - 1]],
-        ref: ['parent', parent],
+      return resource;
+    } catch (e: any) {
+      if (e instanceof AccessControlError) {
+        throw new ResourceNotFoundError('Resource not found.');
       }
-    );
-
-    if (nymphResource == null) {
-      throw new ResourceNotFoundError('Resource not found.');
+      throw e;
     }
-
-    const resource = new Resource({
-      adapter: this,
-      baseUrl,
-      path: `/${pathParts.join('/')}`,
-      nymphResource,
-    });
-
-    return resource;
   }
 
   async newResource(url: URL, baseUrl: URL) {

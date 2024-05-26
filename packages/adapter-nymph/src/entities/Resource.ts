@@ -1,13 +1,14 @@
 import type { Nymph, Selector } from '@nymphjs/nymph';
 import { Entity, nymphJoiProps } from '@nymphjs/nymph';
 import type { AccessControlData } from '@nymphjs/tilmeld';
-import { tilmeldJoiProps } from '@nymphjs/tilmeld';
+import { enforceTilmeld, tilmeldJoiProps } from '@nymphjs/tilmeld';
 import Joi from 'joi';
 import {
   BadRequestError,
   ForbiddenError,
   InternalServerError,
   ResourceExistsError,
+  UnauthorizedError,
 } from 'nephele';
 
 import { Lock as NymphLock } from './Lock.js';
@@ -230,6 +231,15 @@ export class Resource extends Entity<ResourceData> {
   }
 
   async $save() {
+    try {
+      const tilmeld = enforceTilmeld(this);
+      if (!tilmeld.gatekeeper()) {
+        throw new UnauthorizedError('You must be logged in.');
+      }
+    } catch (e: any) {
+      // No Tilmeld means auth happened elsewhere.
+    }
+
     const selector: Selector = {
       type: '&',
       equal: ['name', this.$data.name],

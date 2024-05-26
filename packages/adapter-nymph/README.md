@@ -50,7 +50,7 @@ response.on('close', async () => {
 
 - `root`: The absolute path of the directory that acts as the root directory for the service.
 - `nymph` = `undefined`: The instance of Nymph that will manage the data.
-- `getRootResource` = `Function`: A function to get the root resource of the namespace.
+- `getRootResource` = `() => Promise<NymphResource & NymphResourceData>`: A function to get the root resource of the namespace.
 
 ## nymph
 

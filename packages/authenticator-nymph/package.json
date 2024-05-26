@@ -1,7 +1,7 @@
 {
-  "name": "@nephele/adapter-nymph",
+  "name": "@nephele/authenticator-nymph",
   "version": "1.0.0-alpha.41",
-  "description": "Nymph.js based deduping file adapter for the Nephele WebDAV server.",
+  "description": "Nymph.js authenticator for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -23,12 +23,10 @@
   "keywords": [
     "webdav",
     "nephele",
-    "adapter",
-    "nephele adapter",
-    "nymph",
-    "server",
-    "deduping",
-    "deduplicate"
+    "authenticator",
+    "nephele authenticator",
+    "auth",
+    "nymph"
   ],
   "author": "Hunter Perrin <hperrin@gmail.com>",
   "license": "Apache-2.0",
@@ -40,23 +38,16 @@
     "@tsconfig/recommended": "^1.0.2",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.4",
-    "@types/mime": "^3.0.1",
-    "@types/uuid": "^9.0.8",
     "express": "^4.18.2",
     "jest": "^29.6.4",
     "ts-jest": "^29.1.1",
     "typescript": "^5.2.2"
   },
   "dependencies": {
-    "@nymphjs/driver-sqlite3": "^1.0.0-beta.52",
     "@nymphjs/nymph": "^1.0.0-beta.52",
     "@nymphjs/tilmeld": "^1.0.0-beta.52",
-    "@sciactive/back-pressure-transform": "^0.0.2",
-    "check-disk-space": "^3.4.0",
-    "file-type": "^19.0.0",
-    "joi": "^17.13.1",
-    "nephele": "^1.0.0-alpha.41",
-    "uuid": "^9.0.1"
+    "basic-auth": "^2.0.1",
+    "nephele": "^1.0.0-alpha.41"
   },
   "engines": {
     "node": ">=18"

@@ -1,9 +1,9 @@
 import type { Nymph } from '@nymphjs/nymph';
 import { Entity, TilmeldAccessLevels, nymphJoiProps } from '@nymphjs/nymph';
 import type { AccessControlData } from '@nymphjs/tilmeld';
-import { tilmeldJoiProps } from '@nymphjs/tilmeld';
+import { enforceTilmeld, tilmeldJoiProps } from '@nymphjs/tilmeld';
 import Joi from 'joi';
-import { BadRequestError } from 'nephele';
+import { BadRequestError, UnauthorizedError } from 'nephele';
 
 import { Resource, type ResourceData } from './Resource.js';
 
@@ -71,6 +71,15 @@ export class Lock extends Entity<LockData> {
   }
 
   async $save() {
+    try {
+      const tilmeld = enforceTilmeld(this);
+      if (!tilmeld.gatekeeper()) {
+        throw new UnauthorizedError('You must be logged in.');
+      }
+    } catch (e: any) {
+      // No Tilmeld means auth happened elsewhere.
+    }
+
     if (JSON.stringify(this.$data.owner).length > 8192) {
       throw new BadRequestError('Lock owner must be less than 8KB.');
     }

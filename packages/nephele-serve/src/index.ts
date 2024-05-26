@@ -9,6 +9,15 @@ import { program, Option } from 'commander';
 import express from 'express';
 import { Nymph } from '@nymphjs/nymph';
 import { SQLite3Driver } from '@nymphjs/driver-sqlite3';
+import {
+  enforceTilmeld,
+  User as NymphUser,
+  UserData as NymphUserData,
+  Group as NymphGroup,
+  Tilmeld,
+} from '@nymphjs/tilmeld';
+import { createServer as nymphServer } from '@nymphjs/server';
+import { setup as nymphSetup } from '@nymphjs/tilmeld-setup';
 import type { Adapter } from 'nephele';
 import nepheleServer, { ResourceNotFoundError } from 'nephele';
 import FileSystemAdapter from '@nephele/adapter-file-system';
@@ -19,6 +28,7 @@ import CustomAuthenticator, {
   User as CustomUser,
 } from '@nephele/authenticator-custom';
 import HtpasswdAuthenticator from '@nephele/authenticator-htpasswd';
+import NymphAuthenticator from '@nephele/authenticator-nymph';
 import InsecureAuthenticator from '@nephele/authenticator-none';
 import IndexPlugin from '@nephele/plugin-index';
 import EncryptionPlugin from '@nephele/plugin-encryption';
@@ -68,7 +78,11 @@ type Conf = {
   s3AccessKey?: string;
   s3SecretKey?: string;
   s3Bucket?: string;
-  dedupe: boolean;
+  nymph: boolean;
+  nymphJwtSecret?: string;
+  nymphRestPath?: string;
+  nymphSetupPath?: string;
+  nymphRegistration: boolean;
   updateCheck: boolean;
   directory?: string;
 };
@@ -188,8 +202,24 @@ program
   .option('--s3-secret-key <secret-key>', 'The S3 secret key.')
   .option('--s3-bucket <bucket-name>', 'The S3 bucket.')
   .option(
-    '--dedupe',
+    '--nymph',
     'Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.)'
+  )
+  .option(
+    '--nymph-jwt-secret <jwt-secret>',
+    'A random string to use as the JWT secret for the Nymph user setup app.'
+  )
+  .option(
+    '--nymph-rest-path <rest-path>',
+    'The path to use for the Nymph rest server used by the user setup app. (Defaults to "/!nymph".)'
+  )
+  .option(
+    '--nymph-setup-path <setup-path>',
+    'The path to use for the Nymph user setup app. (Defaults to "/!users".)'
+  )
+  .option(
+    '--no-nymph-registration',
+    "Don't allow new user registration through the Nymph user setup app."
   )
   .option('--no-update-check', "Don't check for updates.")
   .argument(
@@ -233,7 +263,11 @@ Environment Variables:
   S3_ACCESS_KEY                              Same as --s3-access-key.
   S3_SECRET_KEY                              Same as --s3-secret-key.
   S3_BUCKET                                  Same as --s3-bucket.
-  DEDUPE                                     Same as --dedupe when set to "true", "on" or "1".
+  NYMPH                                      Same as --nymph when set to "true", "on" or "1".
+  NYMPH_JWT_SECRET                           Same as --nymph-jwt-secret.
+  NYMPH_REST_PATH                            Same as --nymph-rest-path.
+  NYMPH_SETUP_PATH                           Same as --nymph-setup-path.
+  NYMPH_REGISTRATION                         Same as --no-nymph-registration when set to "false", "off" or "0".
   UPDATE_CHECK                               Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT                                Same as [directory].
 
@@ -314,6 +348,10 @@ program.addHelpText(
 File Deduplication:
   TODO: add documentation for Nymph adapter.
 
+  When using the Nymph adapter, unless auth is disable, PAM auth is enabled, or
+  a global username/password is set, the Nymph authenticator will be loaded.
+  This authenticator uses Tilmeld, which is a user/group manager for Nymph.
+
   You can find more information about Nephele's Nymph.js adapter here:
   https://github.com/sciactive/nephele/blob/master/packages/adapter-nymph/README.md`
 );
@@ -375,7 +413,11 @@ try {
     s3AccessKey,
     s3SecretKey,
     s3Bucket,
-    dedupe,
+    nymph,
+    nymphJwtSecret,
+    nymphRestPath,
+    nymphSetupPath,
+    nymphRegistration,
     updateCheck,
     directory,
   } = {
@@ -419,8 +461,14 @@ try {
     s3AccessKey: process.env.S3_ACCESS_KEY,
     s3SecretKey: process.env.S3_SECRET_KEY,
     s3Bucket: process.env.S3_BUCKET,
-    dedupe: ['true', 'on', '1'].includes(
-      (process.env.DEDUPE || '').toLowerCase()
+    nymph: ['true', 'on', '1'].includes(
+      (process.env.NYMPH || '').toLowerCase()
+    ),
+    nymphJwtSecret: process.env.NYMPH_JWT_SECRET,
+    nymphRestPath: process.env.NYMPH_REST_PATH,
+    nymphSetupPath: process.env.NYMPH_SETUP_PATH,
+    nymphRegistration: !['false', 'off', '0'].includes(
+      (process.env.NYMPH_REGISTRATION || '').toLowerCase()
     ),
     updateCheck: !['false', 'off', '0'].includes(
       (process.env.UPDATE_CHECK || '').toLowerCase()
@@ -519,39 +567,54 @@ try {
     throw new Error('The --s3-bucket option is required to use S3.');
   }
 
-  if (dedupe && homeDirectories) {
+  if (nymph && homeDirectories) {
     throw new Error(
-      'The --dedupe option is not compatible with --home-directories.'
+      'The --nymph option is not compatible with --home-directories.'
     );
   }
 
-  if (dedupe && userDirectories) {
+  if (nymph && userDirectories) {
     throw new Error(
-      'The --dedupe option is not compatible with --user-directories.'
+      'The --nymph option is not compatible with --user-directories.'
     );
   }
 
+  let tilmeld: Tilmeld | undefined = undefined;
   if (
-    dedupe &&
+    nymph &&
     auth &&
     !pamAuth &&
     (authUsername == null || authPassword == null)
   ) {
-    throw new Error(
-      'The --dedupe option requires auth to be set with --pam-auth or --auth-username and --auth-password.'
-    );
+    if (nymphJwtSecret == null) {
+      throw new Error(
+        'The --nymph option with auth enabled, PAM auth disabled, and no global username/password, requires a JWT secret to be set with --nymph-jwt-secret.'
+      );
+    }
+
+    tilmeld = new Tilmeld({
+      jwtSecret: nymphJwtSecret,
+      setupPath: nymphSetupPath ?? '/!users',
+      appName: realm,
+      allowRegistration: nymphRegistration,
+      emailUsernames: false,
+      userFields: [],
+      regFields: [],
+      verifyEmail: false,
+      pwRecovery: false,
+    });
   }
 
-  if (dedupe && encryption) {
-    throw new Error('The --dedupe option is not compatible with --encryption.');
+  if (nymph && encryption) {
+    throw new Error('The --nymph option is not compatible with --encryption.');
   }
 
-  if (dedupe && s3Endpoint != null) {
-    throw new Error('The --dedupe option is not compatible with S3.');
+  if (nymph && s3Endpoint != null) {
+    throw new Error('The --nymph option is not compatible with S3.');
   }
 
-  if (dedupe && directory == null) {
-    throw new Error('The --dedupe option requires a root directory.');
+  if (nymph && directory == null) {
+    throw new Error('The --nymph option requires a root directory.');
   }
 
   if (homeDirectories) {
@@ -621,14 +684,32 @@ try {
     throw new Error('No hosts to listen on.');
   }
 
-  let nymph: Nymph;
-  if (dedupe && directory) {
-    nymph = new Nymph(
+  let nymphInstance: Nymph | undefined = undefined;
+  if (nymph && directory) {
+    nymphInstance = new Nymph(
       {},
       new SQLite3Driver({
         filename: path.resolve(directory, 'nephele.db'),
         wal: true,
-      })
+      }),
+      tilmeld
+    );
+  }
+
+  if (nymphInstance && tilmeld) {
+    nymphInstance.addEntityClass(NymphUser);
+    nymphInstance.addEntityClass(NymphGroup);
+
+    app.use(nymphRestPath ?? '/!nymph', nymphServer(nymphInstance));
+    app.use(
+      nymphSetupPath ?? '/!users',
+      nymphSetup(
+        {
+          restUrl: nymphRestPath ?? '/!nymph',
+        },
+        nymphInstance,
+        { allowRegistration: nymphRegistration }
+      )
     );
   }
 
@@ -659,12 +740,45 @@ try {
 
           let adapter: Adapter;
 
-          if (dedupe) {
+          if (nymph) {
             if (directory == null || !fs.statSync(directory).isDirectory()) {
               throw new Error('Server root is not an accessible directory.');
             }
 
-            adapter = new NymphAdapter({ root: directory, nymph });
+            if (nymphInstance == null) {
+              throw new Error('Nymph instance is not defined.');
+            }
+
+            if (
+              tilmeld &&
+              response.locals.user &&
+              response.locals.user instanceof NymphUser &&
+              response.locals.user.guid != null
+            ) {
+              const authNymph = nymphInstance.clone();
+              const authTilmeld = enforceTilmeld(authNymph);
+              const user = await authTilmeld.User.factory();
+              user.guid = response.locals.user.guid;
+              user.cdate = response.locals.user.cdate;
+              user.mdate = response.locals.user.mdate;
+              user.tags = response.locals.user.tags;
+              user.$putData(
+                response.locals.user.$getData(false),
+                response.locals.user.$getSData()
+              );
+              await authTilmeld.fillSession(user);
+              response.locals.user = user as NymphUser &
+                NymphUserData & { username: string };
+              adapter = new NymphAdapter({
+                root: directory,
+                nymph: authNymph,
+              });
+            } else {
+              adapter = new NymphAdapter({
+                root: directory,
+                nymph: nymphInstance,
+              });
+            }
           } else if (s3Endpoint == null) {
             if (directory == null || !fs.statSync(directory).isDirectory()) {
               throw new Error('Server root is not an accessible directory.');
@@ -796,6 +910,14 @@ try {
             });
           }
 
+          if (nymph && tilmeld) {
+            if (nymphInstance == null) {
+              throw new Error('Nymph instance is not defined.');
+            }
+
+            return new NymphAuthenticator({ realm, nymph: nymphInstance });
+          }
+
           return new HtpasswdAuthenticator({
             realm,
             authUserFilename,
@@ -893,6 +1015,19 @@ try {
         )
         .join('\n\t')}`
     );
+
+    if (tilmeld) {
+      console.log(
+        `User setup app available at \n\t${serverHosts
+          .map(
+            ({ address }) =>
+              `http${secure ? 's' : ''}://${address}:${port}${
+                nymphSetupPath ?? '/!users'
+              }`
+          )
+          .join('\n\t')}`
+      );
+    }
 
     server.requestTimeout = timeout || 0;
     if (keepAliveTimeout != null) {
