@@ -90,11 +90,15 @@ export default class Adapter implements AdapterInterface {
       new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
       () => path.sep
     );
-    const driver = new SQLite3Driver({
-      filename: path.resolve(this.root, 'nephele.db'),
-      wal: true,
-    });
-    this.nymph = nymph || new Nymph({}, driver);
+    this.nymph =
+      nymph ||
+      new Nymph(
+        {},
+        new SQLite3Driver({
+          filename: path.resolve(this.root, 'nephele.db'),
+          wal: true,
+        })
+      );
 
     try {
       this.NymphLock = this.nymph.getEntityClass(NymphLock);
