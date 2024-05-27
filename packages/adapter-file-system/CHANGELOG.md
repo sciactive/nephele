@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.42](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.41...v1.0.0-alpha.42) (2024-05-27)
+
+
+### Features
+
+* add nymph.js based deduplicating file adapter ([6e613e3](https://github.com/sciactive/nephele/commit/6e613e3512085d823570370804b46ff687092fc7))
+
+
+
+
+
 # [1.0.0-alpha.41](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.40...v1.0.0-alpha.41) (2024-03-15)
 
 **Note:** Version bump only for package @nephele/adapter-file-system

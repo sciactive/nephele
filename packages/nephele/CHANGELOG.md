@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.42](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.41...v1.0.0-alpha.42) (2024-05-27)
+
+
+### Bug Fixes
+
+* report multi-status errors in the console ([1bec58c](https://github.com/sciactive/nephele/commit/1bec58ca9ac693cbfa3897980d6012af5140d39d))
+
+
+
+
+
 # [1.0.0-alpha.41](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.40...v1.0.0-alpha.41) (2024-03-15)
 
 **Note:** Version bump only for package nephele

@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.42](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.41...v1.0.0-alpha.42) (2024-05-27)
+
+
+### Features
+
+* allow properties to be set before stream, set encryption iv before stream ([cb90207](https://github.com/sciactive/nephele/commit/cb90207096b7ccdf545bd146cc5fa7e13a35eb08))
+
+
+
+
+
 # [1.0.0-alpha.41](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.40...v1.0.0-alpha.41) (2024-03-15)
 
 **Note:** Version bump only for package @nephele/plugin-encryption
