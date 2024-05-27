@@ -2,6 +2,8 @@
 
 Run Nephele WebDAV server to serve files from either a file system or an S3 compatible object store.
 
+This server is also available as the [Nephele Docker image](https://hub.docker.com/r/sciactive/nephele).
+
 # What is WebDAV
 
 WebDAV (Web Distributed Authoring and Versioning) is a protocol that allows users to access and manage files stored on a remote server. It is commonly used for web-based file sharing and collaboration, as it allows users to upload, download, and manage files directly from a web browser or file manager.
@@ -178,6 +180,28 @@ Options:
   --s3-access-key <access-key>               The S3 access key.
   --s3-secret-key <secret-key>               The S3 secret key.
   --s3-bucket <bucket-name>                  The S3 bucket.
+  --nymph                                    Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.)
+  --nymph-jwt-secret <jwt-secret>            A random string to use as the JWT secret for the Nymph user setup app.
+  --nymph-rest-path <rest-path>              The path to use for the Nymph rest server used by the user setup app. (Defaults to "/!nymph".)
+  --nymph-setup-path <setup-path>            The path to use for the Nymph user setup app. (Defaults to "/!users".)
+  --no-nymph-registration                    Don't allow new user registration through the Nymph user setup app.
+  --nymph-export <filename>                  Export the Nymph database to a NEX file.
+  --nymph-import <filename>                  Import the Nymph database from a NEX file.
+  --nymph-db-driver <db_driver>              The type of the DB driver to use. (Can be "mysql", "postgres", or "sqlite". Defaults to "sqlite").
+  --nymph-mysql-host <host>                  The MySQL host if the DB driver is "mysql". (Defaults to "localhost".)
+  --nymph-mysql-port <port>                  The MySQL port if the DB driver is "mysql". (Defaults to 3306.)
+  --nymph-mysql-database <database>          The MySQL database if the DB driver is "mysql". (Defaults to "nymph".)
+  --nymph-mysql-username <username>          The MySQL username if the DB driver is "mysql". (Defaults to "nymph".)
+  --nymph-mysql-password <password>          The MySQL password if the DB driver is "mysql". (Defaults to "password".)
+  --nymph-mysql-prefix <prefix>              The MySQL table prefix if the DB driver is "mysql". (Defaults to "nymph_".)
+  --nymph-postgres-host <host>               The PostgreSQL host if the DB driver is "postgres". (Defaults to "localhost".)
+  --nymph-postgres-port <port>               The PostgreSQL port if the DB driver is "postgres". (Defaults to 5432.)
+  --nymph-postgres-database <database>       The PostgreSQL database if the DB driver is "postgres". (Defaults to "nymph".)
+  --nymph-postgres-username <username>       The PostgreSQL username if the DB driver is "postgres". (Defaults to "nymph".)
+  --nymph-postgres-password <password>       The PostgreSQL password if the DB driver is "postgres". (Defaults to "password".)
+  --nymph-postgres-prefix <prefix>           The PostgreSQL table prefix if the DB driver is "postgres". (Defaults to "nymph_".)
+  --nymph-sqlite-cache-size <kilobytes>      The SQLite cache size to maintain in memory. (Defaults to 100MB).
+  --nymph-sqlite-prefix <prefix>             The SQLite table prefix if the DB driver is "sqlite". (Defaults to "nymph_".)
   --no-update-check                          Don't check for updates.
   --help                                     display help for command
 
@@ -214,6 +238,28 @@ Environment Variables:
   S3_ACCESS_KEY                              Same as --s3-access-key.
   S3_SECRET_KEY                              Same as --s3-secret-key.
   S3_BUCKET                                  Same as --s3-bucket.
+  NYMPH                                      Same as --nymph when set to "true", "on" or "1".
+  NYMPH_JWT_SECRET                           Same as --nymph-jwt-secret.
+  NYMPH_REST_PATH                            Same as --nymph-rest-path.
+  NYMPH_SETUP_PATH                           Same as --nymph-setup-path.
+  NYMPH_REGISTRATION                         Same as --no-nymph-registration when set to "false", "off" or "0".
+  NYMPH_EXPORT                               Same as --nymph-export.
+  NYMPH_IMPORT                               Same as --nymph-import.
+  NYMPH_DB_DRIVER                            Same as --nymph-db-driver.
+  NYMPH_MYSQL_HOST                           Same as --nymph-mysql-host.
+  NYMPH_MYSQL_PORT                           Same as --nymph-mysql-port.
+  NYMPH_MYSQL_DATABASE                       Same as --nymph-mysql-database.
+  NYMPH_MYSQL_USERNAME                       Same as --nymph-mysql-username.
+  NYMPH_MYSQL_PASSWORD                       Same as --nymph-mysql-password.
+  NYMPH_MYSQL_PREFIX                         Same as --nymph-mysql-prefix.
+  NYMPH_POSTGRES_HOST                        Same as --nymph-postgres-host.
+  NYMPH_POSTGRES_PORT                        Same as --nymph-postgres-port.
+  NYMPH_POSTGRES_DATABASE                    Same as --nymph-postgres-database.
+  NYMPH_POSTGRES_USERNAME                    Same as --nymph-postgres-username.
+  NYMPH_POSTGRES_PASSWORD                    Same as --nymph-postgres-password.
+  NYMPH_POSTGRES_PREFIX                      Same as --nymph-postgres-prefix.
+  NYMPH_SQLITE_CACHE_SIZE                    Same as --nymph-sqlite-cache-size.
+  NYMPH_SQLITE_PREFIX                        Same as --nymph-sqlite-prefix.
   UPDATE_CHECK                               Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT                                Same as [directory].
 
@@ -278,6 +324,40 @@ S3 Object Store:
 
   You can find more information about Nephele's S3 adapter here:
   https://github.com/sciactive/nephele/blob/master/packages/adapter-s3/README.md
+
+Nymph and File Deduplication:
+  When Nephele is loaded with the Nymph adapter, it will use a deduplicating
+  file storage method. File metadata is stored in the Nymph database, which can
+  be a SQLite3, MySQL, or PostgreSQL database, and file contents are stored on
+  disk using their SHA-384 hash for deduplication.
+
+  When using the Nymph adapter, unless auth is disable, PAM auth is enabled, or
+  a global username/password is set, the Nymph authenticator will be loaded.
+  This authenticator uses Tilmeld, which is a user/group manager for Nymph. The
+  first user you create will be the admin user, then you should turn off
+  registration.
+
+  The SQLite3 driver is easier to set up, because the DB can be stored in a file
+  alongside the file blobs, but it is considerably slower if you have many files
+  in your server. It also must be on a local disk, because it uses SQLite's
+  write ahead log.
+
+  The MySQL and PostgreSQL drivers are much faster. If you start with a SQLite
+  DB and end up outgrowing it, you can export your Nymph DB to a NEX file, then
+  import it into a new database. The import can take a long time (many hours),
+  so plan for downtime if you do this.
+
+  Because the files are deduplicated, this can be a great option if you store
+  something like regular backups, where many files have the same contents.
+
+  You can find more information about Nephele's Nymph.js adapter here:
+  https://github.com/sciactive/nephele/blob/master/packages/adapter-nymph/README.md
+
+  You can find more information about Nephele's Nymph.js authenticator here:
+  https://github.com/sciactive/nephele/blob/master/packages/authenticator-nymph/README.md
+
+  You can find more information about Nymph.js:
+  https://nymph.io
 
 Nephele repo: https://github.com/sciactive/nephele
 Copyright (C) 2022-2024 SciActive, Inc

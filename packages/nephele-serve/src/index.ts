@@ -481,6 +481,9 @@ Nymph and File Deduplication:
   You can find more information about Nephele's Nymph.js adapter here:
   https://github.com/sciactive/nephele/blob/master/packages/adapter-nymph/README.md
 
+  You can find more information about Nephele's Nymph.js authenticator here:
+  https://github.com/sciactive/nephele/blob/master/packages/authenticator-nymph/README.md
+
   You can find more information about Nymph.js:
   https://nymph.io`
 );
