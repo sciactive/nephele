@@ -934,9 +934,6 @@ try {
   }
 
   if (nymphInstance && tilmeld) {
-    nymphInstance.addEntityClass(NymphUser);
-    nymphInstance.addEntityClass(NymphGroup);
-
     app.use(nymphRestPath ?? '/!nymph', nymphServer(nymphInstance));
     app.use(
       nymphSetupPath ?? '/!users',

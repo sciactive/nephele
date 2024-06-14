@@ -1,4 +1,4 @@
-import type { Nymph, Selector } from '@nymphjs/nymph';
+import { EntityUniqueConstraintError, Nymph, Selector } from '@nymphjs/nymph';
 import { Entity, nymphJoiProps } from '@nymphjs/nymph';
 import type { AccessControlData } from '@nymphjs/tilmeld';
 import { enforceTilmeld, tilmeldJoiProps } from '@nymphjs/tilmeld';
@@ -34,16 +34,7 @@ export class Resource extends Entity<ResourceData> {
   protected $privateData = [];
 
   private $skipAcWhenSaving = false;
-
   private $skipAcWhenDeleting = false;
-
-  static async factory(guid?: string): Promise<Resource & ResourceData> {
-    return (await super.factory(guid)) as Resource & ResourceData;
-  }
-
-  static factorySync(): Resource & ResourceData {
-    return super.factorySync() as Resource & ResourceData;
-  }
 
   constructor() {
     super();
@@ -54,6 +45,12 @@ export class Resource extends Entity<ResourceData> {
     this.$data.collection = false;
     this.$data.hash = '';
     this.$data.properties = {};
+  }
+
+  public async $getUniques(): Promise<string[]> {
+    return [
+      `${this.$data.user?.guid}:${this.$data.parent?.guid}:${this.$data.name}`,
+    ];
   }
 
   public $setNymph(nymph: Nymph) {
@@ -251,25 +248,6 @@ export class Resource extends Entity<ResourceData> {
       // No Tilmeld means auth happened elsewhere.
     }
 
-    const selector: Selector = {
-      type: '&',
-      equal: ['name', this.$data.name],
-    };
-    if (this.$data.parent != null) {
-      selector['ref'] = ['parent', this.$data.parent];
-    }
-    if (this.guid != null) {
-      selector['!guid'] = this.guid;
-    }
-    if (
-      await this.$nymph.getEntity(
-        { class: this.$nymph.getEntityClass(Resource) },
-        selector
-      )
-    ) {
-      throw new ResourceExistsError('This resource already exists.');
-    }
-
     // Validate the entity's data.
     try {
       Joi.attempt(
@@ -304,7 +282,14 @@ export class Resource extends Entity<ResourceData> {
       throw new BadRequestError(e.message);
     }
 
-    return await super.$save();
+    try {
+      return await super.$save();
+    } catch (e: any) {
+      if (e instanceof EntityUniqueConstraintError) {
+        throw new ResourceExistsError('This resource already exists.');
+      }
+      throw e;
+    }
   }
 
   /*

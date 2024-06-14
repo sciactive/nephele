@@ -30,16 +30,7 @@ export class Lock extends Entity<LockData> {
   protected $privateData = [];
 
   private $skipAcWhenSaving = false;
-
   private $skipAcWhenDeleting = false;
-
-  static async factory(guid?: string): Promise<Lock & LockData> {
-    return (await super.factory(guid)) as Lock & LockData;
-  }
-
-  static factorySync(): Lock & LockData {
-    return super.factorySync() as Lock & LockData;
-  }
 
   constructor() {
     super();
