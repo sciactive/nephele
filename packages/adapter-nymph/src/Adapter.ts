@@ -88,7 +88,7 @@ export default class Adapter implements AdapterInterface {
   constructor({ nymph, root, getRootResource }: AdapterConfig) {
     this.root = root.replace(
       new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
-      () => path.sep
+      () => path.sep,
     );
     this.nymph =
       nymph ||
@@ -97,7 +97,7 @@ export default class Adapter implements AdapterInterface {
         new SQLite3Driver({
           filename: path.resolve(this.root, 'nephele.db'),
           wal: true,
-        })
+        }),
       );
 
     try {
@@ -121,7 +121,7 @@ export default class Adapter implements AdapterInterface {
               type: '&',
               '!defined': 'parent',
               equal: ['collection', true],
-            }
+            },
           );
 
           if (rootResource == null) {
@@ -134,7 +134,7 @@ export default class Adapter implements AdapterInterface {
 
             if (!(await rootResource.$save())) {
               throw new InternalServerError(
-                'Root resource could not be created.'
+                'Root resource could not be created.',
               );
             }
           }
@@ -149,7 +149,7 @@ export default class Adapter implements AdapterInterface {
       fs.accessSync(this.root, constants.R_OK);
     } catch (e: any) {
       throw new Error(
-        "Can't read from given file system root. Does the directory exist?"
+        "Can't read from given file system root. Does the directory exist?",
       );
     }
   }
@@ -177,7 +177,7 @@ export default class Adapter implements AdapterInterface {
   async getComplianceClasses(
     _url: URL,
     _request: Request,
-    _response: AuthResponse
+    _response: AuthResponse,
   ) {
     // This adapter supports locks.
     return ['2'];
@@ -186,7 +186,7 @@ export default class Adapter implements AdapterInterface {
   async getAllowedMethods(
     _url: URL,
     _request: Request,
-    _response: AuthResponse
+    _response: AuthResponse,
   ) {
     // This adapter doesn't support any WebDAV extensions that require
     // additional methods.
@@ -196,7 +196,7 @@ export default class Adapter implements AdapterInterface {
   async getOptionsResponseCacheControl(
     _url: URL,
     _request: Request,
-    _response: AuthResponse
+    _response: AuthResponse,
   ) {
     // This adapter doesn't do anything special for individual URLs, so a max
     // age of one week is fine.
@@ -281,7 +281,7 @@ export default class Adapter implements AdapterInterface {
             type: '&',
             equal: ['name', pathParts[pathParts.length - 1]],
             ref: ['parent', parent],
-          }
+          },
         );
 
       if (curResource == null) {
@@ -289,7 +289,7 @@ export default class Adapter implements AdapterInterface {
         return tilmeld.checkPermissions(
           parent,
           Math.max(access, TilmeldAccessLevels.WRITE_ACCESS),
-          user
+          user,
         );
       } else {
         // Check the resoure itself.
@@ -309,7 +309,7 @@ export default class Adapter implements AdapterInterface {
 
   async getNymphResource(
     pathParts: string[],
-    rootResource: NymphResource & NymphResourceData
+    rootResource: NymphResource & NymphResourceData,
   ) {
     if (pathParts.length === 0) {
       return rootResource;
@@ -361,7 +361,7 @@ export default class Adapter implements AdapterInterface {
 
   async getNymphParent(
     pathParts: string[],
-    rootResource: NymphResource & NymphResourceData
+    rootResource: NymphResource & NymphResourceData,
   ) {
     if (pathParts.length <= 1) {
       return rootResource;
@@ -369,7 +369,7 @@ export default class Adapter implements AdapterInterface {
 
     const resource = await this.getNymphResource(
       pathParts.slice(0, -1),
-      rootResource
+      rootResource,
     );
 
     if (resource == null || resource.collection !== true) {
@@ -384,7 +384,7 @@ export default class Adapter implements AdapterInterface {
 
     if (pathParts == null) {
       throw new BadGatewayError(
-        'The given path is not managed by this server.'
+        'The given path is not managed by this server.',
       );
     }
 
@@ -403,7 +403,7 @@ export default class Adapter implements AdapterInterface {
 
       const nymphResource = await this.getNymphResource(
         pathParts,
-        rootResource
+        rootResource,
       );
 
       if (nymphResource == null) {
@@ -432,7 +432,7 @@ export default class Adapter implements AdapterInterface {
 
     if (pathParts == null) {
       throw new BadGatewayError(
-        'The given path is not managed by this server.'
+        'The given path is not managed by this server.',
       );
     }
 
@@ -452,7 +452,7 @@ export default class Adapter implements AdapterInterface {
 
     if (!parent) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -462,7 +462,7 @@ export default class Adapter implements AdapterInterface {
         type: '&',
         equal: ['name', pathParts[pathParts.length - 1]],
         ref: ['parent', parent],
-      }
+      },
     );
 
     if (nymphResource == null) {
@@ -498,7 +498,7 @@ export default class Adapter implements AdapterInterface {
 
     if (pathParts == null) {
       throw new BadGatewayError(
-        'The given path is not managed by this server.'
+        'The given path is not managed by this server.',
       );
     }
 
@@ -518,7 +518,7 @@ export default class Adapter implements AdapterInterface {
 
     if (!parent) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -528,7 +528,7 @@ export default class Adapter implements AdapterInterface {
         type: '&',
         equal: ['name', pathParts[pathParts.length - 1]],
         ref: ['parent', parent],
-      }
+      },
     );
 
     if (nymphResource == null) {

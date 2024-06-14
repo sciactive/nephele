@@ -28,7 +28,7 @@ app.use(
     adapter: new ExampleAdapter(),
     authenticator: new ExampleAuthenticator(),
     plugins: [new ReadOnlyPlugin()],
-  })
+  }),
 );
 
 app.listen(port, () => {

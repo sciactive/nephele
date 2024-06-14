@@ -49,7 +49,7 @@ app.use(
     adapter: new ExampleAdapter(),
     authenticator: new ExampleAuthenticator(),
     plugins: [new ExamplePluginA(), new ExamplePluginB()],
-  })
+  }),
 );
 
 app.listen(port, () => {
@@ -83,7 +83,7 @@ app.use(
     adapter: new ExampleAdapter(),
     authenticator: new ExampleAuthenticator(),
     plugins: [new ExamplePluginA(), new ExamplePluginB()],
-  })
+  }),
 );
 
 const server = https.createServer({ cert, key }, app).listen(port);
@@ -134,7 +134,7 @@ app.use(
 
       return [];
     },
-  })
+  }),
 );
 
 app.listen(port, () => {
@@ -211,7 +211,7 @@ app.use(
       '/Some Directory/': [new ExamplePlugin()],
       '/Another Directory/': [new AnotherPlugin()],
     },
-  })
+  }),
 );
 
 app.listen(port, () => {

@@ -84,7 +84,7 @@ app.use(
       };
     },
     authenticator: pam ? new PamAuthenticator() : new InsecureAuthenticator(),
-  })
+  }),
 );
 
 app.listen(port, () => {
@@ -92,8 +92,8 @@ app.listen(port, () => {
   debug(
     `Serving files from user "${join(root, 'First')}" and "${join(
       root,
-      'Second'
-    )}" directories.`
+      'Second',
+    )}" directories.`,
   );
   console.log(`Example Nephele WebDAV server listening on port ${port}`);
 });

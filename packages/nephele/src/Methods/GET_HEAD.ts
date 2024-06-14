@@ -24,7 +24,7 @@ export class GET_HEAD extends Method {
         request,
         response,
         request.method === 'GET' ? 'beginGet' : 'beginHead',
-        { method: this, url }
+        { method: this, url },
       )
     ) {
       return;
@@ -34,7 +34,7 @@ export class GET_HEAD extends Method {
 
     const resource = await response.locals.adapter.getResource(
       url,
-      response.locals.baseUrl
+      response.locals.baseUrl,
     );
 
     if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
@@ -73,7 +73,7 @@ export class GET_HEAD extends Method {
         request,
         response,
         request.method === 'GET' ? 'preGet' : 'preHead',
-        { method: this, resource, properties }
+        { method: this, resource, properties },
       )
     ) {
       return;
@@ -86,7 +86,7 @@ export class GET_HEAD extends Method {
         request,
         response,
         request.method === 'GET' ? 'beforeGet' : 'beforeHead',
-        { method: this, resource, properties }
+        { method: this, resource, properties },
       )
     ) {
       return;
@@ -133,7 +133,7 @@ export class GET_HEAD extends Method {
 
         if (requestedRanges === -1) {
           throw new RangeNotSatisfiableError(
-            'The specified Range header is not satisfiable.'
+            'The specified Range header is not satisfiable.',
           );
         }
 
@@ -235,7 +235,7 @@ export class GET_HEAD extends Method {
 
           await writeText(`\nContent-Type: ${mediaType}`);
           await writeText(
-            `\nContent-Range: bytes ${range.start}-${range.end}/${contentLength}`
+            `\nContent-Range: bytes ${range.start}-${range.end}/${contentLength}`,
           );
           await writeText(`\n\n`);
 
@@ -340,7 +340,7 @@ export class GET_HEAD extends Method {
             encodingStream.on('data', (chunk) => {
               response.write(
                 ('length' in chunk ? chunk.length : chunk.size).toString(16) +
-                  '\r\n'
+                  '\r\n',
               );
               response.write(chunk);
               if (!response.write('\r\n')) {
@@ -385,7 +385,7 @@ export class GET_HEAD extends Method {
       request,
       response,
       request.method === 'GET' ? 'afterGet' : 'afterHead',
-      { method: this, resource, properties }
+      { method: this, resource, properties },
     );
   }
 }

@@ -124,7 +124,7 @@ export default class Authenticator implements AuthenticatorInterface {
         request.path.endsWith(`/${this.authUserFilename}/`))
     ) {
       throw new ForbiddenError(
-        "You don't have permission to access this resource."
+        "You don't have permission to access this resource.",
       );
     }
 
@@ -139,7 +139,7 @@ export default class Authenticator implements AuthenticatorInterface {
     try {
       if (username.trim() === '') {
         throw new UnauthorizedError(
-          'Authentication is required to use this server.'
+          'Authentication is required to use this server.',
         );
       }
 
@@ -147,7 +147,7 @@ export default class Authenticator implements AuthenticatorInterface {
 
       if (!(await this._checkHtpasswd(username, password, htpasswd))) {
         throw new UnauthorizedError(
-          'The provided credentials are not correct.'
+          'The provided credentials are not correct.',
         );
       }
 
@@ -156,7 +156,7 @@ export default class Authenticator implements AuthenticatorInterface {
       if (e instanceof UnauthorizedError) {
         response.set(
           'WWW-Authenticate',
-          `Basic realm="${this.realm}", charset="UTF-8"`
+          `Basic realm="${this.realm}", charset="UTF-8"`,
         );
       }
 
@@ -210,7 +210,7 @@ export default class Authenticator implements AuthenticatorInterface {
         return await fsp.readFile(this.authUserFile, { encoding: 'utf-8' });
       } catch (e: any) {
         throw new InternalServerError(
-          "The server's authentication user file is not accessible."
+          "The server's authentication user file is not accessible.",
         );
       }
     }
@@ -226,7 +226,7 @@ export default class Authenticator implements AuthenticatorInterface {
     for (let i = 0; i < urlParts.length; i++) {
       const htpasswdUrl = new URL(
         `${[...urlParts.slice(0, i), ''].join('/')}${this.authUserFilename}`,
-        baseUrl
+        baseUrl,
       );
       let htpasswdResource: Resource | undefined = undefined;
       try {
@@ -244,7 +244,7 @@ export default class Authenticator implements AuthenticatorInterface {
           return await this._streamToString(stream);
         } catch (e: any) {
           throw new InternalServerError(
-            "The server's authentication user file is not accessible."
+            "The server's authentication user file is not accessible.",
           );
         }
       }

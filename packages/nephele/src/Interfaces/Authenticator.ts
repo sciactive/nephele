@@ -13,7 +13,7 @@ import type { Plugin } from './Plugin.js';
 
 export type AuthResponse<
   ResBody = any,
-  Locals extends Record<string, any> = Record<string, any>
+  Locals extends Record<string, any> = Record<string, any>,
 > = Response<
   ResBody,
   {

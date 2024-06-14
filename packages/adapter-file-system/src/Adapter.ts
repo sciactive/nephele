@@ -71,7 +71,7 @@ export default class Adapter implements AdapterInterface {
   constructor({ root, contentEtagMaxBytes = -1 }: AdapterConfig) {
     this.root = root.replace(
       new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
-      () => path.sep
+      () => path.sep,
     );
     this.contentEtagMaxBytes = contentEtagMaxBytes;
 
@@ -79,7 +79,7 @@ export default class Adapter implements AdapterInterface {
       fs.accessSync(this.root, constants.R_OK);
     } catch (e: any) {
       throw new Error(
-        "Can't read from given file system root. Does the directory exist?"
+        "Can't read from given file system root. Does the directory exist?",
       );
     }
   }
@@ -98,7 +98,7 @@ export default class Adapter implements AdapterInterface {
       ...decodeURIComponent(url.pathname)
         .substring(decodeURIComponent(baseUrl.pathname).length)
         .replace(/\/?$/, '')
-        .split('/')
+        .split('/'),
     );
   }
 
@@ -127,7 +127,7 @@ export default class Adapter implements AdapterInterface {
   async getComplianceClasses(
     _url: URL,
     _request: Request,
-    _response: AuthResponse
+    _response: AuthResponse,
   ) {
     // This adapter supports locks.
     return ['2'];
@@ -136,7 +136,7 @@ export default class Adapter implements AdapterInterface {
   async getAllowedMethods(
     _url: URL,
     _request: Request,
-    _response: AuthResponse
+    _response: AuthResponse,
   ) {
     // This adapter doesn't support any WebDAV extensions that require
     // additional methods.
@@ -146,7 +146,7 @@ export default class Adapter implements AdapterInterface {
   async getOptionsResponseCacheControl(
     _url: URL,
     _request: Request,
-    _response: AuthResponse
+    _response: AuthResponse,
   ) {
     // This adapter doesn't do anything special for individual URLs, so a max
     // age of one week is fine.
@@ -204,7 +204,7 @@ export default class Adapter implements AdapterInterface {
     try {
       await fsp.access(
         absolutePathname,
-        access === 'w' ? constants.W_OK : constants.R_OK
+        access === 'w' ? constants.W_OK : constants.R_OK,
       );
     } catch (e: any) {
       exists = false;
@@ -275,7 +275,7 @@ export default class Adapter implements AdapterInterface {
 
     if (path == null) {
       throw new BadGatewayError(
-        'The given path is not managed by this server.'
+        'The given path is not managed by this server.',
       );
     }
 
@@ -297,7 +297,7 @@ export default class Adapter implements AdapterInterface {
 
     if (path == null) {
       throw new BadGatewayError(
-        'The given path is not managed by this server.'
+        'The given path is not managed by this server.',
       );
     }
 
@@ -313,7 +313,7 @@ export default class Adapter implements AdapterInterface {
 
     if (path == null) {
       throw new BadGatewayError(
-        'The given path is not managed by this server.'
+        'The given path is not managed by this server.',
       );
     }
 

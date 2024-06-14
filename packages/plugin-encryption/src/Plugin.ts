@@ -135,7 +135,7 @@ export default class Plugin implements PluginInterface {
   async prepareAdapter(
     request: Request,
     _response: AuthResponse,
-    adapter: Adapter
+    adapter: Adapter,
   ) {
     if (!this.baseUrl) {
       return;
@@ -154,7 +154,7 @@ export default class Plugin implements PluginInterface {
       const auth = basicAuth.parse(authorization);
       if (!auth || auth.pass.trim() === '') {
         throw new UnauthorizedError(
-          'Authentication is required to use this server.'
+          'Authentication is required to use this server.',
         );
       }
 
@@ -195,7 +195,7 @@ export default class Plugin implements PluginInterface {
               return;
             }
             resolve(key);
-          }
+          },
         );
       }),
 
@@ -230,7 +230,7 @@ export default class Plugin implements PluginInterface {
 
     if (!this.baseUrl) {
       throw new InternalServerError(
-        'Encryption plugin was not provided baseUrl.'
+        'Encryption plugin was not provided baseUrl.',
       );
     }
 
@@ -274,7 +274,7 @@ export default class Plugin implements PluginInterface {
   async getEncryptedFilename(
     key: Buffer,
     iv: Buffer,
-    filename: string
+    filename: string,
   ): Promise<string> {
     const cipher = createCipheriv(this.algorithm, key, iv);
 
@@ -298,7 +298,7 @@ export default class Plugin implements PluginInterface {
   async getDecryptedFilename(
     key: Buffer,
     iv: Buffer,
-    filename: string
+    filename: string,
   ): Promise<string> {
     const decipher = createDecipheriv(this.algorithm, key, iv);
 
@@ -323,7 +323,7 @@ export default class Plugin implements PluginInterface {
     key: Buffer,
     stream: Readable,
     ivCallback: (iv: string) => Promise<void>,
-    doneCallback: (paddingBytes: number) => void
+    doneCallback: (paddingBytes: number) => void,
   ) {
     const iv = await new Promise<Uint8Array>((resolve, reject) => {
       randomFill(new Uint8Array(16), (err, iv) => {
@@ -402,7 +402,7 @@ export default class Plugin implements PluginInterface {
     const decipher = createDecipheriv(
       this.algorithm,
       key,
-      new Uint8Array(Buffer.from(iv, 'base64'))
+      new Uint8Array(Buffer.from(iv, 'base64')),
     );
 
     stream.pipe(decipher);

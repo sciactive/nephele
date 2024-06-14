@@ -31,8 +31,8 @@ export function catchErrors<A extends any[], R = void>(
     code: number,
     message: string,
     error: Error,
-    args: A
-  ) => Promise<void>
+    args: A,
+  ) => Promise<void>,
 ) {
   return async (...args: A) => {
     try {

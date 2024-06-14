@@ -58,7 +58,7 @@ app.use(
       },
     }),
     authenticator: new ExampleAuthenticator(),
-  })
+  }),
 );
 
 app.listen(port, () => {

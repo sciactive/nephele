@@ -42,7 +42,7 @@ export class PROPPATCH extends Method {
 
     const resource = await response.locals.adapter.getResource(
       url,
-      response.locals.baseUrl
+      response.locals.baseUrl,
     );
 
     if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
@@ -76,7 +76,7 @@ export class PROPPATCH extends Method {
 
     if (!('propertyupdate' in xml)) {
       throw new BadRequestError(
-        'PROPPATCH methods requires a propertyupdate element.'
+        'PROPPATCH methods requires a propertyupdate element.',
       );
     }
 
@@ -84,12 +84,12 @@ export class PROPPATCH extends Method {
       request,
       response,
       resource,
-      response.locals.user
+      response.locals.user,
     );
 
     if (lockPermission === 0) {
       throw new LockedError(
-        'The user does not have permission to modify the locked resource.'
+        'The user does not have permission to modify the locked resource.',
       );
     }
     const order = await this.getPropPatchOrder(xmlBody);
@@ -130,7 +130,7 @@ export class PROPPATCH extends Method {
 
           if (prop === 'lockdiscovery') {
             propErrors[prop] = new PropertyIsProtectedError(
-              `${prop} is a protected property.`
+              `${prop} is a protected property.`,
             );
           }
 
@@ -170,7 +170,7 @@ export class PROPPATCH extends Method {
 
     const errors = await props.runInstructionsByUser(
       instructions,
-      response.locals.user
+      response.locals.user,
     );
 
     if (errors && errors.length) {
@@ -207,7 +207,7 @@ export class PROPPATCH extends Method {
 
             response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);
-          }
+          },
         );
 
         await run();
@@ -216,7 +216,7 @@ export class PROPPATCH extends Method {
       const propNames = Object.keys(propErrors);
       const propStatStatus = new PropStatStatus(200);
       propStatStatus.setProp(
-        Object.fromEntries(propNames.map((propName) => [propName, {}]))
+        Object.fromEntries(propNames.map((propName) => [propName, {}])),
       );
       status.addPropStatStatus(propStatStatus);
     }
@@ -242,7 +242,7 @@ export class PROPPATCH extends Method {
 
     const propertyupdate: any = (Object.entries(parsed).find(
       ([_name, value]: [string, any]) =>
-        value.$ns.uri === 'DAV:' && value.$ns.local === 'propertyupdate'
+        value.$ns.uri === 'DAV:' && value.$ns.local === 'propertyupdate',
     ) || ['', {}])[1];
 
     for (let item of propertyupdate.$$) {

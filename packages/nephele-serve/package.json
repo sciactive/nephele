@@ -53,13 +53,13 @@
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
   "devDependencies": {
-    "@tsconfig/recommended": "^1.0.2",
-    "@types/express": "^4.17.17",
-    "@types/jest": "^29.5.4",
-    "@types/update-notifier": "^6.0.5",
-    "jest": "^29.6.4",
-    "ts-jest": "^29.1.1",
-    "typescript": "^5.2.2"
+    "@tsconfig/recommended": "^1.0.6",
+    "@types/express": "^4.17.21",
+    "@types/jest": "^29.5.12",
+    "@types/update-notifier": "^6.0.8",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.4",
+    "typescript": "^5.4.5"
   },
   "dependencies": {
     "@nephele/adapter-file-system": "^1.0.0-alpha.42",
@@ -72,17 +72,17 @@
     "@nephele/authenticator-nymph": "^1.0.0-alpha.42",
     "@nephele/plugin-encryption": "^1.0.0-alpha.42",
     "@nephele/plugin-index": "^1.0.0-alpha.42",
-    "@nymphjs/driver-mysql": "^1.0.0-beta.55",
-    "@nymphjs/driver-postgresql": "^1.0.0-beta.55",
-    "@nymphjs/driver-sqlite3": "^1.0.0-beta.55",
-    "@nymphjs/nymph": "^1.0.0-beta.55",
-    "@nymphjs/server": "^1.0.0-beta.55",
-    "@nymphjs/tilmeld": "^1.0.0-beta.55",
-    "@nymphjs/tilmeld-setup": "^1.0.0-beta.55",
-    "commander": "^11.0.0",
-    "express": "^4.18.2",
+    "@nymphjs/driver-mysql": "^1.0.0-beta.61",
+    "@nymphjs/driver-postgresql": "^1.0.0-beta.61",
+    "@nymphjs/driver-sqlite3": "^1.0.0-beta.61",
+    "@nymphjs/nymph": "^1.0.0-beta.61",
+    "@nymphjs/server": "^1.0.0-beta.61",
+    "@nymphjs/tilmeld": "^1.0.0-beta.61",
+    "@nymphjs/tilmeld-setup": "^1.0.0-beta.61",
+    "commander": "^12.1.0",
+    "express": "^4.19.2",
     "nephele": "^1.0.0-alpha.42",
-    "update-notifier": "^6.0.2"
+    "update-notifier": "^7.0.0"
   },
   "optionalDependencies": {
     "@nephele/authenticator-pam": "^1.0.0-alpha.42",

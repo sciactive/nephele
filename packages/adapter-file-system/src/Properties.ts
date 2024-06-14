@@ -28,7 +28,7 @@ export default class Properties implements PropertiesInterface {
         const mediaType = await this.resource.getMediaType();
         if (mediaType == null) {
           throw new PropertyNotFoundError(
-            `${name} property doesn't exist on resource.`
+            `${name} property doesn't exist on resource.`,
           );
         }
         return mediaType;
@@ -65,7 +65,7 @@ export default class Properties implements PropertiesInterface {
       case 'LCGDM:%%mode':
         if (platform() === 'win32') {
           throw new PropertyNotFoundError(
-            `${name} property doesn't exist on resource.`
+            `${name} property doesn't exist on resource.`,
           );
         }
 
@@ -75,7 +75,7 @@ export default class Properties implements PropertiesInterface {
         } catch (e: any) {
           if (e.code === 'ENOENT') {
             throw new PropertyNotFoundError(
-              `${name} property doesn't exist on resource.`
+              `${name} property doesn't exist on resource.`,
             );
           } else {
             throw e;
@@ -88,7 +88,7 @@ export default class Properties implements PropertiesInterface {
 
     if (meta.props == null || !(name in meta.props)) {
       throw new PropertyNotFoundError(
-        `${name} property doesn't exist on resource.`
+        `${name} property doesn't exist on resource.`,
       );
     }
 
@@ -110,7 +110,7 @@ export default class Properties implements PropertiesInterface {
   async setByUser(name: string, value: string, user: User) {
     const errors = await this.runInstructionsByUser(
       [['set', name, value]],
-      user
+      user,
     );
 
     if (errors != null && errors.length) {
@@ -129,7 +129,7 @@ export default class Properties implements PropertiesInterface {
   async removeByUser(name: string, user: User) {
     const errors = await this.runInstructionsByUser(
       [['remove', name, undefined]],
-      user
+      user,
     );
 
     if (errors != null && errors.length) {
@@ -248,7 +248,7 @@ export default class Properties implements PropertiesInterface {
 
   async runInstructionsByUser(
     instructions: ['set' | 'remove', string, any][],
-    _user: User
+    _user: User,
   ) {
     return await this.runInstructions(instructions);
   }

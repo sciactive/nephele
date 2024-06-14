@@ -29,7 +29,7 @@ export class MKCOL extends Method {
 
     const resource = await response.locals.adapter.newCollection(
       url,
-      response.locals.baseUrl
+      response.locals.baseUrl,
     );
 
     if (!url.toString().endsWith('/')) {
@@ -56,7 +56,7 @@ export class MKCOL extends Method {
       // Parent not found is handled separately.
       if (e instanceof ResourceNotFoundError) {
         throw new ResourceTreeNotCompleteError(
-          'One or more intermediate collections must be created before this resource.'
+          'One or more intermediate collections must be created before this resource.',
         );
       } else {
         throw e;
@@ -78,7 +78,7 @@ export class MKCOL extends Method {
     if (providedBody) {
       response.locals.debug('Provided body to MKCOL.');
       throw new MediaTypeNotSupportedError(
-        "This server doesn't understand the body sent in the request."
+        "This server doesn't understand the body sent in the request.",
       );
     }
 
@@ -86,19 +86,19 @@ export class MKCOL extends Method {
       request,
       response,
       resource,
-      response.locals.user
+      response.locals.user,
     );
 
     // Check that the resource wouldn't be added to a locked collection.
     if (lockPermission === 1) {
       throw new LockedError(
-        'The user does not have permission to add a new resource to the locked collection.'
+        'The user does not have permission to add a new resource to the locked collection.',
       );
     }
 
     if (lockPermission === 0) {
       throw new LockedError(
-        'The user does not have permission to create the locked resource.'
+        'The user does not have permission to create the locked resource.',
       );
     }
 

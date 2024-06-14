@@ -20,7 +20,7 @@ export default class Properties implements PropertiesInterface {
         const mediaType = await this.resource.getMediaType();
         if (mediaType == null) {
           throw new PropertyNotFoundError(
-            `${name} property doesn't exist on resource.`
+            `${name} property doesn't exist on resource.`,
           );
         }
         return mediaType;
@@ -53,14 +53,14 @@ export default class Properties implements PropertiesInterface {
           return this.resource.file.properties.owner;
         } else {
           throw new PropertyNotFoundError(
-            `${name} property doesn't exist on resource.`
+            `${name} property doesn't exist on resource.`,
           );
         }
     }
 
     if (!(name in this.resource.file.properties)) {
       throw new PropertyNotFoundError(
-        `${name} property doesn't exist on resource.`
+        `${name} property doesn't exist on resource.`,
       );
     }
 
@@ -82,7 +82,7 @@ export default class Properties implements PropertiesInterface {
   async setByUser(name: string, value: string, user: User) {
     const errors = await this.runInstructionsByUser(
       [['set', name, value]],
-      user
+      user,
     );
 
     if (errors != null && errors.length) {
@@ -101,7 +101,7 @@ export default class Properties implements PropertiesInterface {
   async removeByUser(name: string, user: User) {
     const errors = await this.runInstructionsByUser(
       [['remove', name, undefined]],
-      user
+      user,
     );
 
     if (errors != null && errors.length) {
@@ -111,7 +111,7 @@ export default class Properties implements PropertiesInterface {
 
   async runInstructions(instructions: ['set' | 'remove', string, any][]) {
     let props = JSON.parse(
-      JSON.stringify(this.resource.file.properties)
+      JSON.stringify(this.resource.file.properties),
     ) as typeof this.resource.file.properties;
     props.creationdate = this.resource.file.properties.creationdate;
     props.getlastmodified = this.resource.file.properties.getlastmodified;
@@ -160,7 +160,7 @@ export default class Properties implements PropertiesInterface {
 
   async runInstructionsByUser(
     instructions: ['set' | 'remove', string, any][],
-    _user: User
+    _user: User,
   ) {
     return await this.runInstructions(instructions);
   }
@@ -231,7 +231,7 @@ export default class Properties implements PropertiesInterface {
         (name) =>
           name !== 'creationdate' &&
           name !== 'getlastmodified' &&
-          name !== 'owner'
+          name !== 'owner',
       ),
     ];
   }

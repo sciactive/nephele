@@ -95,7 +95,7 @@ export default class Adapter implements AdapterInterface {
   async getComplianceClasses(
     _url: URL,
     _request: Request,
-    _response: AuthResponse
+    _response: AuthResponse,
   ) {
     // This adapter supports locks.
     return ['2'];
@@ -104,7 +104,7 @@ export default class Adapter implements AdapterInterface {
   async getAllowedMethods(
     _url: URL,
     _request: Request,
-    _response: AuthResponse
+    _response: AuthResponse,
   ) {
     // This adapter doesn't support any WebDAV extensions that require
     // additional methods.
@@ -114,7 +114,7 @@ export default class Adapter implements AdapterInterface {
   async getOptionsResponseCacheControl(
     _url: URL,
     _request: Request,
-    _response: AuthResponse
+    _response: AuthResponse,
   ) {
     // This adapter doesn't do anything special for individual URLs, so a max
     // age of one week is fine.
@@ -171,7 +171,7 @@ export default class Adapter implements AdapterInterface {
 
           const parent = await this.getResource(
             new URL(this.dirname(url.toString())),
-            baseUrl
+            baseUrl,
           );
 
           if (
@@ -200,7 +200,7 @@ export default class Adapter implements AdapterInterface {
 
     if (path == null) {
       throw new BadGatewayError(
-        'The given path is not managed by this server.'
+        'The given path is not managed by this server.',
       );
     }
 
@@ -222,7 +222,7 @@ export default class Adapter implements AdapterInterface {
 
     if (path == null) {
       throw new BadGatewayError(
-        'The given path is not managed by this server.'
+        'The given path is not managed by this server.',
       );
     }
 
@@ -238,7 +238,7 @@ export default class Adapter implements AdapterInterface {
 
     if (path == null) {
       throw new BadGatewayError(
-        'The given path is not managed by this server.'
+        'The given path is not managed by this server.',
       );
     }
 

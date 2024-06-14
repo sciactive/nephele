@@ -39,7 +39,7 @@ app.use(
         exclude: ['**/.htpasswd'],
       }),
     ],
-  })
+  }),
 );
 
 app.listen(port, () => {

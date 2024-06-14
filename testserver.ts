@@ -65,27 +65,27 @@ app.use(
             },
           })
         : s3Endpoint && s3AccessKey && s3SecretKey && s3Bucket
-        ? new S3Adapter({
-            s3Config: {
-              endpoint: s3Endpoint,
-              region: s3Region,
-              credentials: {
-                accessKeyId: s3AccessKey,
-                secretAccessKey: s3SecretKey,
+          ? new S3Adapter({
+              s3Config: {
+                endpoint: s3Endpoint,
+                region: s3Region,
+                credentials: {
+                  accessKeyId: s3AccessKey,
+                  secretAccessKey: s3SecretKey,
+                },
               },
-            },
-            bucket: s3Bucket,
-            root:
-              userDirs && response.locals.user
-                ? response.locals.user.username
-                : '',
-          })
-        : new FileSystemAdapter({
-            root:
-              userDirs && response.locals.user
-                ? join(root, response.locals.user.username)
-                : root,
-          }),
+              bucket: s3Bucket,
+              root:
+                userDirs && response.locals.user
+                  ? response.locals.user.username
+                  : '',
+            })
+          : new FileSystemAdapter({
+              root:
+                userDirs && response.locals.user
+                  ? join(root, response.locals.user.username)
+                  : root,
+            }),
     authenticator: userpassdefined
       ? new CustomAuthenticator({
           getUser: async (username) => {
@@ -102,14 +102,14 @@ app.use(
           },
         })
       : htpasswd
-      ? new HtpasswdAuthenticator({
-          unauthorizedAccess: unauthorized,
-        })
-      : pam
-      ? new PamAuthenticator({
-          unauthorizedAccess: unauthorized,
-        })
-      : new InsecureAuthenticator(),
+        ? new HtpasswdAuthenticator({
+            unauthorizedAccess: unauthorized,
+          })
+        : pam
+          ? new PamAuthenticator({
+              unauthorizedAccess: unauthorized,
+            })
+          : new InsecureAuthenticator(),
     plugins: async (_request, response) => {
       const isReadonly =
         readonly ||
@@ -133,13 +133,13 @@ app.use(
             filenameIVSalt: '7f3bf86e561d46bcbba06702eb0d7718',
             exclude: ['/.htpasswd'],
             ...(htpasswd || pam ? {} : { globalPassword: encryption }),
-          })
+          }),
         );
       }
 
       return plugins;
     },
-  })
+  }),
 );
 
 app.listen(port, () => {

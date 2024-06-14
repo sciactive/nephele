@@ -49,7 +49,7 @@ export default class User implements UserInterface {
             resolve();
           }
         },
-        { serviceName: 'login', remoteHost }
+        { serviceName: 'login', remoteHost },
       );
     });
   }

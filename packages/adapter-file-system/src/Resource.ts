@@ -158,13 +158,13 @@ export default class Resource implements ResourceInterface {
       await fsp.access(path.dirname(this.absolutePath), constants.F_OK);
     } catch (e: any) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
     if (await this.isCollection()) {
       throw new MethodNotSupportedError(
-        'This resource is an existing collection.'
+        'This resource is an existing collection.',
       );
     }
 
@@ -179,7 +179,7 @@ export default class Resource implements ResourceInterface {
       await fsp.chown(
         this.absolutePath,
         await this.adapter.getUid(user),
-        await this.adapter.getGid(user)
+        await this.adapter.getGid(user),
       );
     }
 
@@ -235,7 +235,7 @@ export default class Resource implements ResourceInterface {
       await fsp.access(path.dirname(this.absolutePath), constants.F_OK);
     } catch (e: any) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -249,7 +249,7 @@ export default class Resource implements ResourceInterface {
       await fsp.chown(
         this.absolutePath,
         await this.adapter.getUid(user),
-        await this.adapter.getGid(user)
+        await this.adapter.getGid(user),
       );
     }
   }
@@ -298,7 +298,7 @@ export default class Resource implements ResourceInterface {
         )
       ) {
         throw new UnauthorizedError(
-          'You do not have permission to delete this resource.'
+          'You do not have permission to delete this resource.',
         );
       }
     }
@@ -318,12 +318,12 @@ export default class Resource implements ResourceInterface {
   async copy(destination: URL, baseUrl: URL, user: User) {
     const destinationPath = this.adapter.urlToAbsolutePath(
       destination,
-      baseUrl
+      baseUrl,
     );
 
     if (destinationPath == null) {
       throw new BadGatewayError(
-        'The destination URL is not under the namespace of this server.'
+        'The destination URL is not under the namespace of this server.',
       );
     }
 
@@ -333,12 +333,12 @@ export default class Resource implements ResourceInterface {
         destinationPath.startsWith(
           this.absolutePath.replace(
             new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
-            () => path.sep
-          )
+            () => path.sep,
+          ),
         ))
     ) {
       throw new ForbiddenError(
-        'The destination cannot be the same as or contained within the source.'
+        'The destination cannot be the same as or contained within the source.',
       );
     }
 
@@ -346,7 +346,7 @@ export default class Resource implements ResourceInterface {
       await fsp.access(path.dirname(destinationPath), constants.F_OK);
     } catch (e: any) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -366,7 +366,7 @@ export default class Resource implements ResourceInterface {
         )
       ) {
         throw new UnauthorizedError(
-          'You do not have permission to access the destination.'
+          'You do not have permission to access the destination.',
         );
       }
 
@@ -378,7 +378,7 @@ export default class Resource implements ResourceInterface {
         )
       ) {
         throw new UnauthorizedError(
-          'You do not have permission to write to the destination.'
+          'You do not have permission to write to the destination.',
         );
       }
     }
@@ -505,12 +505,12 @@ export default class Resource implements ResourceInterface {
 
     const destinationPath = this.adapter.urlToAbsolutePath(
       destination,
-      baseUrl
+      baseUrl,
     );
 
     if (destinationPath == null) {
       throw new BadGatewayError(
-        'The destination URL is not under the namespace of this server.'
+        'The destination URL is not under the namespace of this server.',
       );
     }
 
@@ -520,12 +520,12 @@ export default class Resource implements ResourceInterface {
         destinationPath.startsWith(
           this.absolutePath.replace(
             new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
-            () => path.sep
-          )
+            () => path.sep,
+          ),
         ))
     ) {
       throw new ForbiddenError(
-        'The destination cannot be the same as or contained within the source.'
+        'The destination cannot be the same as or contained within the source.',
       );
     }
 
@@ -533,7 +533,7 @@ export default class Resource implements ResourceInterface {
       await fsp.access(path.dirname(destinationPath), constants.F_OK);
     } catch (e: any) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -553,7 +553,7 @@ export default class Resource implements ResourceInterface {
         )
       ) {
         throw new UnauthorizedError(
-          'You do not have permission to move this resource.'
+          'You do not have permission to move this resource.',
         );
       }
 
@@ -568,7 +568,7 @@ export default class Resource implements ResourceInterface {
         )
       ) {
         throw new UnauthorizedError(
-          'You do not have permission to access the destination.'
+          'You do not have permission to access the destination.',
         );
       }
 
@@ -580,7 +580,7 @@ export default class Resource implements ResourceInterface {
         )
       ) {
         throw new UnauthorizedError(
-          'You do not have permission to write to the destination.'
+          'You do not have permission to write to the destination.',
         );
       }
     }
@@ -639,8 +639,8 @@ export default class Resource implements ResourceInterface {
         .c(
           Buffer.from(
             `size: ${stat.size}; birthtime: ${stat.birthtimeMs}; mtime: ${stat.mtimeMs}`,
-            'utf8'
-          )
+            'utf8',
+          ),
         )
         .toString(16);
     } else {
@@ -657,7 +657,7 @@ export default class Resource implements ResourceInterface {
             crc32.createHash({
               seed: 0,
               table: crc32.TABLE.CASTAGNOLI,
-            })
+            }),
           );
           stream.on('error', reject);
           stream.on('data', (buffer: Buffer) => {
@@ -701,7 +701,7 @@ export default class Resource implements ResourceInterface {
     if (await this.isCollection()) {
       return this.path.replace(
         new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
-        () => path.sep
+        () => path.sep,
       );
     }
     return this.path;
@@ -714,7 +714,7 @@ export default class Resource implements ResourceInterface {
         .map(encodeURIComponent)
         .join('/')
         .replace(/^\//, () => ''),
-      this.baseUrl
+      this.baseUrl,
     );
   }
 
@@ -752,7 +752,7 @@ export default class Resource implements ResourceInterface {
         )
       ) {
         throw new UnauthorizedError(
-          "You do not have permission to list this collection's members."
+          "You do not have permission to list this collection's members.",
         );
       }
     }
@@ -785,7 +785,7 @@ export default class Resource implements ResourceInterface {
           path: path.join(this.path, name),
           baseUrl: this.baseUrl,
           adapter: this.adapter,
-        })
+        }),
       );
     }
 
@@ -853,7 +853,7 @@ export default class Resource implements ResourceInterface {
   async saveMetadataFile(
     meta: MetaStorage,
     filePath?: string,
-    metaFilePath?: string
+    metaFilePath?: string,
   ) {
     if (!metaFilePath) {
       metaFilePath = await this.getMetadataFilePath();
@@ -864,7 +864,7 @@ export default class Resource implements ResourceInterface {
       await fsp.access(path.dirname(metaFilePath), constants.F_OK);
     } catch (e: any) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 

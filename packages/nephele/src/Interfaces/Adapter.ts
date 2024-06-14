@@ -27,7 +27,7 @@ export interface Adapter {
   getComplianceClasses(
     url: URL,
     request: Request,
-    response: AuthResponse
+    response: AuthResponse,
   ): Promise<string[]>;
 
   /**
@@ -50,7 +50,7 @@ export interface Adapter {
   getAllowedMethods(
     url: URL,
     request: Request,
-    response: AuthResponse
+    response: AuthResponse,
   ): Promise<string[]>;
 
   /**
@@ -66,7 +66,7 @@ export interface Adapter {
   getOptionsResponseCacheControl(
     url: URL,
     request: Request,
-    response: AuthResponse
+    response: AuthResponse,
   ): Promise<string>;
 
   /**
@@ -84,7 +84,7 @@ export interface Adapter {
     url: URL,
     method: string,
     baseUrl: URL,
-    user: User
+    user: User,
   ): Promise<boolean>;
 
   /**

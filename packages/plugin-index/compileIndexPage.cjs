@@ -15,11 +15,11 @@ const svelte = require('svelte/compiler');
 
   await fs.writeFile(
     path.resolve(__dirname, 'dist/IndexPage.js'),
-    IndexPage.js.code
+    IndexPage.js.code,
   );
   await fs.writeFile(
     path.resolve(__dirname, 'dist/IndexPage.js.map'),
-    JSON.stringify(IndexPage.js.map)
+    JSON.stringify(IndexPage.js.map),
   );
 
   console.log('Done!');

@@ -48,24 +48,24 @@ export default class Resource implements ResourceInterface {
       file != null
         ? file
         : collection
-        ? {
-            name: basename,
-            properties: {
-              creationdate: new Date(),
-              getlastmodified: new Date(),
-            },
-            locks: {},
-            children: [],
-          }
-        : {
-            name: basename,
-            properties: {
-              creationdate: new Date(),
-              getlastmodified: new Date(),
-            },
-            locks: {},
-            content: Buffer.from([]),
-          };
+          ? {
+              name: basename,
+              properties: {
+                creationdate: new Date(),
+                getlastmodified: new Date(),
+              },
+              locks: {},
+              children: [],
+            }
+          : {
+              name: basename,
+              properties: {
+                creationdate: new Date(),
+                getlastmodified: new Date(),
+              },
+              locks: {},
+              content: Buffer.from([]),
+            };
     this.collection = 'children' in this.file;
   }
 
@@ -120,17 +120,17 @@ export default class Resource implements ResourceInterface {
 
       if (parent == null || !('children' in parent)) {
         throw new ResourceTreeNotCompleteError(
-          'One or more intermediate collections must be created before this resource.'
+          'One or more intermediate collections must be created before this resource.',
         );
       }
 
       parent = parent.children.find(
-        (child) => 'children' in child && child.name === part
+        (child) => 'children' in child && child.name === part,
       ) as Folder;
     } while (parentParts.length);
 
     let current: Folder | File | undefined = parent.children.find(
-      (child) => child.name === basename
+      (child) => child.name === basename,
     );
 
     if (current) {
@@ -183,7 +183,7 @@ export default class Resource implements ResourceInterface {
       }
 
       parent = parent.children.find(
-        (child) => 'children' in child && child.name === part
+        (child) => 'children' in child && child.name === part,
       ) as Folder;
     } while (parentParts.length);
 
@@ -252,7 +252,7 @@ export default class Resource implements ResourceInterface {
   async setStream(input: Readable, user: User) {
     if (!('content' in this.file)) {
       throw new MethodNotSupportedError(
-        'This resource is an existing collection.'
+        'This resource is an existing collection.',
       );
     }
 
@@ -264,7 +264,7 @@ export default class Resource implements ResourceInterface {
 
     if (dir == null) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -273,7 +273,7 @@ export default class Resource implements ResourceInterface {
       this.file.properties.owner !== user.username
     ) {
       throw new UnauthorizedError(
-        'You do not have permission to modify this resource.'
+        'You do not have permission to modify this resource.',
       );
     }
 
@@ -318,7 +318,7 @@ export default class Resource implements ResourceInterface {
       this.file.properties.owner !== user.username
     ) {
       throw new UnauthorizedError(
-        'You do not have permission to delete this resource.'
+        'You do not have permission to delete this resource.',
       );
     }
 
@@ -332,12 +332,12 @@ export default class Resource implements ResourceInterface {
   async copy(destination: URL, baseUrl: URL, user: User) {
     const destinationPath = this.adapter.urlToRelativePath(
       destination,
-      baseUrl
+      baseUrl,
     );
 
     if (destinationPath == null) {
       throw new BadGatewayError(
-        'The destination URL is not under the namespace of this server.'
+        'The destination URL is not under the namespace of this server.',
       );
     }
 
@@ -347,7 +347,7 @@ export default class Resource implements ResourceInterface {
         destinationPath.startsWith(this.path.replace(/\/?$/, () => '/')))
     ) {
       throw new ForbiddenError(
-        'The destination cannot be the same as or contained within the source.'
+        'The destination cannot be the same as or contained within the source.',
       );
     }
 
@@ -359,9 +359,9 @@ export default class Resource implements ResourceInterface {
             .split('/')
             .map(encodeURIComponent)
             .join('/'),
-          baseUrl
+          baseUrl,
         ),
-        baseUrl
+        baseUrl,
       );
 
       if (
@@ -369,13 +369,13 @@ export default class Resource implements ResourceInterface {
         parent.file.properties.owner !== user.username
       ) {
         throw new UnauthorizedError(
-          "You don't have permission to copy the resource to this destination."
+          "You don't have permission to copy the resource to this destination.",
         );
       }
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
         throw new ResourceTreeNotCompleteError(
-          'One or more intermediate collections must be created before this resource.'
+          'One or more intermediate collections must be created before this resource.',
         );
       }
       throw e;
@@ -385,26 +385,26 @@ export default class Resource implements ResourceInterface {
     try {
       destinationResource = await this.adapter.getResource(
         destination,
-        baseUrl
+        baseUrl,
       );
       if (
         'owner' in destinationResource.file.properties &&
         destinationResource.file.properties.owner !== user.username
       ) {
         throw new UnauthorizedError(
-          "You don't have permission to modify the destination."
+          "You don't have permission to modify the destination.",
         );
       }
     } catch (e: any) {
       if (this.collection) {
         destinationResource = await this.adapter.newCollection(
           destination,
-          baseUrl
+          baseUrl,
         );
       } else {
         destinationResource = await this.adapter.newResource(
           destination,
-          baseUrl
+          baseUrl,
         );
       }
     }
@@ -440,12 +440,12 @@ export default class Resource implements ResourceInterface {
 
     const destinationPath = this.adapter.urlToRelativePath(
       destination,
-      baseUrl
+      baseUrl,
     );
 
     if (destinationPath == null) {
       throw new BadGatewayError(
-        'The destination URL is not under the namespace of this server.'
+        'The destination URL is not under the namespace of this server.',
       );
     }
 
@@ -455,7 +455,7 @@ export default class Resource implements ResourceInterface {
         destinationPath.startsWith(this.path.replace(/\/?$/, () => '/')))
     ) {
       throw new ForbiddenError(
-        'The destination cannot be the same as or contained within the source.'
+        'The destination cannot be the same as or contained within the source.',
       );
     }
 
@@ -464,14 +464,14 @@ export default class Resource implements ResourceInterface {
       this.file.properties.owner !== user.username
     ) {
       throw new UnauthorizedError(
-        "You don't have permission to move the resource."
+        "You don't have permission to move the resource.",
       );
     }
 
     try {
       const parent = await this.adapter.getResource(
         new URL(this.adapter.dirname(destination.toString())),
-        baseUrl
+        baseUrl,
       );
 
       if (
@@ -479,13 +479,13 @@ export default class Resource implements ResourceInterface {
         parent.file.properties.owner !== user.username
       ) {
         throw new UnauthorizedError(
-          "You don't have permission to move the resource to this destination."
+          "You don't have permission to move the resource to this destination.",
         );
       }
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
         throw new ResourceTreeNotCompleteError(
-          'One or more intermediate collections must be created before this resource.'
+          'One or more intermediate collections must be created before this resource.',
         );
       }
       throw e;
@@ -495,20 +495,20 @@ export default class Resource implements ResourceInterface {
     try {
       destinationResource = await this.adapter.getResource(
         destination,
-        baseUrl
+        baseUrl,
       );
       if (
         'owner' in destinationResource.file.properties &&
         destinationResource.file.properties.owner !== user.username
       ) {
         throw new UnauthorizedError(
-          "You don't have permission to modify the destination."
+          "You don't have permission to modify the destination.",
         );
       }
     } catch (e: any) {
       destinationResource = await this.adapter.newResource(
         destination,
-        baseUrl
+        baseUrl,
       );
     }
 
@@ -543,8 +543,8 @@ export default class Resource implements ResourceInterface {
             ('content' in this.file ? this.file.content : Buffer.from([]))
               .byteLength
           }; birthtime: ${this.file.properties.creationdate.getTime()}; mtime: ${this.file.properties.getlastmodified.getTime()}`,
-          'utf8'
-        )
+          'utf8',
+        ),
       )
       .toString(16);
 
@@ -593,7 +593,7 @@ export default class Resource implements ResourceInterface {
         .split('/')
         .map(encodeURIComponent)
         .join('/'),
-      this.baseUrl
+      this.baseUrl,
     );
   }
 
@@ -614,7 +614,7 @@ export default class Resource implements ResourceInterface {
           path: this.path.replace(/\/?$/, () => '/') + file.name,
           baseUrl: this.baseUrl,
           adapter: this.adapter,
-        })
+        }),
       );
     }
 

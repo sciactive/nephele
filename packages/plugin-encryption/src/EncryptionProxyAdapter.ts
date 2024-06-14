@@ -20,7 +20,7 @@ export class EncryptionProxyAdapter implements Adapter {
     plugin: Plugin,
     targetAdapter: Adapter,
     keys: { content: Buffer; name: Buffer; nameIV: Buffer },
-    baseURL: URL
+    baseURL: URL,
   ) {
     this.plugin = plugin;
     this.targetAdapter = targetAdapter;
@@ -43,8 +43,8 @@ export class EncryptionProxyAdapter implements Adapter {
             (await this.plugin.getEncryptedFilename(
               this.keys.name,
               this.keys.nameIV,
-              part
-            ))
+              part,
+            )),
         );
       } else {
         newparts.push(part);
@@ -68,7 +68,7 @@ export class EncryptionProxyAdapter implements Adapter {
         .split('/')
         .map((part) => encodeURIComponent(part))
         .join('/'),
-      this.baseUrl
+      this.baseUrl,
     );
   }
 
@@ -88,8 +88,8 @@ export class EncryptionProxyAdapter implements Adapter {
           await this.plugin.getDecryptedFilename(
             this.keys.name,
             this.keys.nameIV,
-            part
-          )
+            part,
+          ),
         );
       } else {
         newparts.push(part);
@@ -111,7 +111,7 @@ export class EncryptionProxyAdapter implements Adapter {
         .split('/')
         .map((part) => encodeURIComponent(part))
         .join('/'),
-      this.baseUrl
+      this.baseUrl,
     );
   }
 
@@ -143,12 +143,12 @@ export class EncryptionProxyAdapter implements Adapter {
   async getComplianceClasses(
     url: URL,
     request: Request,
-    response: AuthResponse
+    response: AuthResponse,
   ) {
     return await this.targetAdapter.getComplianceClasses(
       await this.encryptUrl(url),
       request,
-      response
+      response,
     );
   }
 
@@ -156,19 +156,19 @@ export class EncryptionProxyAdapter implements Adapter {
     return await this.targetAdapter.getAllowedMethods(
       await this.encryptUrl(url),
       request,
-      response
+      response,
     );
   }
 
   async getOptionsResponseCacheControl(
     url: URL,
     request: Request,
-    response: AuthResponse
+    response: AuthResponse,
   ) {
     return await this.targetAdapter.getOptionsResponseCacheControl(
       await this.encryptUrl(url),
       request,
-      response
+      response,
     );
   }
 
@@ -177,49 +177,49 @@ export class EncryptionProxyAdapter implements Adapter {
       await this.encryptUrl(url),
       method,
       baseUrl,
-      user
+      user,
     );
   }
 
   async getResource(url: URL, baseUrl: URL): Promise<Resource> {
     const resource = await this.targetAdapter.getResource(
       await this.encryptUrl(url),
-      baseUrl
+      baseUrl,
     );
     return new EncryptionProxyResource(
       this.plugin,
       this,
       resource,
       baseUrl,
-      this.keys
+      this.keys,
     );
   }
 
   async newResource(url: URL, baseUrl: URL): Promise<Resource> {
     const resource = await this.targetAdapter.newResource(
       await this.encryptUrl(url),
-      baseUrl
+      baseUrl,
     );
     return new EncryptionProxyResource(
       this.plugin,
       this,
       resource,
       baseUrl,
-      this.keys
+      this.keys,
     );
   }
 
   async newCollection(url: URL, baseUrl: URL): Promise<Resource> {
     const resource = await this.targetAdapter.newCollection(
       await this.encryptUrl(url),
-      baseUrl
+      baseUrl,
     );
     return new EncryptionProxyResource(
       this.plugin,
       this,
       resource,
       baseUrl,
-      this.keys
+      this.keys,
     );
   }
 

@@ -45,7 +45,7 @@ app.use(
       }
     },
     authenticator: new InsecureAuthenticator(),
-  })
+  }),
 );
 
 app.listen(port, () => {

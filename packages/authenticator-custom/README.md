@@ -50,7 +50,7 @@ app.use(
       },
       realm: 'My WebDAV Server',
     }),
-  })
+  }),
 );
 
 app.listen(port, () => {

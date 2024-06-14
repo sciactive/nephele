@@ -43,7 +43,7 @@ export interface Properties {
    */
   getByUser(
     name: string,
-    user: User
+    user: User,
   ): Promise<string | Object | Object[] | undefined>;
 
   /**
@@ -72,7 +72,7 @@ export interface Properties {
    */
   set(
     name: string,
-    value: string | Object | Object[] | undefined
+    value: string | Object | Object[] | undefined,
   ): Promise<void>;
 
   /**
@@ -81,7 +81,7 @@ export interface Properties {
   setByUser(
     name: string,
     value: string | Object | Object[] | undefined,
-    user: User
+    user: User,
   ): Promise<void>;
 
   /**
@@ -115,7 +115,7 @@ export interface Properties {
    *   being removed.
    */
   runInstructions(
-    instructions: ['set' | 'remove', string, any][]
+    instructions: ['set' | 'remove', string, any][],
   ): Promise<undefined | [string, Error][]>;
 
   /**
@@ -123,7 +123,7 @@ export interface Properties {
    */
   runInstructionsByUser(
     instructions: ['set' | 'remove', string, any][],
-    user: User
+    user: User,
   ): Promise<undefined | [string, Error][]>;
 
   /**
@@ -147,7 +147,7 @@ export interface Properties {
    * Same as getAll, but for a specific user.
    */
   getAllByUser(
-    user: User
+    user: User,
   ): Promise<{ [k: string]: string | Object | Object[] }>;
 
   /**

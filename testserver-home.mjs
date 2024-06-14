@@ -46,7 +46,7 @@ app.use(
       }
     },
     authenticator: new PamAuthenticator(),
-  })
+  }),
 );
 
 app.listen(port, () => {

@@ -106,7 +106,7 @@ export class Lock extends Entity<LockData> {
           username: Joi.string().required(),
           resource: Joi.object().instance(Resource).required(),
         }),
-        'Invalid Lock: '
+        'Invalid Lock: ',
       );
     } catch (e: any) {
       throw new BadRequestError(e.message);

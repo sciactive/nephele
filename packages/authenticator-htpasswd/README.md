@@ -32,7 +32,7 @@ app.use(
     authenticator: new HtpasswdAuthenticator({
       realm: 'My WebDAV Server',
     }),
-  })
+  }),
 );
 
 app.listen(port, () => {

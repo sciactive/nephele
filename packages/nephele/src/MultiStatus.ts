@@ -96,7 +96,7 @@ export class Status {
     href: URL,
     statusCode: number,
     statusMessage?: string,
-    element: string = 'response'
+    element: string = 'response',
   ) {
     this.href = href;
     this.statusCode = statusCode;

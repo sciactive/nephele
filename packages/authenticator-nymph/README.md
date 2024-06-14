@@ -29,7 +29,7 @@ app.use(
       nymph: myNymphInstance,
       realm: 'My WebDAV Server',
     }),
-  })
+  }),
 );
 
 app.listen(port, () => {

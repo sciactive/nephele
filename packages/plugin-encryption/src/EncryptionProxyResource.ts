@@ -21,7 +21,7 @@ export class EncryptionProxyResource implements Resource {
     adapter: EncryptionProxyAdapter,
     targetResource: Resource,
     baseUrl: URL,
-    keys: { content: Buffer; name: Buffer; nameIV: Buffer }
+    keys: { content: Buffer; name: Buffer; nameIV: Buffer },
   ) {
     this.plugin = plugin;
     this.adapter = adapter;
@@ -93,7 +93,7 @@ export class EncryptionProxyResource implements Resource {
 
     if (typeof iv !== 'string') {
       throw new InternalServerError(
-        'Initialization vector not found. Cannot decrypt resource.'
+        'Initialization vector not found. Cannot decrypt resource.',
       );
     }
 
@@ -103,7 +103,7 @@ export class EncryptionProxyResource implements Resource {
     const cipher = await this.plugin.getDecryptedStream(
       this.keys.content,
       iv,
-      stream
+      stream,
     );
 
     if (range) {
@@ -175,9 +175,9 @@ export class EncryptionProxyResource implements Resource {
       async (paddingBytes: number) => {
         await properties.set(
           'nephele-encryption-padding-bytes',
-          `${paddingBytes}`
+          `${paddingBytes}`,
         );
-      }
+      },
     );
 
     await this.targetResource.setStream(stream, user);
@@ -195,7 +195,7 @@ export class EncryptionProxyResource implements Resource {
     return await this.targetResource.copy(
       await this.adapter.encryptUrl(destination),
       baseUrl,
-      user
+      user,
     );
   }
 
@@ -213,7 +213,7 @@ export class EncryptionProxyResource implements Resource {
 
     const properties = await this.targetResource.getProperties();
     const paddingBytes = await properties.get(
-      'nephele-encryption-padding-bytes'
+      'nephele-encryption-padding-bytes',
     );
 
     if (typeof paddingBytes !== 'string') {
@@ -255,7 +255,7 @@ export class EncryptionProxyResource implements Resource {
       ? await this.plugin.getDecryptedFilename(
           this.keys.name,
           this.keys.nameIV,
-          filename
+          filename,
         )
       : filename;
   }
@@ -283,8 +283,8 @@ export class EncryptionProxyResource implements Resource {
           this.adapter,
           resource,
           this.baseUrl,
-          this.keys
-        )
+          this.keys,
+        ),
     );
   }
 }

@@ -30,13 +30,13 @@ export class PUT extends Method {
     try {
       resource = await response.locals.adapter.getResource(
         url,
-        response.locals.baseUrl
+        response.locals.baseUrl,
       );
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
         resource = await response.locals.adapter.newResource(
           url,
-          response.locals.baseUrl
+          response.locals.baseUrl,
         );
         newResource = true;
       } else {
@@ -69,7 +69,7 @@ export class PUT extends Method {
       // Parent not found is handled separately.
       if (e instanceof ResourceNotFoundError) {
         throw new ResourceTreeNotCompleteError(
-          'One or more intermediate collections must be created before this resource.'
+          'One or more intermediate collections must be created before this resource.',
         );
       } else {
         throw e;
@@ -80,13 +80,13 @@ export class PUT extends Method {
       request,
       response,
       resource,
-      response.locals.user
+      response.locals.user,
     );
 
     // Check that the resource wouldn't be added to a locked collection.
     if (newResource && lockPermission === 1) {
       throw new LockedError(
-        'The user does not have permission to add a new resource to the locked collection.'
+        'The user does not have permission to add a new resource to the locked collection.',
       );
     }
 
@@ -94,7 +94,7 @@ export class PUT extends Method {
       throw new LockedError(
         `The user does not have permission to ${
           newResource ? 'create' : 'modify'
-        } the locked resource.`
+        } the locked resource.`,
       );
     }
 

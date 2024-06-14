@@ -183,13 +183,13 @@ export default class Resource implements ResourceInterface {
   async setStream(input: Readable, _user: User, mediaType?: string) {
     if (!(await this.resourceTreeExists())) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
     if (await this.isCollection()) {
       throw new MethodNotSupportedError(
-        'This resource is an existing collection.'
+        'This resource is an existing collection.',
       );
     }
 
@@ -242,7 +242,7 @@ export default class Resource implements ResourceInterface {
 
     if (!(await this.resourceTreeExists())) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -309,12 +309,12 @@ export default class Resource implements ResourceInterface {
   async copy(destination: URL, baseUrl: URL, user: User) {
     const destinationPath = this.adapter.urlToRelativePath(
       destination,
-      baseUrl
+      baseUrl,
     );
 
     if (destinationPath == null) {
       throw new BadGatewayError(
-        'The destination URL is not under the namespace of this server.'
+        'The destination URL is not under the namespace of this server.',
       );
     }
 
@@ -324,12 +324,12 @@ export default class Resource implements ResourceInterface {
         destinationPath.startsWith(
           this.path.replace(
             new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
-            () => path.sep
-          )
+            () => path.sep,
+          ),
         ))
     ) {
       throw new ForbiddenError(
-        'The destination cannot be the same as or contained within the source.'
+        'The destination cannot be the same as or contained within the source.',
       );
     }
 
@@ -337,7 +337,7 @@ export default class Resource implements ResourceInterface {
 
     if (!(await this.resourceTreeExists(destinationKey))) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -348,7 +348,7 @@ export default class Resource implements ResourceInterface {
       try {
         const destinationResource = await this.adapter.getResource(
           destination,
-          this.baseUrl
+          this.baseUrl,
         );
 
         if (await destinationResource.isCollection()) {
@@ -385,7 +385,7 @@ export default class Resource implements ResourceInterface {
       } else {
         const emptyKey = `${destinationKey.replace(
           /\/?$/,
-          () => '/'
+          () => '/',
         )}.nepheleempty`;
         debug('PutObjectCommand', emptyKey);
         const command = new PutObjectCommand({
@@ -426,12 +426,12 @@ export default class Resource implements ResourceInterface {
 
     const destinationPath = this.adapter.urlToRelativePath(
       destination,
-      baseUrl
+      baseUrl,
     );
 
     if (destinationPath == null) {
       throw new BadGatewayError(
-        'The destination URL is not under the namespace of this server.'
+        'The destination URL is not under the namespace of this server.',
       );
     }
 
@@ -441,12 +441,12 @@ export default class Resource implements ResourceInterface {
         destinationPath.startsWith(
           this.path.replace(
             new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
-            () => path.sep
-          )
+            () => path.sep,
+          ),
         ))
     ) {
       throw new ForbiddenError(
-        'The destination cannot be the same as or contained within the source.'
+        'The destination cannot be the same as or contained within the source.',
       );
     }
 
@@ -454,21 +454,21 @@ export default class Resource implements ResourceInterface {
 
     if (!(await this.resourceTreeExists(destinationKey))) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
     try {
       const destinationResource = await this.adapter.getResource(
         destination,
-        baseUrl
+        baseUrl,
       );
       if (
         (await destinationResource.isCollection()) &&
         !(await destinationResource.isEmpty())
       ) {
         throw new ForbiddenError(
-          'The destination cannot be an existing non-empty directory.'
+          'The destination cannot be an existing non-empty directory.',
         );
       }
     } catch (e: any) {
@@ -560,7 +560,7 @@ export default class Resource implements ResourceInterface {
     if (await this.isCollection()) {
       return this.path.replace(
         new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
-        () => path.sep
+        () => path.sep,
       );
     }
     return this.path;
@@ -573,7 +573,7 @@ export default class Resource implements ResourceInterface {
         .map(encodeURIComponent)
         .join('/')
         .replace(/^\//, () => ''),
-      this.baseUrl
+      this.baseUrl,
     );
   }
 
@@ -631,7 +631,7 @@ export default class Resource implements ResourceInterface {
 
     const keys = this.listKeys(
       this.key.replace(/\/?$/, () => '/'),
-      1
+      1,
     );
 
     for await (let key of keys) {
@@ -642,7 +642,7 @@ export default class Resource implements ResourceInterface {
     }
 
     const collection = await this.existsInStorage(
-      `${this.key.replace(/\/?$/, () => '/')}.nepheleempty`
+      `${this.key.replace(/\/?$/, () => '/')}.nepheleempty`,
     );
     this.collection = collection;
     return this.collection;
@@ -655,7 +655,7 @@ export default class Resource implements ResourceInterface {
 
     const keys = this.listKeys(
       this.key.replace(/\/?$/, () => '/'),
-      1
+      1,
     );
 
     for await (let key of keys) {
@@ -728,7 +728,7 @@ export default class Resource implements ResourceInterface {
     // Check for resource under this one.
     const keys = this.listKeys(
       key.replace(/\/?$/, () => '/'),
-      1
+      1,
     );
     for await (let _key of keys) {
       return true;
@@ -767,10 +767,10 @@ export default class Resource implements ResourceInterface {
 
         this.meta = {};
         this.meta.props = JSON.parse(
-          response.Metadata?.['nephele-properties'] ?? '{}'
+          response.Metadata?.['nephele-properties'] ?? '{}',
         );
         this.meta.locks = JSON.parse(
-          response.Metadata?.['nephele-locks'] ?? '{}'
+          response.Metadata?.['nephele-locks'] ?? '{}',
         );
       }
     } catch (e: any) {
@@ -888,10 +888,10 @@ export default class Resource implements ResourceInterface {
       this.lastModified = response.LastModified;
 
       this.meta.props = JSON.parse(
-        response.Metadata?.['nephele-properties'] ?? '{}'
+        response.Metadata?.['nephele-properties'] ?? '{}',
       );
       this.meta.locks = JSON.parse(
-        response.Metadata?.['nephele-locks'] ?? '{}'
+        response.Metadata?.['nephele-locks'] ?? '{}',
       );
 
       this.inStorage = true;

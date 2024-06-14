@@ -28,7 +28,7 @@ app.use(
       root: '/path/to/webdav/root',
     }),
     authenticator: new ExampleAuthenticator(),
-  })
+  }),
 );
 
 app.listen(port, () => {

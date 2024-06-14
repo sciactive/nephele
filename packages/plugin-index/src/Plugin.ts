@@ -71,7 +71,7 @@ export default class Plugin implements PluginInterface {
     {
       method,
       resource,
-    }: { method: Method; resource: Resource; properties: Properties }
+    }: { method: Method; resource: Resource; properties: Properties },
   ) {
     if (!(await resource.isCollection())) {
       return;
@@ -126,7 +126,7 @@ export default class Plugin implements PluginInterface {
             url,
             size: await resource.getLength(),
             lastModified: new Date(
-              typeof lastModified === 'string' ? lastModified : 0
+              typeof lastModified === 'string' ? lastModified : 0,
             ).getTime(),
             type: await resource.getMediaType(),
             directory: await resource.isCollection(),
@@ -134,7 +134,7 @@ export default class Plugin implements PluginInterface {
             canMove,
             canDelete,
           };
-        })
+        }),
       );
 
       let canUpload = true;
@@ -145,8 +145,8 @@ export default class Plugin implements PluginInterface {
           'PUT',
           new URL(
             `${request.url}`.replace(/\/?$/, '/') + '--nephele-new-file-name--',
-            `${request.protocol}://${request.headers.host}`
-          )
+            `${request.protocol}://${request.headers.host}`,
+          ),
         );
       } catch (e: any) {
         canUpload = false;
@@ -161,8 +161,8 @@ export default class Plugin implements PluginInterface {
           new URL(
             `${request.url}`.replace(/\/?$/, '/') +
               '--nephele-new-directory-name--',
-            `${request.protocol}://${request.headers.host}`
-          )
+            `${request.protocol}://${request.headers.host}`,
+          ),
         );
       } catch (e: any) {
         canMkdir = false;
@@ -219,7 +219,7 @@ export default class Plugin implements PluginInterface {
     try {
       indexResource = await adapter.getResource(
         indexHtmlUrl,
-        response.locals.baseUrl
+        response.locals.baseUrl,
       );
     } catch (e: any) {
       if (!(e instanceof ResourceNotFoundError)) {
@@ -234,7 +234,7 @@ export default class Plugin implements PluginInterface {
     try {
       indexResource = await adapter.getResource(
         indexHtmUrl,
-        response.locals.baseUrl
+        response.locals.baseUrl,
       );
     } catch (e: any) {
       if (!(e instanceof ResourceNotFoundError)) {

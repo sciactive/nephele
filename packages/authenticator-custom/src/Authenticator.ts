@@ -92,7 +92,7 @@ export type AuthenticatorConfig = {
       authDigest: (
         user: User,
         realm: string,
-        algorithm: 'sha256' | 'md5'
+        algorithm: 'sha256' | 'md5',
       ) => Promise<{ password: string } | { hash: string } | null>;
     }
 );
@@ -114,7 +114,7 @@ export default class Authenticator implements AuthenticatorInterface {
   authDigest?: (
     user: User,
     realm: string,
-    algorithm: 'sha256' | 'md5'
+    algorithm: 'sha256' | 'md5',
   ) => Promise<{ password: string } | { hash: string } | null>;
   realm: string;
   unauthorizedAccess: boolean;
@@ -132,7 +132,7 @@ export default class Authenticator implements AuthenticatorInterface {
 
     if (this.authBasic == null && this.authDigest == null) {
       throw new Error(
-        'You must provide at least one auth function to authenticator-custom.'
+        'You must provide at least one auth function to authenticator-custom.',
       );
     }
 
@@ -155,7 +155,7 @@ export default class Authenticator implements AuthenticatorInterface {
 
           if (this.authBasic == null || (!username && !password)) {
             throw new UnauthorizedError(
-              'You must authenticate to access this server.'
+              'You must authenticate to access this server.',
             );
           }
 
@@ -163,13 +163,13 @@ export default class Authenticator implements AuthenticatorInterface {
 
           if (user == null) {
             throw new UnauthorizedError(
-              'The provided credentials are not correct.'
+              'The provided credentials are not correct.',
             );
           }
 
           if (!(await this.authBasic(user, password))) {
             throw new UnauthorizedError(
-              'The provided credentials are not correct.'
+              'The provided credentials are not correct.',
             );
           }
 
@@ -198,7 +198,7 @@ export default class Authenticator implements AuthenticatorInterface {
                 `${request.protocol}://${request.headers.host}${request.url}`)
           ) {
             throw new UnauthorizedError(
-              'You must authenticate to access this server.'
+              'You must authenticate to access this server.',
             );
           }
 
@@ -213,12 +213,12 @@ export default class Authenticator implements AuthenticatorInterface {
 
           const checkNonce = hash(
             `${request.ip}:${opaque}:${this.key}`,
-            'sha256'
+            'sha256',
           );
 
           if (checkNonce !== nonce) {
             throw new StaleUnauthorizedError(
-              'The provided nonce was not issued to this client by this server.'
+              'The provided nonce was not issued to this client by this server.',
             );
           }
 
@@ -226,7 +226,7 @@ export default class Authenticator implements AuthenticatorInterface {
 
           if (user == null) {
             throw new UnauthorizedError(
-              'The provided credentials are not correct.'
+              'The provided credentials are not correct.',
             );
           }
 
@@ -238,18 +238,18 @@ export default class Authenticator implements AuthenticatorInterface {
             qop === 'auth-int'
           ) {
             throw new UnauthorizedError(
-              'The provided credentials are not in a supported format.'
+              'The provided credentials are not in a supported format.',
             );
           }
 
           const digestInfo = await this.authDigest(
             user,
             this.realm,
-            algorithm === 'MD5-sess' ? 'md5' : 'sha256'
+            algorithm === 'MD5-sess' ? 'md5' : 'sha256',
           );
           if (digestInfo == null) {
             throw new UnauthorizedError(
-              'The provided credentials are not correct.'
+              'The provided credentials are not correct.',
             );
           }
 
@@ -263,9 +263,9 @@ export default class Authenticator implements AuthenticatorInterface {
             HA1 = hash(
               `${hash(
                 `${username}:${this.realm}:${password}`,
-                hashAlg
+                hashAlg,
               )}:${nonce}:${cnonce}`,
-              hashAlg
+              hashAlg,
             );
           }
 
@@ -275,7 +275,7 @@ export default class Authenticator implements AuthenticatorInterface {
           if (qop === 'auth') {
             check = hash(
               `${HA1}:${nonce}:${nc}:${cnonce}:${qop}:${HA2}`,
-              hashAlg
+              hashAlg,
             );
           } else {
             check = hash(`${HA1}:${nonce}:${HA2}`, hashAlg);
@@ -283,7 +283,7 @@ export default class Authenticator implements AuthenticatorInterface {
 
           if (check !== response) {
             throw new UnauthorizedError(
-              'The provided credentials are not correct.'
+              'The provided credentials are not correct.',
             );
           }
 
@@ -292,7 +292,7 @@ export default class Authenticator implements AuthenticatorInterface {
       }
 
       throw new UnauthorizedError(
-        'You must authenticate to access this server.'
+        'You must authenticate to access this server.',
       );
     } catch (e: any) {
       if (e instanceof UnauthorizedError) {
@@ -301,7 +301,7 @@ export default class Authenticator implements AuthenticatorInterface {
           auths.push(
             `Basic ${BASIC.buildWWWAuthenticateRest({
               realm: this.realm,
-            })}, charset="UTF-8"`
+            })}, charset="UTF-8"`,
           );
         }
         if (this.authDigest != null) {
@@ -315,7 +315,7 @@ export default class Authenticator implements AuthenticatorInterface {
               algorithm: 'SHA256-sess' as 'MD5-sess',
               realm: this.realm,
               stale: e instanceof StaleUnauthorizedError ? 'true' : 'false',
-            })}, charset="UTF-8"`
+            })}, charset="UTF-8"`,
           );
           auths.push(
             `Digest ${DIGEST.buildWWWAuthenticateRest({
@@ -325,7 +325,7 @@ export default class Authenticator implements AuthenticatorInterface {
               algorithm: 'MD5-sess',
               realm: this.realm,
               stale: e instanceof StaleUnauthorizedError ? 'true' : 'false',
-            })}, charset="UTF-8"`
+            })}, charset="UTF-8"`,
           );
         }
         response.set('WWW-Authenticate', auths);

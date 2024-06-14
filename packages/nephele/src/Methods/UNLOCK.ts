@@ -29,7 +29,7 @@ export class UNLOCK extends Method {
     const contentType = request.accepts('application/xml', 'text/xml');
     let resource = await response.locals.adapter.getResource(
       url,
-      response.locals.baseUrl
+      response.locals.baseUrl,
     );
 
     if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
@@ -54,7 +54,7 @@ export class UNLOCK extends Method {
 
     if (lockTokenHeader == null || lockTokenHeader.trim() === '') {
       throw new BadRequestError(
-        'UNLOCK method must include a lock token in the Lock-Token header.'
+        'UNLOCK method must include a lock token in the Lock-Token header.',
       );
     }
 
@@ -63,7 +63,7 @@ export class UNLOCK extends Method {
       request,
       response,
       resource,
-      response.locals.user
+      response.locals.user,
     );
 
     const lock =
@@ -80,7 +80,7 @@ export class UNLOCK extends Method {
         // If the lock exists, it means the user doesn't have permission to
         // unlock it.
         throw new ForbiddenError(
-          'You do not have permission to unlock this resource.'
+          'You do not have permission to unlock this resource.',
         );
       }
 

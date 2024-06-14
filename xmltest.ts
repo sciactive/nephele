@@ -51,7 +51,7 @@ const parseIfHeader = async () => {
       url: URL;
       etag: string;
       tokens: string[];
-    }[]
+    }[],
   ) => {
     ifHeader = ifHeader.trim().replace(/\n/g, ' ');
 
@@ -74,7 +74,7 @@ const parseIfHeader = async () => {
       if (resourceMatch) {
         if (!startedWithResource) {
           throw new Error(
-            'Tagged-lists and no-tag-lists must not be mixed in the If header.'
+            'Tagged-lists and no-tag-lists must not be mixed in the If header.',
           );
         }
 
@@ -82,7 +82,7 @@ const parseIfHeader = async () => {
         currentResource = resource.slice(1, -1);
         if (currentResource.match(/(?:^\/)\.\.?(?:$|\/)/)) {
           throw new Error(
-            'Resource URIs in the If header must not contain dot segments.'
+            'Resource URIs in the If header must not contain dot segments.',
           );
         }
         ifHeader = ifHeader.replace(matchResource, '');
@@ -99,7 +99,7 @@ const parseIfHeader = async () => {
 
         if (list === '') {
           throw new Error(
-            'All lists in the If header must have at least one condition.'
+            'All lists in the If header must have at least one condition.',
           );
         }
 
@@ -142,7 +142,7 @@ const parseIfHeader = async () => {
           } else {
             // Unparseable header.
             throw new Error(
-              "The server doesn't recognize the submitted If header."
+              "The server doesn't recognize the submitted If header.",
             );
           }
         }
@@ -157,14 +157,14 @@ const parseIfHeader = async () => {
       } else {
         // Unparseable header.
         throw new Error(
-          "The server doesn't recognize the submitted If header."
+          "The server doesn't recognize the submitted If header.",
         );
       }
     }
 
     if (Object.keys(parsedHeader).length === 0) {
       throw new Error(
-        'The If header, if provided, must contain at least one list with a condition.'
+        'The If header, if provided, must contain at least one list with a condition.',
       );
     }
 
@@ -174,7 +174,7 @@ const parseIfHeader = async () => {
     for (let [resourceUri, lists] of Object.entries(parsedHeader)) {
       const url = new URL(resourceUri, requestURL);
       const { etag, tokens } = resources.find(
-        (resource) => resource.url.toString() === url.toString()
+        (resource) => resource.url.toString() === url.toString(),
       ) || { etag: '', tokens: [] as string[] };
 
       listLoop: for (let list of lists) {
@@ -230,8 +230,8 @@ const parseIfHeader = async () => {
           etag: 'eeee',
           tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -245,8 +245,8 @@ const parseIfHeader = async () => {
           etag: 'I am an ETag',
           tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -260,8 +260,8 @@ const parseIfHeader = async () => {
           etag: 'I am another ETag',
           tokens: [],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -275,8 +275,8 @@ const parseIfHeader = async () => {
           etag: 'I am an ETag',
           tokens: [],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -290,8 +290,8 @@ const parseIfHeader = async () => {
           etag: 'eeee',
           tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -305,8 +305,8 @@ const parseIfHeader = async () => {
           etag: 'eeee',
           tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -320,8 +320,8 @@ const parseIfHeader = async () => {
           etag: 'eeee',
           tokens: ['urn:uuid:1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -335,8 +335,8 @@ const parseIfHeader = async () => {
           etag: 'eeee',
           tokens: [],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -355,8 +355,8 @@ const parseIfHeader = async () => {
           etag: 'eeee',
           tokens: ['urn:uuid:9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -370,8 +370,8 @@ const parseIfHeader = async () => {
           etag: 'eeee',
           tokens: [],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -390,8 +390,8 @@ const parseIfHeader = async () => {
           etag: 'etag',
           tokens: [],
         },
-      ]
-    )
+      ],
+    ),
   );
 
   console.log(
@@ -405,8 +405,8 @@ const parseIfHeader = async () => {
           etag: 'eeee',
           tokens: [],
         },
-      ]
-    )
+      ],
+    ),
   );
 };
 await parseIfHeader();
@@ -486,7 +486,7 @@ const multistatuspropstat = async () => {
 
   const container = new Status(
     new URL('http://www.example.com/container'),
-    207
+    207,
   );
   multistatus.addStatus(container);
 
@@ -502,7 +502,7 @@ const multistatuspropstat = async () => {
 
   const file = new Status(
     new URL('http://www.example.com/container/file'),
-    207
+    207,
   );
   multistatus.addStatus(file);
 

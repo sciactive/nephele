@@ -46,7 +46,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const pkg = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, '..', 'package.json')).toString()
+  fs.readFileSync(path.resolve(__dirname, '..', 'package.json')).toString(),
 );
 
 type Conf = {
@@ -115,105 +115,105 @@ program
   .option(
     '-h, --host <host>',
     'A host address to listen on. The default is to listen on all external hosts.',
-    '::'
+    '::',
   )
   .option(
     '-r, --realm <realm>',
-    'The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.'
+    'The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.',
   )
   .option(
     '--cert <cert_file>',
-    'The filename of a certificate to use for HTTPS in PEM format.'
+    'The filename of a certificate to use for HTTPS in PEM format.',
   )
   .option(
     '--key <key_file>',
-    'The filename of a private key to use for HTTPS in PEM format.'
+    'The filename of a private key to use for HTTPS in PEM format.',
   )
   .addOption(
     new Option(
       '-p, --port <port>',
-      'The port to listen on. Defaults to 443 if a cert is provided, 80 otherwise.'
-    ).argParser(parseInt)
+      'The port to listen on. Defaults to 443 if a cert is provided, 80 otherwise.',
+    ).argParser(parseInt),
   )
   .addOption(
     new Option(
       '--redirect-port <redirect_port>',
-      'The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.'
-    ).argParser(parseInt)
+      'The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.',
+    ).argParser(parseInt),
   )
   .addOption(
     new Option(
       '-t, --timeout <milliseconds>',
-      'Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.'
-    ).argParser(parseInt)
+      'Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.',
+    ).argParser(parseInt),
   )
   .addOption(
     new Option(
       '--keep-alive-timeout <milliseconds>',
-      'Server will wait this long for additional data after writing its last response.'
-    ).argParser(parseInt)
+      'Server will wait this long for additional data after writing its last response.',
+    ).argParser(parseInt),
   )
   .option(
     '--home-directories',
-    "Serve users' home directories to them when they log in. (Impies --pam-auth.)"
+    "Serve users' home directories to them when they log in. (Impies --pam-auth.)",
   )
   .option(
     '--user-directories',
-    'Serve users their own directory under the server root when they log in.'
+    'Serve users their own directory under the server root when they log in.',
   )
   .option(
     '--serve-indexes',
-    'Serve index.html and index.htm files when the user requests a directory.'
+    'Serve index.html and index.htm files when the user requests a directory.',
   )
   .option(
     '--serve-listings',
-    'Serve directory listings with file management forms when the user requests a directory.'
+    'Serve directory listings with file management forms when the user requests a directory.',
   )
   .option(
     '--no-auth',
-    "Don't require authentication. (Not compatible with --home-directories or --user-directories.)"
+    "Don't require authentication. (Not compatible with --home-directories or --user-directories.)",
   )
   .option('--pam-auth', 'Use PAM authentication. (Requires PAM libraries.)')
   .option(
     '--auth-user-filename',
-    "htpasswd filename. (Defaults to '.htpasswd'.)"
+    "htpasswd filename. (Defaults to '.htpasswd'.)",
   )
   .option(
     '--auth-user-file',
-    'A specific htpasswd file to use for every request.'
+    'A specific htpasswd file to use for every request.',
   )
   .option(
     '--auth-username <username>',
-    'Authenticate with a given username instead.'
+    'Authenticate with a given username instead.',
   )
   .option(
     '--auth-password <password>',
-    'Authenticate with a given password instead.'
+    'Authenticate with a given password instead.',
   )
   .option('--encryption', 'Enable filename and file contents encryption.')
   .option(
     '--encryption-salt <salt>',
-    'The salt used to generate file content encryption keys.'
+    'The salt used to generate file content encryption keys.',
   )
   .option(
     '--encryption-filename-salt <salt>',
-    'The salt used to generate filename encryption keys.'
+    'The salt used to generate filename encryption keys.',
   )
   .option(
     '--encryption-filename-iv-salt <salt>',
-    'The salt used to generate filename initialization vectors.'
+    'The salt used to generate filename initialization vectors.',
   )
   .option(
     '--encryption-filename-encoding <encoding>',
-    "The encoding to use for filenames ('base64' or 'ascii85')."
+    "The encoding to use for filenames ('base64' or 'ascii85').",
   )
   .option(
     '--encryption-global-password <password>',
-    'A password to use globally instead of user passwords.'
+    'A password to use globally instead of user passwords.',
   )
   .option(
     '--encryption-exclude <globlist>',
-    'A list of glob patterns to exclude from the encryption/decryption process.'
+    'A list of glob patterns to exclude from the encryption/decryption process.',
   )
   .option('--s3-endpoint <endpoint-url>', 'The S3 endpoint URL to connect to.')
   .option('--s3-region <region>', 'The S3 region.')
@@ -222,100 +222,100 @@ program
   .option('--s3-bucket <bucket-name>', 'The S3 bucket.')
   .option(
     '--nymph',
-    'Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.)'
+    'Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.)',
   )
   .option(
     '--nymph-jwt-secret <jwt-secret>',
-    'A random string to use as the JWT secret for the Nymph user setup app.'
+    'A random string to use as the JWT secret for the Nymph user setup app.',
   )
   .option(
     '--nymph-rest-path <rest-path>',
-    'The path to use for the Nymph rest server used by the user setup app. (Defaults to "/!nymph".)'
+    'The path to use for the Nymph rest server used by the user setup app. (Defaults to "/!nymph".)',
   )
   .option(
     '--nymph-setup-path <setup-path>',
-    'The path to use for the Nymph user setup app. (Defaults to "/!users".)'
+    'The path to use for the Nymph user setup app. (Defaults to "/!users".)',
   )
   .option(
     '--no-nymph-registration',
-    "Don't allow new user registration through the Nymph user setup app."
+    "Don't allow new user registration through the Nymph user setup app.",
   )
   .option(
     '--nymph-export <filename>',
-    'Export the Nymph database to a NEX file.'
+    'Export the Nymph database to a NEX file.',
   )
   .option(
     '--nymph-import <filename>',
-    'Import the Nymph database from a NEX file.'
+    'Import the Nymph database from a NEX file.',
   )
   .option(
     '--nymph-db-driver <db_driver>',
-    'The type of the DB driver to use. (Can be "mysql", "postgres", or "sqlite". Defaults to "sqlite").'
+    'The type of the DB driver to use. (Can be "mysql", "postgres", or "sqlite". Defaults to "sqlite").',
   )
   .option(
     '--nymph-mysql-host <host>',
-    'The MySQL host if the DB driver is "mysql". (Defaults to "localhost".)'
+    'The MySQL host if the DB driver is "mysql". (Defaults to "localhost".)',
   )
   .addOption(
     new Option(
       '--nymph-mysql-port <port>',
-      'The MySQL port if the DB driver is "mysql". (Defaults to 3306.)'
-    ).argParser(parseInt)
+      'The MySQL port if the DB driver is "mysql". (Defaults to 3306.)',
+    ).argParser(parseInt),
   )
   .option(
     '--nymph-mysql-database <database>',
-    'The MySQL database if the DB driver is "mysql". (Defaults to "nymph".)'
+    'The MySQL database if the DB driver is "mysql". (Defaults to "nymph".)',
   )
   .option(
     '--nymph-mysql-username <username>',
-    'The MySQL username if the DB driver is "mysql". (Defaults to "nymph".)'
+    'The MySQL username if the DB driver is "mysql". (Defaults to "nymph".)',
   )
   .option(
     '--nymph-mysql-password <password>',
-    'The MySQL password if the DB driver is "mysql". (Defaults to "password".)'
+    'The MySQL password if the DB driver is "mysql". (Defaults to "password".)',
   )
   .option(
     '--nymph-mysql-prefix <prefix>',
-    'The MySQL table prefix if the DB driver is "mysql". (Defaults to "nymph_".)'
+    'The MySQL table prefix if the DB driver is "mysql". (Defaults to "nymph_".)',
   )
   .option(
     '--nymph-postgres-host <host>',
-    'The PostgreSQL host if the DB driver is "postgres". (Defaults to "localhost".)'
+    'The PostgreSQL host if the DB driver is "postgres". (Defaults to "localhost".)',
   )
   .addOption(
     new Option(
       '--nymph-postgres-port <port>',
-      'The PostgreSQL port if the DB driver is "postgres". (Defaults to 5432.)'
-    ).argParser(parseInt)
+      'The PostgreSQL port if the DB driver is "postgres". (Defaults to 5432.)',
+    ).argParser(parseInt),
   )
   .option(
     '--nymph-postgres-database <database>',
-    'The PostgreSQL database if the DB driver is "postgres". (Defaults to "nymph".)'
+    'The PostgreSQL database if the DB driver is "postgres". (Defaults to "nymph".)',
   )
   .option(
     '--nymph-postgres-username <username>',
-    'The PostgreSQL username if the DB driver is "postgres". (Defaults to "nymph".)'
+    'The PostgreSQL username if the DB driver is "postgres". (Defaults to "nymph".)',
   )
   .option(
     '--nymph-postgres-password <password>',
-    'The PostgreSQL password if the DB driver is "postgres". (Defaults to "password".)'
+    'The PostgreSQL password if the DB driver is "postgres". (Defaults to "password".)',
   )
   .option(
     '--nymph-postgres-prefix <prefix>',
-    'The PostgreSQL table prefix if the DB driver is "postgres". (Defaults to "nymph_".)'
+    'The PostgreSQL table prefix if the DB driver is "postgres". (Defaults to "nymph_".)',
   )
   .option(
     '--nymph-sqlite-cache-size <kilobytes>',
-    'The SQLite cache size to maintain in memory. (Defaults to 100MB).'
+    'The SQLite cache size to maintain in memory. (Defaults to 100MB).',
   )
   .option(
     '--nymph-sqlite-prefix <prefix>',
-    'The SQLite table prefix if the DB driver is "sqlite". (Defaults to "nymph_".)'
+    'The SQLite table prefix if the DB driver is "sqlite". (Defaults to "nymph_".)',
   )
   .option('--no-update-check', "Don't check for updates.")
   .argument(
     '[directory]',
-    'The path of the directory to use as the server root. When using S3, this is the path within the bucket.'
+    'The path of the directory to use as the server root. When using S3, this is the path within the bucket.',
   );
 
 program.addHelpText(
@@ -379,7 +379,7 @@ Environment Variables:
   UPDATE_CHECK                               Same as --no-update-check when set to "false", "off" or "0".
   SERVER_ROOT                                Same as [directory].
 
-Options given on the command line take precedence over options from an environment variable.`
+Options given on the command line take precedence over options from an environment variable.`,
 );
 
 program.addHelpText(
@@ -411,7 +411,7 @@ Encryption:
   of glob patterns.
 
   You can find more information about Nephele's file encryption here:
-  https://github.com/sciactive/nephele/blob/master/packages/plugin-encryption/README.md`
+  https://github.com/sciactive/nephele/blob/master/packages/plugin-encryption/README.md`,
 );
 
 program.addHelpText(
@@ -447,7 +447,7 @@ S3 Object Store:
   deleting the empty directory.
 
   You can find more information about Nephele's S3 adapter here:
-  https://github.com/sciactive/nephele/blob/master/packages/adapter-s3/README.md`
+  https://github.com/sciactive/nephele/blob/master/packages/adapter-s3/README.md`,
 );
 
 program.addHelpText(
@@ -485,7 +485,7 @@ Nymph and File Deduplication:
   https://github.com/sciactive/nephele/blob/master/packages/authenticator-nymph/README.md
 
   You can find more information about Nymph.js:
-  https://nymph.io`
+  https://nymph.io`,
 );
 
 program.addHelpText(
@@ -493,7 +493,7 @@ program.addHelpText(
   `
 Nephele repo: https://github.com/sciactive/nephele
 Copyright (C) 2022-2024 SciActive, Inc
-https://sciactive.com/`
+https://sciactive.com/`,
 );
 
 try {
@@ -575,29 +575,29 @@ try {
     cert: process.env.CERT_FILE,
     key: process.env.KEY_FILE,
     homeDirectories: ['true', 'on', '1'].includes(
-      (process.env.HOME_DIRECTORIES || '').toLowerCase()
+      (process.env.HOME_DIRECTORIES || '').toLowerCase(),
     ),
     userDirectories: ['true', 'on', '1'].includes(
-      (process.env.USER_DIRECTORIES || '').toLowerCase()
+      (process.env.USER_DIRECTORIES || '').toLowerCase(),
     ),
     serveIndexes: ['true', 'on', '1'].includes(
-      (process.env.SERVE_INDEXES || '').toLowerCase()
+      (process.env.SERVE_INDEXES || '').toLowerCase(),
     ),
     serveListings: ['true', 'on', '1'].includes(
-      (process.env.SERVE_LISTINGS || '').toLowerCase()
+      (process.env.SERVE_LISTINGS || '').toLowerCase(),
     ),
     auth: !['false', 'off', '0'].includes(
-      (process.env.AUTH || '').toLowerCase()
+      (process.env.AUTH || '').toLowerCase(),
     ),
     pamAuth: ['true', 'on', '1'].includes(
-      (process.env.PAM_AUTH || '').toLowerCase()
+      (process.env.PAM_AUTH || '').toLowerCase(),
     ),
     authUserFilename: process.env.AUTH_USER_FILENAME,
     authUserFile: process.env.AUTH_USER_FILE,
     authUsername: process.env.AUTH_USERNAME,
     authPassword: process.env.AUTH_PASSWORD,
     encryption: ['true', 'on', '1'].includes(
-      (process.env.ENCRYPTION || '').toLowerCase()
+      (process.env.ENCRYPTION || '').toLowerCase(),
     ),
     encryptionSalt: process.env.ENCRYPTION_SALT,
     encryptionFilenameSalt: process.env.ENCRYPTION_FILENAME_SALT,
@@ -611,13 +611,13 @@ try {
     s3SecretKey: process.env.S3_SECRET_KEY,
     s3Bucket: process.env.S3_BUCKET,
     nymph: ['true', 'on', '1'].includes(
-      (process.env.NYMPH || '').toLowerCase()
+      (process.env.NYMPH || '').toLowerCase(),
     ),
     nymphJwtSecret: process.env.NYMPH_JWT_SECRET,
     nymphRestPath: process.env.NYMPH_REST_PATH,
     nymphSetupPath: process.env.NYMPH_SETUP_PATH,
     nymphRegistration: !['false', 'off', '0'].includes(
-      (process.env.NYMPH_REGISTRATION || '').toLowerCase()
+      (process.env.NYMPH_REGISTRATION || '').toLowerCase(),
     ),
     nymphExport: process.env.NYMPH_EXPORT,
     nymphImport: process.env.NYMPH_IMPORT,
@@ -637,7 +637,7 @@ try {
     nymphSqliteCacheSize: process.env.NYMPH_SQLITE_CACHE_SIZE,
     nymphSqlitePrefix: process.env.NYMPH_SQLITE_PREFIX,
     updateCheck: !['false', 'off', '0'].includes(
-      (process.env.UPDATE_CHECK || '').toLowerCase()
+      (process.env.UPDATE_CHECK || '').toLowerCase(),
     ),
     directory: program.args.length
       ? path.resolve(program.args[0])
@@ -695,7 +695,7 @@ try {
   // Validate args.
   if (homeDirectories && userDirectories) {
     throw new Error(
-      'Only one of --home-directories and --user-directories options can be used at a time.'
+      'Only one of --home-directories and --user-directories options can be used at a time.',
     );
   }
 
@@ -709,7 +709,7 @@ try {
 
   if (userDirectories && directory == null && s3Endpoint == null) {
     throw new Error(
-      'Serving user directories requires a root directory or an S3 endpoint.'
+      'Serving user directories requires a root directory or an S3 endpoint.',
     );
   }
 
@@ -721,13 +721,13 @@ try {
     nymphImport == null
   ) {
     throw new Error(
-      'A root directory, an S3 endpoint, or the --home-directories option is required.'
+      'A root directory, an S3 endpoint, or the --home-directories option is required.',
     );
   }
 
   if ((homeDirectories || userDirectories) && !auth) {
     throw new Error(
-      'The --home-directories and --user-directories options require authentication.'
+      'The --home-directories and --user-directories options require authentication.',
     );
   }
 
@@ -741,13 +741,13 @@ try {
 
   if (nymph && homeDirectories) {
     throw new Error(
-      'The --nymph option is not compatible with --home-directories.'
+      'The --nymph option is not compatible with --home-directories.',
     );
   }
 
   if (nymph && userDirectories) {
     throw new Error(
-      'The --nymph option is not compatible with --user-directories.'
+      'The --nymph option is not compatible with --user-directories.',
     );
   }
 
@@ -760,7 +760,7 @@ try {
   ) {
     if (nymphJwtSecret == null) {
       throw new Error(
-        'The --nymph option with auth enabled, PAM auth disabled, and no global username/password, requires a JWT secret to be set with --nymph-jwt-secret.'
+        'The --nymph option with auth enabled, PAM auth disabled, and no global username/password, requires a JWT secret to be set with --nymph-jwt-secret.',
       );
     }
 
@@ -797,7 +797,7 @@ try {
     console.log(
       '\x1b[43m\x1b[37m\x1b[1m%s\x1b[0m\x1b[33m\x1b[1m%s\x1b[0m',
       ' ⚠  ',
-      ' BREAKING CHANGE: nephele-serve 1.0.0-alpha.34 and above require the `@nephele/authenticator-pam` package and `--pam-auth` option to authenticate with system users.'
+      ' BREAKING CHANGE: nephele-serve 1.0.0-alpha.34 and above require the `@nephele/authenticator-pam` package and `--pam-auth` option to authenticate with system users.',
     );
   }
 
@@ -808,13 +808,13 @@ try {
 
     if (!encryptionFilenameSalt) {
       throw new Error(
-        'You must provide a filename salt to use file encryption.'
+        'You must provide a filename salt to use file encryption.',
       );
     }
 
     if (!encryptionFilenameIvSalt) {
       throw new Error(
-        'You must provide a filename IV salt to use file encryption.'
+        'You must provide a filename IV salt to use file encryption.',
       );
     }
   }
@@ -903,7 +903,7 @@ try {
         cacheThreshold: 1,
       },
       nymphDriver,
-      tilmeld
+      tilmeld,
     );
 
     if (nymphExport) {
@@ -945,8 +945,8 @@ try {
           restUrl: nymphRestPath ?? '/!nymph',
         },
         nymphInstance,
-        { allowRegistration: nymphRegistration }
-      )
+        { allowRegistration: nymphRegistration },
+      ),
     );
   }
 
@@ -1001,7 +1001,7 @@ try {
               user.tags = response.locals.user.tags;
               user.$putData(
                 response.locals.user.$getData(false),
-                response.locals.user.$getSData()
+                response.locals.user.$getSData(),
               );
               await authTilmeld.fillSession(user);
               response.locals.user = user as NymphUser &
@@ -1024,7 +1024,7 @@ try {
             if (userDirectories && response.locals.user != null) {
               const root = path.join(
                 directory,
-                response.locals.user.username.replace(/\//g, '_')
+                response.locals.user.username.replace(/\//g, '_'),
               );
 
               try {
@@ -1074,7 +1074,7 @@ try {
 
             if (userDirectories && response.locals.user != null) {
               const userPath = encodeURIComponent(
-                response.locals.user.username.replace(/\//g, '_')
+                response.locals.user.username.replace(/\//g, '_'),
               );
               const baseUrl = new URL(`http://localhost/`);
               const url = new URL(userPath, baseUrl);
@@ -1200,7 +1200,7 @@ try {
           ? [new IndexPlugin({ serveIndexes, serveListings })]
           : []),
       ],
-    })
+    }),
   );
 
   // Run server.
@@ -1227,9 +1227,9 @@ try {
           `Nephele redirect server listening on ${serverHosts
             .map(
               ({ name, address }) =>
-                `dav://${address}:${redirectPort} (${name})`
+                `dav://${address}:${redirectPort} (${name})`,
             )
-            .join(', ')}`
+            .join(', ')}`,
         );
       });
 
@@ -1248,9 +1248,9 @@ try {
       `Nephele server listening on \n\t${serverHosts
         .map(
           ({ name, address }) =>
-            `dav${secure ? 's' : ''}://${address}:${port} (${name})`
+            `dav${secure ? 's' : ''}://${address}:${port} (${name})`,
         )
-        .join('\n\t')}`
+        .join('\n\t')}`,
     );
 
     if (tilmeld) {
@@ -1260,9 +1260,9 @@ try {
             ({ address }) =>
               `http${secure ? 's' : ''}://${address}:${port}${
                 nymphSetupPath ?? '/!users'
-              }`
+              }`,
           )
-          .join('\n\t')}`
+          .join('\n\t')}`,
       );
     }
 
@@ -1271,7 +1271,7 @@ try {
       server.keepAliveTimeout = keepAliveTimeout;
       server.headersTimeout = Math.max(
         server.headersTimeout,
-        server.keepAliveTimeout + 1000
+        server.keepAliveTimeout + 1000,
       );
     }
   });

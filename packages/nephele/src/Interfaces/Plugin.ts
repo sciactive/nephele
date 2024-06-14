@@ -36,7 +36,7 @@ export interface Plugin {
   prepareAdapter?: (
     request: Request,
     response: AuthResponse,
-    adapter: Adapter
+    adapter: Adapter,
   ) => Promise<Adapter | undefined>;
 
   //
@@ -65,7 +65,7 @@ export interface Plugin {
    */
   beforeAuth?: (
     request: Request,
-    response: AuthResponse
+    response: AuthResponse,
   ) => Promise<false | void>;
   /**
    * Run directly after authentication.
@@ -78,7 +78,7 @@ export interface Plugin {
    */
   afterAuth?: (
     request: Request,
-    response: AuthResponse
+    response: AuthResponse,
   ) => Promise<false | void>;
   /**
    * Run directly before the method is processed.
@@ -109,7 +109,7 @@ export interface Plugin {
       method: Method;
       methodName: string;
       url: URL;
-    }
+    },
   ) => Promise<void>;
   /**
    * Run after authorization is checked for a method.
@@ -123,7 +123,7 @@ export interface Plugin {
       method: Method;
       methodName: string;
       url: URL;
-    }
+    },
   ) => Promise<void>;
 
   //
@@ -145,7 +145,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a GET request has been checked and processed.
@@ -160,7 +160,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       properties: Properties;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a GET request has been processed.
@@ -175,7 +175,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       properties: Properties;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a GET request has been processed.
@@ -187,7 +187,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       properties: Properties;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -205,7 +205,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a HEAD request has been checked and processed.
@@ -220,7 +220,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       properties: Properties;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a HEAD request has been processed.
@@ -235,7 +235,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       properties: Properties;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a HEAD request has been processed.
@@ -247,7 +247,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       properties: Properties;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -265,7 +265,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a COPY request has been checked and processed.
@@ -282,7 +282,7 @@ export interface Plugin {
       destination: URL | undefined;
       depth: string;
       overwrite: string | undefined;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a COPY request has been processed.
@@ -300,7 +300,7 @@ export interface Plugin {
       exists: boolean;
       depth: string;
       overwrite: string | undefined;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a COPY request has been processed.
@@ -315,7 +315,7 @@ export interface Plugin {
       exists: boolean;
       depth: string;
       overwrite: string | undefined;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -333,7 +333,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a DELETE request has been checked and processed.
@@ -347,7 +347,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a DELETE request has been processed.
@@ -361,7 +361,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a DELETE request has been processed.
@@ -372,7 +372,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -390,7 +390,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a LOCK request has been checked and processed.
@@ -404,7 +404,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a LOCK refresh request has been checked and processed.
@@ -418,7 +418,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a LOCK refresh request has been processed.
@@ -433,7 +433,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       lock: Lock;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a LOCK request has been processed, and before the provisional
@@ -448,7 +448,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a LOCK request has been processed.
@@ -463,7 +463,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       lock: Lock;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a LOCK request has been processed.
@@ -475,7 +475,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       lock: Lock;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -493,7 +493,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a MKCOL request has been checked and processed.
@@ -507,7 +507,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a MKCOL request has been processed.
@@ -521,7 +521,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a MKCOL request has been processed.
@@ -532,7 +532,7 @@ export interface Plugin {
     data: {
       method: Method;
       resource: Resource;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -550,7 +550,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a MOVE request has been checked and processed.
@@ -566,7 +566,7 @@ export interface Plugin {
       resource: Resource;
       destination: URL | undefined;
       overwrite: string | undefined;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a MOVE request has been processed.
@@ -583,7 +583,7 @@ export interface Plugin {
       destination: Resource;
       exists: boolean;
       overwrite: string | undefined;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a MOVE request has been processed.
@@ -597,7 +597,7 @@ export interface Plugin {
       destination: Resource;
       exists: boolean;
       overwrite: string | undefined;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -615,7 +615,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before an OPTIONS request has been checked and processed.
@@ -632,7 +632,7 @@ export interface Plugin {
       complianceClasses: string[];
       allowedMethods: string[];
       cacheControl: string;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before an OPTIONS request has been processed.
@@ -649,7 +649,7 @@ export interface Plugin {
       complianceClasses: string[];
       allowedMethods: string[];
       cacheControl: string;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after an OPTIONS request has been processed.
@@ -663,7 +663,7 @@ export interface Plugin {
       complianceClasses: string[];
       allowedMethods: string[];
       cacheControl: string;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -681,7 +681,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a PROPFIND request has been checked and processed.
@@ -696,7 +696,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       depth: string;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a PROPFIND request has been processed.
@@ -711,7 +711,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       depth: string;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a PROPFIND request has been processed.
@@ -723,7 +723,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       depth: string;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -741,7 +741,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a PROPPATCH request has been checked and processed.
@@ -756,7 +756,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       depth: string;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a PROPPATCH request has been processed.
@@ -771,7 +771,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       depth: string;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a PROPPATCH request has been processed.
@@ -783,7 +783,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       depth: string;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -801,7 +801,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a PUT request has been checked and processed.
@@ -816,7 +816,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       newResource: boolean;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before a PUT request has been processed.
@@ -831,7 +831,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       newResource: boolean;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after a PUT request has been processed.
@@ -843,7 +843,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       newResource: boolean;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -861,7 +861,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before an UNLOCK request has been checked and processed.
@@ -876,7 +876,7 @@ export interface Plugin {
       method: Method;
       resource: Resource;
       lockTokenHeader: string | undefined;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before an UNLOCK request has been processed.
@@ -892,7 +892,7 @@ export interface Plugin {
       resource: Resource;
       token: string;
       lock: Lock | undefined;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after an UNLOCK request has been processed.
@@ -905,7 +905,7 @@ export interface Plugin {
       resource: Resource;
       token: string;
       lock: Lock | undefined;
-    }
+    },
   ) => Promise<void>;
 
   /**
@@ -923,7 +923,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before an unknown method request has been checked and processed.
@@ -937,7 +937,7 @@ export interface Plugin {
     data: {
       method: string;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run before an unknown method request has been processed.
@@ -951,7 +951,7 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<false | void>;
   /**
    * Run after an unknown method request has been processed.
@@ -962,6 +962,6 @@ export interface Plugin {
     data: {
       method: Method;
       url: URL;
-    }
+    },
   ) => Promise<void>;
 }

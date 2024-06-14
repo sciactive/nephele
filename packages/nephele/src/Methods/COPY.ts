@@ -47,7 +47,7 @@ export class COPY extends Method {
     const overwrite = request.get('Overwrite');
     const resource = await response.locals.adapter.getResource(
       url,
-      response.locals.baseUrl
+      response.locals.baseUrl,
     );
 
     if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
@@ -90,12 +90,12 @@ export class COPY extends Method {
         response,
         decodeURIComponent(request.path),
         decodeURIComponent(
-          destination.pathname.substring(request.baseUrl.length)
-        )
+          destination.pathname.substring(request.baseUrl.length),
+        ),
       ))
     ) {
       throw new ForbiddenError(
-        'This resource cannot be copied to the destination.'
+        'This resource cannot be copied to the destination.',
       );
     }
 
@@ -105,7 +105,7 @@ export class COPY extends Method {
 
     if (!['0', 'infinity'].includes(depth)) {
       throw new BadRequestError(
-        'Depth header must be one of "0", or "infinity".'
+        'Depth header must be one of "0", or "infinity".',
       );
     }
 
@@ -124,7 +124,7 @@ export class COPY extends Method {
     if (providedBody) {
       response.locals.debug('Provided body to COPY.');
       throw new MediaTypeNotSupportedError(
-        "This server doesn't understand the body sent in the request."
+        "This server doesn't understand the body sent in the request.",
       );
     }
 
@@ -135,13 +135,13 @@ export class COPY extends Method {
     try {
       destResource = await response.locals.adapter.getResource(
         destination,
-        response.locals.baseUrl
+        response.locals.baseUrl,
       );
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
         destResource = await response.locals.adapter.newResource(
           destination,
-          response.locals.baseUrl
+          response.locals.baseUrl,
         );
         destExists = false;
       } else {
@@ -172,7 +172,7 @@ export class COPY extends Method {
     const recursivelyCopy = async (
       resource: Resource,
       destination: URL,
-      topLevel = true
+      topLevel = true,
     ) => {
       const run = catchErrors(
         async () => {
@@ -181,17 +181,17 @@ export class COPY extends Method {
             !(await this.pathsHaveSameAdapter(
               response,
               decodeURIComponent(
-                (
-                  await resource.getCanonicalUrl()
-                ).pathname.substring(request.baseUrl.length)
+                (await resource.getCanonicalUrl()).pathname.substring(
+                  request.baseUrl.length,
+                ),
               ),
               decodeURIComponent(
-                destination.pathname.substring(request.baseUrl.length)
-              ).replace(/\/?$/, () => '/')
+                destination.pathname.substring(request.baseUrl.length),
+              ).replace(/\/?$/, () => '/'),
             ))
           ) {
             throw new ForbiddenError(
-              'This resource cannot be copied to the destination.'
+              'This resource cannot be copied to the destination.',
             );
           }
 
@@ -200,13 +200,13 @@ export class COPY extends Method {
           try {
             destinationResource = await response.locals.adapter.getResource(
               destination,
-              response.locals.baseUrl
+              response.locals.baseUrl,
             );
           } catch (e: any) {
             if (e instanceof ResourceNotFoundError) {
               destinationResource = await response.locals.adapter.newResource(
                 destination,
-                response.locals.baseUrl
+                response.locals.baseUrl,
               );
               destinationExists = false;
             } else {
@@ -217,7 +217,7 @@ export class COPY extends Method {
           // Check overwrite header.
           if (overwrite === 'F' && destinationExists) {
             throw new PreconditionFailedError(
-              'A resource exists at the destination.'
+              'A resource exists at the destination.',
             );
           }
 
@@ -228,11 +228,11 @@ export class COPY extends Method {
               destination,
               collection ? 'MKCOL' : 'PUT',
               response.locals.baseUrl,
-              response.locals.user
+              response.locals.user,
             ))
           ) {
             throw new UnauthorizedError(
-              'The user is not authorized to modify the destination resource.'
+              'The user is not authorized to modify the destination resource.',
             );
           }
 
@@ -241,19 +241,19 @@ export class COPY extends Method {
               request,
               response,
               destinationResource,
-              response.locals.user
+              response.locals.user,
             );
 
             // Check that the resource wouldn't be added to a locked collection.
             if (lockPermission === 1) {
               throw new LockedError(
-                'The user does not have permission to add a new resource to the locked collection.'
+                'The user does not have permission to add a new resource to the locked collection.',
               );
             }
 
             if (lockPermission === 0) {
               throw new LockedError(
-                'The user does not have permission to modify the locked resource.'
+                'The user does not have permission to modify the locked resource.',
               );
             }
           }
@@ -269,7 +269,7 @@ export class COPY extends Method {
                 destinationResource,
                 request,
                 response,
-                multiStatus
+                multiStatus,
               );
 
               if (childrenDeleted) {
@@ -283,7 +283,7 @@ export class COPY extends Method {
                 request,
                 response,
                 destinationResource,
-                response.locals.user
+                response.locals.user,
               );
 
               if (lockPermission !== 2) {
@@ -301,13 +301,13 @@ export class COPY extends Method {
           await resource.copy(
             destination,
             response.locals.baseUrl,
-            response.locals.user
+            response.locals.user,
           );
 
           if (depth === 'infinity' && collection) {
             try {
               const children = await resource.getInternalMembers(
-                response.locals.user
+                response.locals.user,
               );
 
               for (let child of children) {
@@ -316,7 +316,7 @@ export class COPY extends Method {
                   destination.toString().replace(/\/?$/, () => '/') +
                     encodeURIComponent(name) +
                     ((await child.isCollection()) ? '/' : ''),
-                  `${destination.protocol}://${destination.host}`
+                  `${destination.protocol}://${destination.host}`,
                 );
 
                 await recursivelyCopy(child, destinationUrl, false);
@@ -346,7 +346,7 @@ export class COPY extends Method {
 
           response.locals.errors.push(status);
           multiStatus.addStatus(status);
-        }
+        },
       );
 
       return await run();

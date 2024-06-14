@@ -24,7 +24,7 @@ export class OPTIONS extends Method {
       ...(await response.locals.adapter.getComplianceClasses(
         url,
         request,
-        response
+        response,
       )),
     ];
     const allowedMethods = [
@@ -44,14 +44,14 @@ export class OPTIONS extends Method {
       ...(await response.locals.adapter.getAllowedMethods(
         url,
         request,
-        response
+        response,
       )),
     ];
     const cacheControl =
       await response.locals.adapter.getOptionsResponseCacheControl(
         url,
         request,
-        response
+        response,
       );
 
     if (
@@ -81,7 +81,7 @@ export class OPTIONS extends Method {
     if (providedBody) {
       response.locals.debug('Provided body to OPTIONS.');
       throw new MediaTypeNotSupportedError(
-        "This server doesn't understand the body sent in the request."
+        "This server doesn't understand the body sent in the request.",
       );
     }
 

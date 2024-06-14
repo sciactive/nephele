@@ -12,7 +12,7 @@ export class EncryptionProxyProperties implements Properties {
   constructor(
     plugin: Plugin,
     resource: EncryptionProxyResource,
-    targetProperties: Properties
+    targetProperties: Properties,
   ) {
     this.plugin = plugin;
     this.resource = resource;
@@ -28,7 +28,7 @@ export class EncryptionProxyProperties implements Properties {
         !(await this.resource.isCollection())
       ) {
         let padding = await this.targetProperties.get(
-          'nephele-encryption-padding-bytes'
+          'nephele-encryption-padding-bytes',
         );
         if (typeof prop === 'string' && typeof padding === 'string') {
           prop = `${parseFloat(prop) - parseFloat(padding)}`;
@@ -53,7 +53,7 @@ export class EncryptionProxyProperties implements Properties {
     if (await this.resource.shouldEncrypt()) {
       if (name === 'getcontentlength') {
         let padding = await this.targetProperties.get(
-          'nephele-encryption-padding-bytes'
+          'nephele-encryption-padding-bytes',
         );
         if (typeof prop === 'string' && typeof padding === 'string') {
           prop = `${parseFloat(prop) - parseFloat(padding)}`;
@@ -83,7 +83,7 @@ export class EncryptionProxyProperties implements Properties {
   async setByUser(
     name: string,
     value: string | Object | Object[] | undefined,
-    user: User
+    user: User,
   ) {
     if (name.startsWith('nephele-encryption-')) {
       throw new PropertyIsProtectedError('That property is protected.');
@@ -102,7 +102,7 @@ export class EncryptionProxyProperties implements Properties {
 
   async runInstructions(instructions: ['set' | 'remove', string, any][]) {
     const encryptionInstructions = instructions.filter((instruction) =>
-      instruction[1].startsWith('nephele-encryption-')
+      instruction[1].startsWith('nephele-encryption-'),
     );
 
     if (encryptionInstructions.length) {
@@ -111,7 +111,7 @@ export class EncryptionProxyProperties implements Properties {
           [
             instruction[1],
             new PropertyIsProtectedError('That property is protected.'),
-          ] as [string, Error]
+          ] as [string, Error],
       );
     }
 
@@ -120,10 +120,10 @@ export class EncryptionProxyProperties implements Properties {
 
   async runInstructionsByUser(
     instructions: ['set' | 'remove', string, any][],
-    user: User
+    user: User,
   ) {
     const encryptionInstructions = instructions.filter((instruction) =>
-      instruction[1].startsWith('nephele-encryption-')
+      instruction[1].startsWith('nephele-encryption-'),
     );
 
     if (encryptionInstructions.length) {
@@ -132,13 +132,13 @@ export class EncryptionProxyProperties implements Properties {
           [
             instruction[1],
             new PropertyIsProtectedError('That property is protected.'),
-          ] as [string, Error]
+          ] as [string, Error],
       );
     }
 
     return await this.targetProperties.runInstructionsByUser(
       instructions,
-      user
+      user,
     );
   }
 

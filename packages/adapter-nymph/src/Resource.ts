@@ -64,11 +64,11 @@ export default class Resource implements ResourceInterface {
       {
         type: '&',
         ref: ['resource', this.nymphResource],
-      }
+      },
     );
 
     return nymphLocks.map(
-      (nymphLock) => new Lock({ resource: this, nymphLock })
+      (nymphLock) => new Lock({ resource: this, nymphLock }),
     );
   }
 
@@ -79,11 +79,11 @@ export default class Resource implements ResourceInterface {
         type: '&',
         ref: ['resource', this.nymphResource],
         equal: ['username', user.username],
-      }
+      },
     );
 
     return nymphLocks.map(
-      (nymphLock) => new Lock({ resource: this, nymphLock })
+      (nymphLock) => new Lock({ resource: this, nymphLock }),
     );
   }
 
@@ -103,13 +103,13 @@ export default class Resource implements ResourceInterface {
   private getBlobDirname(hash?: string) {
     const threeBytes = (hash ?? this.nymphResource?.hash ?? EMPTY_HASH).slice(
       0,
-      6
+      6,
     );
     const dirname = path.resolve(
       this.adapter.blobRoot,
       threeBytes.slice(0, 2),
       threeBytes.slice(2, 4),
-      threeBytes.slice(4, 6)
+      threeBytes.slice(4, 6),
     );
     return dirname;
   }
@@ -118,7 +118,7 @@ export default class Resource implements ResourceInterface {
     if (
       (await this.adapter.nymph.getEntity(
         { class: this.adapter.NymphResource, skipAc: true },
-        { type: '&', equal: ['hash', hash] }
+        { type: '&', equal: ['hash', hash] },
       )) != null
     ) {
       return;
@@ -155,7 +155,7 @@ export default class Resource implements ResourceInterface {
 
     const filename = path.resolve(
       this.getBlobDirname(),
-      this.nymphResource.hash
+      this.nymphResource.hash,
     );
 
     const handle = await fsp.open(filename, 'r');
@@ -174,7 +174,7 @@ export default class Resource implements ResourceInterface {
   async setStream(input: Readable, _user: User, mediaType?: string) {
     if (await this.isCollection()) {
       throw new MethodNotSupportedError(
-        'This resource is an existing collection.'
+        'This resource is an existing collection.',
       );
     }
 
@@ -199,7 +199,7 @@ export default class Resource implements ResourceInterface {
     const cryptoHash = crypto.createHash('sha384');
     let hashResolve: (hash: string) => void;
     const hashPromise = new Promise<string>(
-      (resolve) => (hashResolve = resolve)
+      (resolve) => (hashResolve = resolve),
     );
     const hashStream = new BackPressureTransform(
       async (chunk) => {
@@ -216,7 +216,7 @@ export default class Resource implements ResourceInterface {
       async () => {
         hashResolve(cryptoHash.digest('hex'));
         cryptoHash.destroy();
-      }
+      },
     );
 
     input.pipe(hashStream.writable);
@@ -311,7 +311,7 @@ export default class Resource implements ResourceInterface {
         {
           type: '&',
           ref: ['parent', this.nymphResource],
-        }
+        },
       )
     ) {
       throw new ForbiddenError('This resource is not empty.');
@@ -331,11 +331,11 @@ export default class Resource implements ResourceInterface {
 
     const destinationPathParts = this.adapter.urlToPathParts(
       destination,
-      baseUrl
+      baseUrl,
     );
     if (destinationPathParts == null) {
       throw new BadGatewayError(
-        'The destination URL is not under the namespace of this server.'
+        'The destination URL is not under the namespace of this server.',
       );
     }
 
@@ -347,18 +347,18 @@ export default class Resource implements ResourceInterface {
         destinationPath.startsWith(`${this.path}/`))
     ) {
       throw new ForbiddenError(
-        'The destination cannot be the same as or contained within the source.'
+        'The destination cannot be the same as or contained within the source.',
       );
     }
 
     const destinationParent = await this.adapter.getNymphParent(
       destinationPathParts,
-      this.rootResource
+      this.rootResource,
     );
 
     if (!destinationParent) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -371,7 +371,7 @@ export default class Resource implements ResourceInterface {
         type: '&',
         equal: ['name', destinationPathParts[destinationPathParts.length - 1]],
         ref: ['parent', destinationParent],
-      }
+      },
     );
 
     // Check if the user can put it in the destination.
@@ -383,11 +383,11 @@ export default class Resource implements ResourceInterface {
           !tilmeld.checkPermissions(
             destinationNymphResource,
             TilmeldAccessLevels.FULL_ACCESS,
-            user
+            user,
           )
         ) {
           throw new UnauthorizedError(
-            'You do not have permission to write to the destination.'
+            'You do not have permission to write to the destination.',
           );
         }
       } else {
@@ -395,11 +395,11 @@ export default class Resource implements ResourceInterface {
           !tilmeld.checkPermissions(
             destinationParent,
             TilmeldAccessLevels.READ_ACCESS,
-            user
+            user,
           )
         ) {
           throw new UnauthorizedError(
-            'You do not have permission to access the destination.'
+            'You do not have permission to access the destination.',
           );
         }
 
@@ -407,11 +407,11 @@ export default class Resource implements ResourceInterface {
           !tilmeld.checkPermissions(
             destinationParent,
             TilmeldAccessLevels.WRITE_ACCESS,
-            user
+            user,
           )
         ) {
           throw new UnauthorizedError(
-            'You do not have permission to write to the destination.'
+            'You do not have permission to write to the destination.',
           );
         }
       }
@@ -420,7 +420,7 @@ export default class Resource implements ResourceInterface {
     await this.nymphResource.$copy(
       destinationParent,
       destinationPathParts[destinationPathParts.length - 1],
-      destinationNymphResource ?? undefined
+      destinationNymphResource ?? undefined,
     );
 
     if (destinationNymphResource != null) {
@@ -435,11 +435,11 @@ export default class Resource implements ResourceInterface {
 
     const destinationPathParts = this.adapter.urlToPathParts(
       destination,
-      baseUrl
+      baseUrl,
     );
     if (destinationPathParts == null) {
       throw new BadGatewayError(
-        'The destination URL is not under the namespace of this server.'
+        'The destination URL is not under the namespace of this server.',
       );
     }
 
@@ -451,18 +451,18 @@ export default class Resource implements ResourceInterface {
         destinationPath.startsWith(`${this.path}/`))
     ) {
       throw new ForbiddenError(
-        'The destination cannot be the same as or contained within the source.'
+        'The destination cannot be the same as or contained within the source.',
       );
     }
 
     const destinationParent = await this.adapter.getNymphParent(
       destinationPathParts,
-      this.rootResource
+      this.rootResource,
     );
 
     if (!destinationParent) {
       throw new ResourceTreeNotCompleteError(
-        'One or more intermediate collections must be created before this resource.'
+        'One or more intermediate collections must be created before this resource.',
       );
     }
 
@@ -475,7 +475,7 @@ export default class Resource implements ResourceInterface {
         type: '&',
         equal: ['name', destinationPathParts[destinationPathParts.length - 1]],
         ref: ['parent', destinationParent],
-      }
+      },
     );
 
     // Check if the user can put it in the destination.
@@ -487,11 +487,11 @@ export default class Resource implements ResourceInterface {
           !tilmeld.checkPermissions(
             destinationNymphResource,
             TilmeldAccessLevels.FULL_ACCESS,
-            user
+            user,
           )
         ) {
           throw new UnauthorizedError(
-            'You do not have permission to write to the destination.'
+            'You do not have permission to write to the destination.',
           );
         }
       } else {
@@ -499,11 +499,11 @@ export default class Resource implements ResourceInterface {
           !tilmeld.checkPermissions(
             destinationParent,
             TilmeldAccessLevels.READ_ACCESS,
-            user
+            user,
           )
         ) {
           throw new UnauthorizedError(
-            'You do not have permission to access the destination.'
+            'You do not have permission to access the destination.',
           );
         }
 
@@ -511,11 +511,11 @@ export default class Resource implements ResourceInterface {
           !tilmeld.checkPermissions(
             destinationParent,
             TilmeldAccessLevels.WRITE_ACCESS,
-            user
+            user,
           )
         ) {
           throw new UnauthorizedError(
-            'You do not have permission to write to the destination.'
+            'You do not have permission to write to the destination.',
           );
         }
       }
@@ -524,7 +524,7 @@ export default class Resource implements ResourceInterface {
     await this.nymphResource.$move(
       destinationParent,
       destinationPathParts[destinationPathParts.length - 1],
-      destinationNymphResource ?? undefined
+      destinationNymphResource ?? undefined,
     );
 
     if (destinationNymphResource != null) {
@@ -588,7 +588,7 @@ export default class Resource implements ResourceInterface {
       {
         type: '&',
         ref: ['parent', this.nymphResource],
-      }
+      },
     );
 
     for (let nymphResource of nymphResources) {
@@ -599,7 +599,7 @@ export default class Resource implements ResourceInterface {
           adapter: this.adapter,
           nymphResource,
           rootResource: this.rootResource,
-        })
+        }),
       );
     }
 

@@ -30,7 +30,7 @@ type DefinedAuthenticator = {
 type DynamicAuthenticator = {
   authenticator: (
     request: Request,
-    response: AuthResponse
+    response: AuthResponse,
   ) => Promise<AuthenticatorConfig>;
 };
 
@@ -45,7 +45,7 @@ type DefinedPlugins = {
 type DynamicPlugins = {
   plugins?: (
     request: Request,
-    response: AuthResponse
+    response: AuthResponse,
   ) => Promise<PluginsConfig>;
 };
 
@@ -92,7 +92,7 @@ export interface Options {
     message: string,
     request: Request,
     response: AuthResponse,
-    error?: Error
+    error?: Error,
   ) => Promise<void>;
 }
 
@@ -105,7 +105,7 @@ export const defaults: Options = {
     message: string,
     _request: Request,
     response: AuthResponse,
-    error?: Error | ResourceNotModifiedError
+    error?: Error | ResourceNotModifiedError,
   ) => {
     if (code < 400) {
       if (response.headersSent || response.destroyed) {
@@ -171,7 +171,7 @@ export const defaults: Options = {
 
 export function _getAdapter(
   unencodedPath: string,
-  config: AdapterConfig
+  config: AdapterConfig,
 ): { adapter: Adapter; baseUrl: string } {
   if ('getComplianceClasses' in config) {
     return { adapter: config as Adapter, baseUrl: '/' };
@@ -181,7 +181,7 @@ export function _getAdapter(
 
     if (!key) {
       throw new Error(
-        `Adapter not found for route "${unencodedPath}". You should always have an adapter for the root path "/".`
+        `Adapter not found for route "${unencodedPath}". You should always have an adapter for the root path "/".`,
       );
     }
 
@@ -200,7 +200,7 @@ export async function getAdapter(
      * request. They will be found for you.
      */
     plugins?: Plugins;
-  }
+  },
 ): Promise<{ adapter: Adapter; baseUrl: string }> {
   let adapter = _getAdapter(unencodedPath, config);
   let plugins = environment.plugins;
@@ -208,12 +208,12 @@ export async function getAdapter(
   if (plugins == null) {
     const parsedPlugins = getPlugins(
       unencodedPath,
-      environment.response.locals.pluginsConfig
+      environment.response.locals.pluginsConfig,
     );
     plugins = parsedPlugins.plugins;
     const baseUrl = new URL(
       path.join(environment.request.baseUrl || '/', parsedPlugins.baseUrl),
-      `${environment.request.protocol}://${environment.request.headers.host}`
+      `${environment.request.protocol}://${environment.request.headers.host}`,
     );
     plugins.forEach((plugin) => (plugin.baseUrl = baseUrl));
   }
@@ -223,7 +223,7 @@ export async function getAdapter(
       const result = await plugin.prepareAdapter(
         environment.request,
         environment.response,
-        adapter.adapter
+        adapter.adapter,
       );
       if (result != null) {
         adapter.adapter = result;
@@ -236,7 +236,7 @@ export async function getAdapter(
 
 export function getAuthenticator(
   unencodedPath: string,
-  config: AuthenticatorConfig
+  config: AuthenticatorConfig,
 ): Authenticator {
   if ('authenticate' in config) {
     return config as Authenticator;
@@ -246,7 +246,7 @@ export function getAuthenticator(
 
     if (!key) {
       throw new Error(
-        `Authenticator not found for route "${unencodedPath}". You should always have an authenticator for the root path "/".`
+        `Authenticator not found for route "${unencodedPath}". You should always have an authenticator for the root path "/".`,
       );
     }
 
@@ -256,7 +256,7 @@ export function getAuthenticator(
 
 export function getPlugins(
   unencodedPath: string,
-  config: PluginsConfig
+  config: PluginsConfig,
 ): { plugins: Plugins; baseUrl: string } {
   if (Array.isArray(config)) {
     return { plugins: config as Plugins, baseUrl: '/' };

@@ -43,13 +43,13 @@ export class LOCK extends Method {
     try {
       resource = await response.locals.adapter.getResource(
         url,
-        response.locals.baseUrl
+        response.locals.baseUrl,
       );
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
         resource = await response.locals.adapter.newResource(
           url,
-          response.locals.baseUrl
+          response.locals.baseUrl,
         );
         newResource = true;
       } else {
@@ -86,7 +86,7 @@ export class LOCK extends Method {
 
       if (isNaN(tReqSec)) {
         throw new BadRequestError(
-          'Timeout header must contain only valid timeouts.'
+          'Timeout header must contain only valid timeouts.',
         );
       }
 
@@ -122,7 +122,7 @@ export class LOCK extends Method {
       const lockTokens = this.getRequestLockTockens(request);
       if (lockTokens.length !== 1) {
         throw new BadRequestError(
-          'LOCK method for refreshing a lock must include exactly one lock token in the If header.'
+          'LOCK method for refreshing a lock must include exactly one lock token in the If header.',
         );
       }
 
@@ -131,7 +131,7 @@ export class LOCK extends Method {
         request,
         response,
         resource,
-        response.locals.user
+        response.locals.user,
       );
 
       const lock =
@@ -199,7 +199,7 @@ export class LOCK extends Method {
     // LOCK refresh requests.
     if (!['0', 'infinity'].includes(depth)) {
       throw new BadRequestError(
-        'Depth header, if present must be one of "0", or "infinity".'
+        'Depth header, if present must be one of "0", or "infinity".',
       );
     }
 
@@ -207,7 +207,7 @@ export class LOCK extends Method {
 
     if (xml == null) {
       throw new BadRequestError(
-        'The given body was not understood by the server.'
+        'The given body was not understood by the server.',
       );
     }
 
@@ -243,7 +243,7 @@ export class LOCK extends Method {
 
     if (!('exclusive' in lockscopeXml) && !('shared' in lockscopeXml)) {
       throw new BadRequestError(
-        'This server only supports exclusive and shared locks.'
+        'This server only supports exclusive and shared locks.',
       );
     }
 
@@ -255,13 +255,13 @@ export class LOCK extends Method {
         request,
         response,
         resource,
-        response.locals.user
+        response.locals.user,
       );
 
       // Check that the resource wouldn't be added to a locked collection.
       if (newResource && lockPermission === 1) {
         throw new LockedError(
-          'The user does not have permission to create an empty resource in the locked collection.'
+          'The user does not have permission to create an empty resource in the locked collection.',
         );
       }
 
@@ -269,7 +269,7 @@ export class LOCK extends Method {
         throw new LockedError(
           `The user does not have permission to ${
             newResource ? 'create' : 'lock'
-          } the locked resource.`
+          } the locked resource.`,
         );
       }
 
@@ -277,7 +277,7 @@ export class LOCK extends Method {
         throw new LockedError(
           `The user does not have permission to ${
             newResource ? 'create' : 'lock'
-          } the locked resource with an exclusive lock.`
+          } the locked resource with an exclusive lock.`,
         );
       }
     };
@@ -292,21 +292,21 @@ export class LOCK extends Method {
         const provisionalLocks = await this.getProvisionalLocks(
           request,
           response,
-          resource
+          resource,
         );
 
         if (provisionalLocks.all.length) {
           if (attempt >= 120) {
             // Give up after a while. (Max ~60 seconds.)
             throw new ServiceUnavailableError(
-              'The server is waiting for another lock operation to complete.'
+              'The server is waiting for another lock operation to complete.',
             );
           }
 
           // A provisional lock exists, so wait for between 100 and 500 ms to
           // try again.
           await new Promise((resolve) =>
-            setTimeout(resolve, 100 + Math.random() * 400)
+            setTimeout(resolve, 100 + Math.random() * 400),
           );
 
           attempt++;
@@ -363,7 +363,7 @@ export class LOCK extends Method {
 
     const checkForPermissionAndLocksBelow = async (
       resource: Resource,
-      firstLevel = true
+      firstLevel = true,
     ) => {
       // If the resource is the root of another adapter, we need its copy of the
       // resource in order to continue looking for locks below.
@@ -373,14 +373,14 @@ export class LOCK extends Method {
         (await this.isAdapterRoot(request, response, resourceUrl))
       ) {
         const absoluteUrl = new URL(
-          resourceUrl.toString().replace(/\/?$/, () => '/')
+          resourceUrl.toString().replace(/\/?$/, () => '/'),
         );
         const adapter = await this.getAdapter(
           request,
           response,
           decodeURIComponent(
-            resourceUrl.pathname.substring(request.baseUrl.length)
-          )
+            resourceUrl.pathname.substring(request.baseUrl.length),
+          ),
         );
         resource = await adapter.getResource(absoluteUrl, absoluteUrl);
       }
@@ -393,11 +393,11 @@ export class LOCK extends Method {
           await resource.getCanonicalUrl(),
           'LOCK',
           resource.baseUrl,
-          response.locals.user
+          response.locals.user,
         ))
       ) {
         throw new UnauthorizedError(
-          'The user is not authorized to lock the resource.'
+          'The user is not authorized to lock the resource.',
         );
       }
 
@@ -426,7 +426,7 @@ export class LOCK extends Method {
         ((lock.depth === '0' && firstLevel) || lock.depth === 'infinity')
       ) {
         const children = await resource.getInternalMembers(
-          response.locals.user
+          response.locals.user,
         );
 
         for (let child of children) {
@@ -454,7 +454,7 @@ export class LOCK extends Method {
 
               response.locals.errors.push(status);
               multiStatus.addStatus(status);
-            }
+            },
           );
 
           await run();
@@ -484,7 +484,7 @@ export class LOCK extends Method {
         }
 
         multiStatus.addStatus(status);
-      }
+      },
     );
 
     await run();

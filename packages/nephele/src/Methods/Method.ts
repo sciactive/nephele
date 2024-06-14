@@ -89,7 +89,7 @@ export class Method {
     request: Request,
     response: AuthResponse,
     event: PluginEvent,
-    data: any = {}
+    data: any = {},
   ) {
     let ended = false;
     for (let plugin of response.locals.plugins) {
@@ -111,7 +111,7 @@ export class Method {
    */
   async run(request: Request, _response: AuthResponse) {
     throw new MethodNotSupportedError(
-      `${request.method} is not supported on this server.`
+      `${request.method} is not supported on this server.`,
     );
   }
 
@@ -125,7 +125,7 @@ export class Method {
     request: Request,
     response: AuthResponse,
     method?: string,
-    url?: URL
+    url?: URL,
   ) {
     await this.runPlugins(request, response, 'beforeCheckAuthorization', {
       method: this,
@@ -140,7 +140,7 @@ export class Method {
           new URL(request.url, `${request.protocol}://${request.headers.host}`),
         method || request.method,
         response.locals.baseUrl,
-        response.locals.user
+        response.locals.user,
       ))
     ) {
       throw new UnauthorizedError('Unauthorized.');
@@ -155,12 +155,12 @@ export class Method {
   async getAdapter(
     request: Request,
     response: AuthResponse,
-    unencodedPath: string
+    unencodedPath: string,
   ) {
     const { adapter } = await getAdapter(
       unencodedPath.replace(/\/?$/, () => '/'),
       response.locals.adapterConfig,
-      { request, response }
+      { request, response },
     );
     return adapter;
   }
@@ -168,7 +168,7 @@ export class Method {
   async getAdapterBaseUrl(response: AuthResponse, unencodedPath: string) {
     const { baseUrl } = _getAdapter(
       unencodedPath.replace(/\/?$/, () => '/'),
-      response.locals.adapterConfig
+      response.locals.adapterConfig,
     );
     return baseUrl;
   }
@@ -176,7 +176,7 @@ export class Method {
   async pathsHaveSameAdapter(
     response: AuthResponse,
     unencodedPathA: string,
-    unencodedPathB: string
+    unencodedPathB: string,
   ) {
     return (
       (await this.getAdapterBaseUrl(response, unencodedPathA)) ===
@@ -198,21 +198,21 @@ export class Method {
     const resourceAdapter = _getAdapter(
       decodeURIComponent(
         new URL(url.toString().replace(/\/?$/, () => '/')).pathname.substring(
-          request.baseUrl.length
-        )
+          request.baseUrl.length,
+        ),
       ),
-      response.locals.adapterConfig
+      response.locals.adapterConfig,
     ).adapter;
 
     const parentAdapter = _getAdapter(
       decodeURIComponent(
         path.dirname(
           new URL(url.toString().replace(/\/?$/, () => '/')).pathname.substring(
-            request.baseUrl.length
-          )
-        )
+            request.baseUrl.length,
+          ),
+        ),
       ),
-      response.locals.adapterConfig
+      response.locals.adapterConfig,
     ).adapter;
 
     return resourceAdapter !== parentAdapter;
@@ -231,7 +231,7 @@ export class Method {
   async getParentResource(
     request: Request,
     response: AuthResponse,
-    resource: Resource
+    resource: Resource,
   ) {
     const url = await resource.getCanonicalUrl();
 
@@ -244,7 +244,7 @@ export class Method {
       await getAdapter(
         parentPath.replace(/\/?$/, () => '/'),
         response.locals.adapterConfig,
-        { request, response }
+        { request, response },
       );
     const splitPath = url.pathname.replace(/\/?$/, '').split('/');
     const newPath = splitPath
@@ -266,8 +266,8 @@ export class Method {
       new URL(newPath, `${request.protocol}://${request.headers.host}`),
       new URL(
         path.join(request.baseUrl || '/', parentBaseUrl),
-        `${request.protocol}://${request.headers.host}`
-      )
+        `${request.protocol}://${request.headers.host}`,
+      ),
     );
   }
 
@@ -303,7 +303,7 @@ export class Method {
     request: Request,
     response: AuthResponse,
     resource: Resource,
-    getLocks: (resource: Resource) => Promise<Lock[]>
+    getLocks: (resource: Resource) => Promise<Lock[]>,
   ) {
     const resourceLocks = await getLocks(resource);
     const locks: {
@@ -346,9 +346,9 @@ export class Method {
       response,
       resource,
       async (resource: Resource) =>
-        (
-          await this.getCurrentResourceLocks(resource)
-        ).filter((lock) => !lock.provisional)
+        (await this.getCurrentResourceLocks(resource)).filter(
+          (lock) => !lock.provisional,
+        ),
     );
   }
 
@@ -356,32 +356,32 @@ export class Method {
     request: Request,
     response: AuthResponse,
     resource: Resource,
-    user: User
+    user: User,
   ) {
     return await this.getLocksGeneral(
       request,
       response,
       resource,
       async (resource: Resource) =>
-        (
-          await this.getCurrentResourceLocksByUser(resource, user)
-        ).filter((lock) => !lock.provisional)
+        (await this.getCurrentResourceLocksByUser(resource, user)).filter(
+          (lock) => !lock.provisional,
+        ),
     );
   }
 
   async getProvisionalLocks(
     request: Request,
     response: AuthResponse,
-    resource: Resource
+    resource: Resource,
   ) {
     return await this.getLocksGeneral(
       request,
       response,
       resource,
       async (resource: Resource) =>
-        (
-          await this.getCurrentResourceLocks(resource)
-        ).filter((lock) => lock.provisional)
+        (await this.getCurrentResourceLocks(resource)).filter(
+          (lock) => lock.provisional,
+        ),
     );
   }
 
@@ -413,7 +413,7 @@ export class Method {
     request: Request,
     response: AuthResponse,
     resource: Resource,
-    user: User
+    user: User,
   ): Promise<0 | 1 | 2 | 3> {
     const locks = await this.getLocks(request, response, resource);
     const lockTokens = this.getRequestLockTockens(request);
@@ -426,7 +426,7 @@ export class Method {
       request,
       response,
       resource,
-      user
+      user,
     );
     const lockTokenSet = new Set(lockTokens);
 
@@ -487,7 +487,7 @@ export class Method {
     const ifHeader = request.get('If') || '';
 
     const matches = ifHeader.match(
-      /<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}>/g
+      /<urn:uuid:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}>/g,
     );
 
     if (matches) {
@@ -511,7 +511,7 @@ export class Method {
 
     if (ifHeader === '') {
       throw new BadRequestError(
-        'The If header, if provided, must not be empty.'
+        'The If header, if provided, must not be empty.',
       );
     }
 
@@ -532,7 +532,7 @@ export class Method {
       if (resourceMatch) {
         if (!startedWithResource) {
           throw new BadRequestError(
-            'Tagged-lists and no-tag-lists must not be mixed in the If header.'
+            'Tagged-lists and no-tag-lists must not be mixed in the If header.',
           );
         }
 
@@ -540,7 +540,7 @@ export class Method {
         currentResource = resource.slice(1, -1);
         if (currentResource.match(/(?:^\/)\.\.?(?:$|\/)/)) {
           throw new BadRequestError(
-            'Resource URIs in the If header must not contain dot segments.'
+            'Resource URIs in the If header must not contain dot segments.',
           );
         }
         ifHeader = ifHeader.replace(matchResource, '');
@@ -557,7 +557,7 @@ export class Method {
 
         if (list === '') {
           throw new BadRequestError(
-            'All lists in the If header must have at least one condition.'
+            'All lists in the If header must have at least one condition.',
           );
         }
 
@@ -600,7 +600,7 @@ export class Method {
           } else {
             // Unparseable header.
             throw new BadRequestError(
-              "The server doesn't recognize the submitted If header."
+              "The server doesn't recognize the submitted If header.",
             );
           }
         }
@@ -615,14 +615,14 @@ export class Method {
       } else {
         // Unparseable header.
         throw new BadRequestError(
-          "The server doesn't recognize the submitted If header."
+          "The server doesn't recognize the submitted If header.",
         );
       }
     }
 
     if (Object.keys(parsedHeader).length === 0) {
       throw new BadRequestError(
-        'The If header, if provided, must contain at least one list with a condition.'
+        'The If header, if provided, must contain at least one list with a condition.',
       );
     }
 
@@ -639,7 +639,7 @@ export class Method {
           !!(needEtag || list.etags.length || list.notEtags.length),
           !!(needTokens || list.tokens.length || list.notTokens.length),
         ],
-        [false, false]
+        [false, false],
       );
 
       if (needEtag || needTokens) {
@@ -648,7 +648,7 @@ export class Method {
           const { adapter: newAdapter, baseUrl } = await getAdapter(
             decodeURIComponent(url.pathname).replace(/\/?$/, () => '/'),
             response.locals.adapterConfig,
-            { request, response }
+            { request, response },
           );
           const adapter =
             baseUrl === response.locals.baseUrl.pathname
@@ -659,16 +659,16 @@ export class Method {
             new URL(
               `${request.protocol}://${request.headers.host}${path.join(
                 request.baseUrl || '/',
-                baseUrl
-              )}`
-            )
+                baseUrl,
+              )}`,
+            ),
           );
           if (needEtag) {
             etag = await resource.getEtag();
           }
           if (needTokens) {
             tokens = (await this.getLocks(request, response, resource)).all.map(
-              (lock) => lock.token
+              (lock) => lock.token,
             );
           }
         } catch (e: any) {
@@ -730,13 +730,13 @@ export class Method {
     try {
       resource = await response.locals.adapter.getResource(
         requestURL,
-        response.locals.baseUrl
+        response.locals.baseUrl,
       );
     } catch (e: any) {
       if (e instanceof ResourceNotFoundError) {
         resource = await response.locals.adapter.newResource(
           requestURL,
-          response.locals.baseUrl
+          response.locals.baseUrl,
         );
         newResource = true;
       } else {
@@ -749,14 +749,14 @@ export class Method {
       value
         .trim()
         .replace(/^(?:W\/)?["']/, '')
-        .replace(/["']$/, '')
+        .replace(/["']$/, ''),
     );
     const ifNoneMatch = request.get('If-None-Match')?.trim();
     const ifNoneMatchEtags = (ifNoneMatch || '').split(',').map((value) =>
       value
         .trim()
         .replace(/^(?:W\/)?["']/, '')
-        .replace(/["']$/, '')
+        .replace(/["']$/, ''),
     );
     const ifUnmodifiedSince = request.get('If-Unmodified-Since')?.trim();
     const ifModifiedSince = request.get('If-Modified-Since')?.trim();
@@ -790,7 +790,7 @@ export class Method {
       new Date(ifUnmodifiedSince) < lastModified
     ) {
       throw new PreconditionFailedError(
-        'If-Unmodified-Since header check failed.'
+        'If-Unmodified-Since header check failed.',
       );
     }
 
@@ -807,12 +807,12 @@ export class Method {
           if (!cacheControl['no-cache'] && cacheControl['max-age'] !== 0) {
             throw new ResourceNotModifiedError(
               newResource ? undefined : etag,
-              newResource ? undefined : lastModified
+              newResource ? undefined : lastModified,
             );
           }
         } else {
           throw new PreconditionFailedError(
-            'If-None-Match header check failed.'
+            'If-None-Match header check failed.',
           );
         }
       } else {
@@ -836,7 +836,7 @@ export class Method {
       if (!cacheControl['no-cache'] && cacheControl['max-age'] !== 0) {
         throw new ResourceNotModifiedError(
           newResource ? undefined : etag,
-          newResource ? undefined : lastModified
+          newResource ? undefined : lastModified,
         );
       }
     }
@@ -860,7 +860,7 @@ export class Method {
   getRequestUrl(request: Request) {
     return new URL(
       request.url,
-      `${request.protocol}://${request.headers.host}`
+      `${request.protocol}://${request.headers.host}`,
     );
   }
 
@@ -880,7 +880,7 @@ export class Method {
     while (![...supported, 'x-gzip', '*'].includes(encoding)) {
       if (!encodings.length) {
         throw new EncodingNotSupportedError(
-          'Requested content encoding is not supported.'
+          'Requested content encoding is not supported.',
         );
       }
       encoding = encodings.splice(0, 1)[0][0];
@@ -889,7 +889,7 @@ export class Method {
       // Pick the first encoding that's not listed in the header.
       encoding =
         supported.find(
-          (check) => encodings.find(([check2]) => check === check2) == null
+          (check) => encodings.find(([check2]) => check === check2) == null,
         ) || 'gzip';
     }
     response.locals.debug(`Requested encoding: ${encoding}.`);
@@ -933,13 +933,13 @@ export class Method {
     if (destinationHeader != null) {
       if (destinationHeader.match(/(?:^\/)\.\.?(?:$|\/)/)) {
         throw new BadRequestError(
-          'Destination header must not contain dot segments.'
+          'Destination header must not contain dot segments.',
         );
       }
       try {
         destination = new URL(
           destinationHeader,
-          new URL(request.url, `${request.protocol}://${request.headers.host}`)
+          new URL(request.url, `${request.protocol}://${request.headers.host}`),
         );
       } catch (e: any) {
         throw new BadRequestError('Destination header must be a valid URI.');
@@ -986,7 +986,7 @@ export class Method {
       default:
         if (encoding != null) {
           throw new MediaTypeNotSupportedError(
-            'Provided content encoding is not supported.'
+            'Provided content encoding is not supported.',
           );
         }
         break;
@@ -998,7 +998,7 @@ export class Method {
   async sendBodyContent(
     response: AuthResponse,
     content: string,
-    encoding: 'gzip' | 'x-gzip' | 'deflate' | 'br' | 'identity'
+    encoding: 'gzip' | 'x-gzip' | 'deflate' | 'br' | 'identity',
   ) {
     vary(response, 'Accept-Encoding');
 
@@ -1065,7 +1065,7 @@ export class Method {
 
     // Be nice to clients who don't send a Content-Type header.
     const requestType = contentType.parse(
-      contentTypeHeader || 'application/xml'
+      contentTypeHeader || 'application/xml',
     );
 
     if (
@@ -1073,7 +1073,7 @@ export class Method {
       requestType.type !== 'application/xml'
     ) {
       throw new MediaTypeNotSupportedError(
-        'Provided content type is not supported.'
+        'Provided content type is not supported.',
       );
     }
 
@@ -1093,7 +1093,7 @@ export class Method {
       ].includes(requestType?.parameters?.charset || 'utf-8')
     ) {
       throw new MediaTypeNotSupportedError(
-        'Provided content charset is not supported.'
+        'Provided content charset is not supported.',
       );
     }
 
@@ -1143,7 +1143,7 @@ export class Method {
           uri: string;
         };
       },
-      namespace: string
+      namespace: string,
     ): any => {
       const output: { [k: string]: string } = {};
 
@@ -1197,7 +1197,7 @@ export class Method {
       element = '',
       prefix: string = '',
       namespaces: { [k: string]: string } = {},
-      includeLang = false
+      includeLang = false,
     ): any => {
       if (Array.isArray(input)) {
         return input.map((value) =>
@@ -1207,8 +1207,8 @@ export class Method {
             element,
             prefix,
             namespaces,
-            includeLang
-          )
+            includeLang,
+          ),
         );
       } else if (typeof input === 'object') {
         const output: { [k: string]: any } = {};
@@ -1265,7 +1265,7 @@ export class Method {
             el,
             prefix,
             curNamespaces,
-            element === 'prop'
+            element === 'prop',
           );
         }
 
@@ -1286,7 +1286,7 @@ export class Method {
     let topLevelObject: { [k: string]: any } | undefined = undefined;
     const prefixEntries = Object.entries(prefixes);
     const davPrefix = (prefixEntries.find(
-      ([_prefix, value]) => value === 'DAV:'
+      ([_prefix, value]) => value === 'DAV:',
     ) || ['', 'DAV:'])[0];
 
     const recursivelyRewrite = (
@@ -1294,7 +1294,7 @@ export class Method {
       namespacePrefixes: { [k: string]: string } = {},
       element = '',
       currentUri = 'DAV:',
-      addNamespace?: string
+      addNamespace?: string,
     ): any => {
       if (Array.isArray(input)) {
         return input.map((value) =>
@@ -1303,8 +1303,8 @@ export class Method {
             namespacePrefixes,
             element,
             currentUri,
-            addNamespace
-          )
+            addNamespace,
+          ),
         );
       } else if (typeof input === 'object') {
         const output: { [k: string]: any } =
@@ -1333,14 +1333,14 @@ export class Method {
                 output.$[name] = input.$[attr];
               } else {
                 const xmlns = Object.entries(input.$).find(
-                  ([name, value]) => name.startsWith('xmlns:') && value === uri
+                  ([name, value]) => name.startsWith('xmlns:') && value === uri,
                 );
                 if (xmlns) {
                   const [_dec, prefix] = splitn(xmlns[0], ':', 2);
                   output.$[`${prefix}:${name}`] = input.$[attr];
                 } else {
                   const prefixEntry = Object.entries(curNamespacePrefixes).find(
-                    ([_prefix, value]) => value === uri
+                    ([_prefix, value]) => value === uri,
                   );
 
                   output.$[
@@ -1381,7 +1381,7 @@ export class Method {
 
             // Look for a prefix in the current prefixes.
             const curPrefixEntry = curNamespacePrefixEntries.find(
-              ([_prefix, value]) => value === uri
+              ([_prefix, value]) => value === uri,
             );
             if (curPrefixEntry) {
               prefix = curPrefixEntry[0];
@@ -1444,7 +1444,7 @@ export class Method {
             curNamespacePrefixes,
             el,
             uri,
-            namespaceToAdd
+            namespaceToAdd,
           );
 
           if (setTopLevel) {

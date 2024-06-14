@@ -35,7 +35,7 @@ export class PROPFIND extends Method {
     const depth = request.get('Depth') || 'infinity';
     const resource = await response.locals.adapter.getResource(
       url,
-      response.locals.baseUrl
+      response.locals.baseUrl,
     );
 
     if ((await resource.isCollection()) && !url.toString().endsWith('/')) {
@@ -56,7 +56,7 @@ export class PROPFIND extends Method {
 
     if (!['0', '1', 'infinity'].includes(depth)) {
       throw new BadRequestError(
-        'Depth header must be one of "0", "1", or "infinity".'
+        'Depth header must be one of "0", "1", or "infinity".',
       );
     }
 
@@ -72,7 +72,7 @@ export class PROPFIND extends Method {
     if (xml != null) {
       if (!('propfind' in xml)) {
         throw new BadRequestError(
-          'PROPFIND methods requires a propfind element.'
+          'PROPFIND methods requires a propfind element.',
         );
       }
 
@@ -121,7 +121,7 @@ export class PROPFIND extends Method {
       response.locals.debug(
         `Requested all props.${
           requestedProps.length ? ` Includes: ${requestedProps.join(', ')}` : ''
-        }`
+        }`,
       );
     } else {
       response.locals.debug(`Requested props: ${requestedProps.join(', ')}`);
@@ -131,11 +131,11 @@ export class PROPFIND extends Method {
     let level = 0;
     const addResourceProps = async (
       resource: Resource,
-      skipRootCheck = false
+      skipRootCheck = false,
     ) => {
       const url = await resource.getCanonicalUrl();
       response.locals.debug(
-        `Retrieving props for ${await resource.getCanonicalPath()}`
+        `Retrieving props for ${await resource.getCanonicalPath()}`,
       );
 
       try {
@@ -146,14 +146,14 @@ export class PROPFIND extends Method {
           (await this.isAdapterRoot(request, response, url))
         ) {
           const absoluteUrl = new URL(
-            url.toString().replace(/\/?$/, () => '/')
+            url.toString().replace(/\/?$/, () => '/'),
           );
           const adapter = await this.getAdapter(
             request,
             response,
             decodeURIComponent(
-              absoluteUrl.pathname.substring(request.baseUrl.length)
-            )
+              absoluteUrl.pathname.substring(request.baseUrl.length),
+            ),
           );
           resource = await adapter.getResource(absoluteUrl, absoluteUrl);
         }
@@ -172,7 +172,7 @@ export class PROPFIND extends Method {
           url,
           'PROPFIND',
           resource.baseUrl,
-          response.locals.user
+          response.locals.user,
         ))
       ) {
         const error = new Status(url, 401);
@@ -264,7 +264,7 @@ export class PROPFIND extends Method {
             const currentLocks = await this.getLocks(
               request,
               response,
-              resource
+              resource,
             );
             propObj.lockdiscovery = await this.formatLocks(currentLocks.all);
           }
@@ -283,7 +283,7 @@ export class PROPFIND extends Method {
               forbiddenProps.length === 1 ? 'y' : 'ies'
             }.`;
             propStatStatus.setProp(
-              Object.fromEntries(forbiddenProps.map((name) => [name, {}]))
+              Object.fromEntries(forbiddenProps.map((name) => [name, {}])),
             );
             response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);
@@ -297,7 +297,7 @@ export class PROPFIND extends Method {
               unauthorizedProps.length === 1 ? 'y' : 'ies'
             }.`;
             propStatStatus.setProp(
-              Object.fromEntries(unauthorizedProps.map((name) => [name, {}]))
+              Object.fromEntries(unauthorizedProps.map((name) => [name, {}])),
             );
             response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);
@@ -311,7 +311,7 @@ export class PROPFIND extends Method {
               notFoundProps.length === 1 ? 'y was' : 'ies were'
             } not found.`;
             propStatStatus.setProp(
-              Object.fromEntries(notFoundProps.map((name) => [name, {}]))
+              Object.fromEntries(notFoundProps.map((name) => [name, {}])),
             );
             response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);
@@ -323,7 +323,7 @@ export class PROPFIND extends Method {
               .map((name) => name.replace('%%', ''))
               .join(', ')} propert${errorProps.length === 1 ? 'y' : 'ies'}.`;
             propStatStatus.setProp(
-              Object.fromEntries(errorProps.map((name) => [name, {}]))
+              Object.fromEntries(errorProps.map((name) => [name, {}])),
             );
             response.locals.errors.push(propStatStatus);
             status.addPropStatStatus(propStatStatus);

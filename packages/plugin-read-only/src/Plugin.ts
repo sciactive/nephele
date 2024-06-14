@@ -15,7 +15,7 @@ export default class Plugin implements PluginInterface {
   async beforeCheckAuthorization(
     _request: Request,
     _response: AuthResponse,
-    { methodName }: { methodName: string }
+    { methodName }: { methodName: string },
   ) {
     if (
       methodName !== 'GET' &&

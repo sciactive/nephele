@@ -84,7 +84,7 @@ export default class Authenticator implements AuthenticatorInterface {
     try {
       if (username.trim() === '') {
         throw new UnauthorizedError(
-          'Authentication is required to use this server.'
+          'Authentication is required to use this server.',
         );
       }
 
@@ -98,7 +98,7 @@ export default class Authenticator implements AuthenticatorInterface {
       if (e instanceof UnauthorizedError) {
         response.set(
           'WWW-Authenticate',
-          `Basic realm="${this.realm}", charset="UTF-8"`
+          `Basic realm="${this.realm}", charset="UTF-8"`,
         );
       }
 

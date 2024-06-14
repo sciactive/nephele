@@ -100,7 +100,7 @@
                 type: 'upload',
                 done: null,
                 file,
-              }))
+              })),
             );
             uploadForm.reset();
 
@@ -258,7 +258,7 @@
             const ext = (filename.match(/(\/|\..*)$/) || [''])[0];
             newFilename = `${filename.substring(
               0,
-              filename.length - ext.length
+              filename.length - ext.length,
             )} (${i})${ext}`;
           } while (fileExists(newFilename));
           return newFilename;
@@ -272,10 +272,10 @@
           event.preventDefault();
 
           document.cookie = `nephele-selected-path=${encodeURIComponent(
-            currentPath
+            currentPath,
           )}; path=/`;
           document.cookie = `nephele-selected-file=${encodeURIComponent(
-            event.target.parentNode.dataset['name']
+            event.target.parentNode.dataset['name'],
           )}; path=/`;
           checkCopyMoveCookie();
         });
@@ -309,11 +309,11 @@
               done: null,
               name: selectedFile,
               source: `${selectedPath.replace(/\/?$/, '/')}${encodeURIComponent(
-                selectedFile
+                selectedFile,
               )}`,
               destination: `${destinationPath.replace(
                 /\/?$/,
-                '/'
+                '/',
               )}${encodeURIComponent(destinationFile)}`,
             },
           ]);
@@ -353,11 +353,11 @@
               done: null,
               name: selectedFile,
               source: `${selectedPath.replace(/\/?$/, '/')}${encodeURIComponent(
-                selectedFile
+                selectedFile,
               )}`,
               destination: `${destinationPath.replace(
                 /\/?$/,
-                '/'
+                '/',
               )}${encodeURIComponent(destinationFile)}`,
             },
           ]);
@@ -495,7 +495,7 @@
 
           const newName = prompt(
             'Enter the new name.',
-            event.target.parentNode.dataset['name']
+            event.target.parentNode.dataset['name'],
           );
           if (newName == null || newName == '') {
             return;
@@ -561,7 +561,7 @@
               xhr.open('MOVE', file.name, true);
               xhr.setRequestHeader(
                 'Destination',
-                currentPath + encodeURIComponent(file.newName)
+                currentPath + encodeURIComponent(file.newName),
               );
               xhr.send();
             }
@@ -590,7 +590,7 @@
                 event.target.parentNode.dataset['name'].match(/\/$/)
                   ? ' This will delete all of its contents too.'
                   : ''
-              }`
+              }`,
             )
           ) {
             return;

@@ -30,7 +30,7 @@ app.use(
   nepheleServer({
     adapter: new ExampleAdapter(),
     authenticator: new InsecureAuthenticator(),
-  })
+  }),
 );
 
 app.listen(port, () => {

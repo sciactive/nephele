@@ -74,7 +74,7 @@ export class Resource extends Entity<ResourceData> {
   async $copy(
     destinationParent: Resource & ResourceData,
     name: string,
-    existingResource?: Resource & ResourceData
+    existingResource?: Resource & ResourceData,
   ) {
     const transaction = 'resource-copy-' + this.guid;
     const nymph = this.$nymph;
@@ -91,7 +91,7 @@ export class Resource extends Entity<ResourceData> {
             {
               type: '&',
               ref: ['parent', existingResource],
-            }
+            },
           )
         ) {
           throw new ForbiddenError('The destination resource is not empty.');
@@ -99,7 +99,7 @@ export class Resource extends Entity<ResourceData> {
 
         if (!(await existingResource.$delete())) {
           throw new InternalServerError(
-            "Couldn't delete destination resource."
+            "Couldn't delete destination resource.",
           );
         }
       }
@@ -113,7 +113,7 @@ export class Resource extends Entity<ResourceData> {
       newNymphResource.collection = this.$data.collection;
       newNymphResource.hash = this.$data.hash;
       newNymphResource.properties = JSON.parse(
-        JSON.stringify(this.$data.properties)
+        JSON.stringify(this.$data.properties),
       );
       newNymphResource.parent = destinationParent;
 
@@ -148,7 +148,7 @@ export class Resource extends Entity<ResourceData> {
   async $move(
     destinationParent: Resource & ResourceData,
     name: string,
-    existingResource?: Resource & ResourceData
+    existingResource?: Resource & ResourceData,
   ) {
     if (
       await this.$nymph.getEntity(
@@ -156,7 +156,7 @@ export class Resource extends Entity<ResourceData> {
         {
           type: '&',
           ref: ['parent', this],
-        }
+        },
       )
     ) {
       throw new ForbiddenError('This resource is not empty.');
@@ -177,7 +177,7 @@ export class Resource extends Entity<ResourceData> {
             {
               type: '&',
               ref: ['parent', existingResource],
-            }
+            },
           )
         ) {
           throw new ForbiddenError('The destination resource is not empty.');
@@ -186,7 +186,7 @@ export class Resource extends Entity<ResourceData> {
         // Delete the existing resource.
         if (!(await existingResource.$delete())) {
           throw new InternalServerError(
-            "Couldn't delete destination resource."
+            "Couldn't delete destination resource.",
           );
         }
       }
@@ -200,7 +200,7 @@ export class Resource extends Entity<ResourceData> {
         {
           type: '&',
           ref: ['resource', this],
-        }
+        },
       );
 
       for (let lock of locks) {
@@ -293,12 +293,12 @@ export class Resource extends Entity<ResourceData> {
             Joi.string().trim(false).max(2048),
             Joi.alternatives().try(
               Joi.string().trim(false).allow('').max(65536),
-              Joi.array().items(Joi.string().trim(false).allow('').max(65536))
-            )
+              Joi.array().items(Joi.string().trim(false).allow('').max(65536)),
+            ),
           ),
           parent: Joi.object().instance(Resource),
         }),
-        'Invalid Resource: '
+        'Invalid Resource: ',
       );
     } catch (e: any) {
       throw new BadRequestError(e.message);
@@ -330,7 +330,7 @@ export class Resource extends Entity<ResourceData> {
         {
           type: '&',
           ref: ['parent', this],
-        }
+        },
       )
     ) {
       throw new ForbiddenError("This resource isn't empty.");
@@ -351,7 +351,7 @@ export class Resource extends Entity<ResourceData> {
         {
           type: '&',
           ref: ['resource', this],
-        }
+        },
       );
 
       for (let lock of locks) {

@@ -47,7 +47,7 @@ app.use(
     authenticator: new PamAuthenticator({
       realm: 'My WebDAV Server',
     }),
-  })
+  }),
 );
 
 app.listen(port, () => {

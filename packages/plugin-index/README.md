@@ -32,7 +32,7 @@ app.use(
         name: 'Nephele Server',
       }),
     ],
-  })
+  }),
 );
 
 app.listen(port, () => {

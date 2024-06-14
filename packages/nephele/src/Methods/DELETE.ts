@@ -41,7 +41,7 @@ export class DELETE extends Method {
 
     const resource = await response.locals.adapter.getResource(
       url,
-      response.locals.baseUrl
+      response.locals.baseUrl,
     );
 
     if (
@@ -68,7 +68,7 @@ export class DELETE extends Method {
     if (providedBody) {
       response.locals.debug('Provided body to DELETE.');
       throw new MediaTypeNotSupportedError(
-        "This server doesn't understand the body sent in the request."
+        "This server doesn't understand the body sent in the request.",
       );
     }
 
@@ -76,19 +76,19 @@ export class DELETE extends Method {
       request,
       response,
       resource,
-      response.locals.user
+      response.locals.user,
     );
 
     // Check that the resource wouldn't be removed from a locked collection.
     if (lockPermission === 1) {
       throw new LockedError(
-        'The user does not have permission to remove a resource from the locked collection.'
+        'The user does not have permission to remove a resource from the locked collection.',
       );
     }
 
     if (lockPermission === 0) {
       throw new LockedError(
-        'The user does not have permission to delete the locked resource.'
+        'The user does not have permission to delete the locked resource.',
       );
     }
 
@@ -157,11 +157,11 @@ export class DELETE extends Method {
     collection: Resource,
     request: Request,
     response: AuthResponse,
-    multiStatus: MultiStatus
+    multiStatus: MultiStatus,
   ): Promise<boolean> {
     try {
       const children = await collection.getInternalMembers(
-        response.locals.user
+        response.locals.user,
       );
 
       let allDeleted = true;
@@ -172,7 +172,7 @@ export class DELETE extends Method {
               await this.isAdapterRoot(
                 request,
                 response,
-                await child.getCanonicalUrl()
+                await child.getCanonicalUrl(),
               )
             ) {
               // Can't delete the root of another adapter.
@@ -183,7 +183,7 @@ export class DELETE extends Method {
               request,
               response,
               child,
-              response.locals.user
+              response.locals.user,
             );
             if (lockPermission !== 2) {
               throw new LockedError('This resource is locked.');
@@ -196,7 +196,7 @@ export class DELETE extends Method {
                   child,
                   request,
                   response,
-                  multiStatus
+                  multiStatus,
                 ));
             }
 
@@ -228,7 +228,7 @@ export class DELETE extends Method {
             multiStatus.addStatus(status);
 
             allDeleted = false;
-          }
+          },
         );
 
         await run();

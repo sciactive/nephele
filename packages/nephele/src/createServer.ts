@@ -35,7 +35,7 @@ const debug = createDebug('nephele:server');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '..', 'package.json')).toString()
+  fs.readFileSync(path.join(__dirname, '..', 'package.json')).toString(),
 );
 
 /**
@@ -53,7 +53,7 @@ const pkg = JSON.parse(
  */
 export default function createServer(
   { adapter, authenticator, plugins }: Config,
-  options: Partial<Options> = {}
+  options: Partial<Options> = {},
 ) {
   const opts = Object.assign({}, defaults, options) as Options;
 
@@ -64,12 +64,12 @@ export default function createServer(
   async function debugLogger(
     request: Request,
     response: AuthResponse,
-    next: NextFunction
+    next: NextFunction,
   ) {
     response.locals.requestId = nanoid(5);
     response.locals.debug = debug.extend(`${response.locals.requestId}`);
     response.locals.debug(
-      `IP: ${request.ip}, Method: ${request.method}, URL: ${request.originalUrl}`
+      `IP: ${request.ip}, Method: ${request.method}, URL: ${request.originalUrl}`,
     );
     response.locals.errors = [];
     next();
@@ -81,17 +81,17 @@ export default function createServer(
   async function debugLoggerEnd(
     _request: Request,
     response: AuthResponse,
-    next: NextFunction
+    next: NextFunction,
   ) {
     response.on('close', () => {
       response.locals.debug(
-        `Response: ${response.statusCode} ${response.statusMessage || ''}`
+        `Response: ${response.statusCode} ${response.statusMessage || ''}`,
       );
 
       for (let error of response.locals.errors) {
         response.locals.debug(
           'Error Message: %s',
-          'message' in error ? error.message : error
+          'message' in error ? error.message : error,
         );
       }
     });
@@ -104,7 +104,7 @@ export default function createServer(
   async function loadPlugins(
     request: Request,
     response: AuthResponse,
-    next: NextFunction
+    next: NextFunction,
   ) {
     if (plugins == null) {
       response.locals.pluginsConfig = plugins;
@@ -117,11 +117,11 @@ export default function createServer(
       response.locals.pluginsConfig = pluginArray;
       const parsedPlugins = getPlugins(
         decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-        pluginArray
+        pluginArray,
       );
       const baseUrl = new URL(
         path.join(request.baseUrl || '/', parsedPlugins.baseUrl),
-        `${request.protocol}://${request.headers.host}`
+        `${request.protocol}://${request.headers.host}`,
       );
       response.locals.plugins = parsedPlugins.plugins;
       response.locals.plugins.forEach((plugin) => (plugin.baseUrl = baseUrl));
@@ -150,18 +150,18 @@ export default function createServer(
         async (code, message, error) => {
           await opts.errorHandler(code, message, request, response, error);
           ended = true;
-        }
+        },
       )();
       if (!ended) {
         next();
       }
-    }
+    },
   );
 
   async function loadAuthenticator(
     request: Request,
     response: AuthResponse,
-    next: NextFunction
+    next: NextFunction,
   ) {
     const auth =
       typeof authenticator === 'function'
@@ -170,7 +170,7 @@ export default function createServer(
     response.locals.authenticatorConfig = auth;
     response.locals.authenticator = getAuthenticator(
       decodeURIComponent(request.path).replace(/\/?$/, () => '/'),
-      auth
+      auth,
     );
     next();
   }
@@ -181,7 +181,7 @@ export default function createServer(
   async function loadAdapter(
     request: Request,
     response: AuthResponse,
-    next: NextFunction
+    next: NextFunction,
   ) {
     const adapt =
       typeof adapter === 'function'
@@ -195,12 +195,12 @@ export default function createServer(
         request,
         response,
         plugins: response.locals.plugins,
-      }
+      },
     );
     response.locals.adapter = parsedAdapter.adapter;
     response.locals.baseUrl = new URL(
       path.join(request.baseUrl || '/', parsedAdapter.baseUrl),
-      `${request.protocol}://${request.headers.host}`
+      `${request.protocol}://${request.headers.host}`,
     );
     next();
   }
@@ -226,18 +226,18 @@ export default function createServer(
         async (code, message, error) => {
           await opts.errorHandler(code, message, request, response, error);
           ended = true;
-        }
+        },
       )();
       if (!ended) {
         next();
       }
-    }
+    },
   );
 
   async function authenticate(
     request: Request,
     response: AuthResponse,
-    next: NextFunction
+    next: NextFunction,
   ) {
     try {
       if (request.method === 'OPTIONS') {
@@ -246,7 +246,7 @@ export default function createServer(
         response.locals.debug(`Authenticating user.`);
         response.locals.user = await response.locals.authenticator.authenticate(
           request,
-          response
+          response,
         );
       }
     } catch (e: any) {
@@ -293,24 +293,24 @@ export default function createServer(
         async (code, message, error) => {
           await opts.errorHandler(code, message, request, response, error);
           ended = true;
-        }
+        },
       )();
       if (!ended) {
         next();
       }
-    }
+    },
   );
 
   async function unauthenticate(
     request: Request,
     response: AuthResponse,
-    next: NextFunction
+    next: NextFunction,
   ) {
     response.on('close', async () => {
       try {
         await response.locals.authenticator.cleanAuthentication(
           request,
-          response
+          response,
         );
       } catch (e: any) {
         response.locals.debug('Error during authentication cleanup: %o', e);
@@ -325,7 +325,7 @@ export default function createServer(
   async function addServerHeader(
     _request: Request,
     response: AuthResponse,
-    next: NextFunction
+    next: NextFunction,
   ) {
     response.set({
       Server: `${pkg.name}/${pkg.version}`,
@@ -339,7 +339,7 @@ export default function createServer(
   async function checkRequestPath(
     request: Request,
     response: AuthResponse,
-    next: NextFunction
+    next: NextFunction,
   ) {
     const splitPath = request.path.split('/');
     if (splitPath.includes('..') || splitPath.includes('.')) {
@@ -358,7 +358,7 @@ export default function createServer(
       method.run.bind(method),
       async (code, message, error, [request, response]) => {
         await opts.errorHandler(code, message, request, response, error);
-      }
+      },
     );
   };
 
@@ -383,12 +383,12 @@ export default function createServer(
         async (code, message, error) => {
           await opts.errorHandler(code, message, request, response, error);
           ended = true;
-        }
+        },
       )();
       if (!ended) {
         next();
       }
-    }
+    },
   );
 
   // Run plugin close.
@@ -405,11 +405,11 @@ export default function createServer(
           },
           async (code, message, error) => {
             await opts.errorHandler(code, message, request, response, error);
-          }
+          },
         )();
       });
       next();
-    }
+    },
   );
 
   app.options('*', runMethodCatchErrors(new OPTIONS(opts)));
@@ -460,7 +460,7 @@ export default function createServer(
             }
 
             const MethodClass = response.locals.adapter.getMethod(
-              request.method
+              request.method,
             );
             const method = new MethodClass(opts);
 
@@ -482,7 +482,7 @@ export default function createServer(
           },
           async (code, message, error) => {
             await opts.errorHandler(code, message, request, response, error);
-          }
+          },
         );
         await run();
         break;
