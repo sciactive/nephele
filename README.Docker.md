@@ -70,6 +70,28 @@ Nephele Serve has a number of options available as environment variables. Some o
 - `S3_ACCESS_KEY`: The S3 access key.
 - `S3_SECRET_KEY`: The S3 secret key.
 - `S3_BUCKET`: The S3 bucket.
+- `NYMPH`: Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.) (When set to "true", "on" or "1".)
+- `NYMPH_JWT_SECRET`: A random string to use as the JWT secret for the Nymph user setup app.
+- `NYMPH_REST_PATH`: The path to use for the Nymph rest server used by the user setup app. (Defaults to "/!nymph".)
+- `NYMPH_SETUP_PATH`: The path to use for the Nymph user setup app. (Defaults to "/!users".)
+- `NYMPH_REGISTRATION`: Don't allow new user registration through the Nymph user setup app. (When set to "false", "off" or "0".)
+- `NYMPH_EXPORT`: Export the Nymph database to a NEX file. (Set this to the filename.)
+- `NYMPH_IMPORT`: Import the Nymph database from a NEX file. (Set this to the filename.)
+- `NYMPH_DB_DRIVER`: The type of the DB driver to use. (Can be "mysql", "postgres", or "sqlite". Defaults to "sqlite").
+- `NYMPH_MYSQL_HOST`: The MySQL host if the DB driver is "mysql". (Defaults to "localhost".)
+- `NYMPH_MYSQL_PORT`: The MySQL port if the DB driver is "mysql". (Defaults to 3306.)
+- `NYMPH_MYSQL_DATABASE`: The MySQL database if the DB driver is "mysql". (Defaults to "nymph".)
+- `NYMPH_MYSQL_USERNAME`: The MySQL username if the DB driver is "mysql". (Defaults to "nymph".)
+- `NYMPH_MYSQL_PASSWORD`: The MySQL password if the DB driver is "mysql". (Defaults to "password".)
+- `NYMPH_MYSQL_PREFIX`: The MySQL table prefix if the DB driver is "mysql". (Defaults to "nymph\_".)
+- `NYMPH_POSTGRES_HOST`: The PostgreSQL host if the DB driver is "postgres". (Defaults to "localhost".)
+- `NYMPH_POSTGRES_PORT`: The PostgreSQL port if the DB driver is "postgres". (Defaults to 5432.)
+- `NYMPH_POSTGRES_DATABASE`: The PostgreSQL database if the DB driver is "postgres". (Defaults to "nymph".)
+- `NYMPH_POSTGRES_USERNAME`: The PostgreSQL username if the DB driver is "postgres". (Defaults to "nymph".)
+- `NYMPH_POSTGRES_PASSWORD`: The PostgreSQL password if the DB driver is "postgres". (Defaults to "password".)
+- `NYMPH_POSTGRES_PREFIX`: The PostgreSQL table prefix if the DB driver is "postgres". (Defaults to "nymph\_".)
+- `NYMPH_SQLITE_CACHE_SIZE`: The SQLite cache size to maintain in memory. (Defaults to 100MB).
+- `NYMPH_SQLITE_PREFIX`: The SQLite table prefix if the DB driver is "sqlite". (Defaults to "nymph\_".)
 - `SERVER_ROOT`: The path of the directory to use as the server root. When using S3, this is the path within the bucket. Defaults to `/data/`, which is set to be a volume. You can bind mount an external directory here to serve it. You must set this to an empty string to serve the root of an S3 bucket!
 
 ## Examples
@@ -79,7 +101,6 @@ Nephele Serve has a number of options available as environment variables. Some o
 Here is an example Docker Compose file configured to serve user directories from a local directory `htdocs`. In this case, you would create a `.htpasswd` file in the `htdocs` directory.
 
 ```yaml
-version: '3.8'
 services:
   nephele:
     image: 'sciactive/nephele'
@@ -97,7 +118,6 @@ services:
 And here is how you would enable HTTPS with a Let's Encrypt certificate.
 
 ```yaml
-version: '3.8'
 services:
   nephele:
     image: 'sciactive/nephele'
@@ -121,7 +141,6 @@ services:
 Here is an example configured to serve user directories from an S3 bucket and use file encryption. In this case, you would upload a `.htpasswd` file in the root of the bucket.
 
 ```yaml
-version: '3.8'
 services:
   nephele:
     image: 'sciactive/nephele'
@@ -150,6 +169,79 @@ services:
       S3_SECRET_KEY: mys3secretkeyshhdonttell
       S3_BUCKET: MyBucket
       SERVER_ROOT: ''
+```
+
+Here is an example configured to serve deduplicated files from a Nymph database.
+
+```yaml
+services:
+  nephele:
+    image: 'sciactive/nephele'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      - ./htdocs:/data
+    environment:
+      REALM: example.com
+      SERVE_LISTINGS: 'on'
+      AUTH_USERNAME: 'admin'
+      AUTH_PASSWORD: 'mysupersecretpassword'
+      NYMPH: 'on'
+      NYMPH_DB_DRIVER: 'mysql'
+      NYMPH_MYSQL_HOST: 'mysql'
+      NYMPH_MYSQL_DATABASE: 'nephele'
+      NYMPH_MYSQL_USERNAME: 'nephele'
+      NYMPH_MYSQL_PASSWORD: 'mysupersecretmysqlpassword'
+  mysql:
+    image: 'mysql:8'
+    restart: unless-stopped
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 'mysupersecretmysqlrootpassword'
+      MYSQL_DATABASE: 'nephele'
+      MYSQL_USER: 'nephele'
+      MYSQL_PASSWORD: 'mysupersecretmysqlpassword'
+```
+
+Here is another Nymph example, but with HTTPS and user management through Nymph. In this case, you would set up your users, then switch NYMPH_REGISTRATION to "off". The first user you register will be the admin user. You can go to `https://yourserver/!users` to register and manage users. Be sure to set NYMPH_JWT_SECRET to your own random string.
+
+```yaml
+services:
+  nephele:
+    image: 'sciactive/nephele'
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    volumes:
+      - ./htdocs:/data
+      - /etc/letsencrypt/:/cert/
+    environment:
+      REALM: example.com
+      PORT: 443
+      REDIRECT_PORT: 80
+      CERT_FILE: /cert/live/example.com/fullchain.pem
+      KEY_FILE: /cert/live/example.com/privkey.pem
+      SERVE_LISTINGS: 'on'
+      NYMPH: 'on'
+      NYMPH_JWT_SECRET: 11341666-f7cb-425d-8adf-7afb5f875fbc
+      NYMPH_DB_DRIVER: 'mysql'
+      NYMPH_MYSQL_HOST: 'mysql'
+      NYMPH_MYSQL_DATABASE: 'nephele'
+      NYMPH_MYSQL_USERNAME: 'nephele'
+      NYMPH_MYSQL_PASSWORD: 'mysupersecretmysqlpassword'
+  mysql:
+    image: 'mysql:8'
+    restart: unless-stopped
+    volumes:
+      - ./mysql:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: 'mysupersecretmysqlrootpassword'
+      MYSQL_DATABASE: 'nephele'
+      MYSQL_USER: 'nephele'
+      MYSQL_PASSWORD: 'mysupersecretmysqlpassword'
 ```
 
 ### Docker Command
