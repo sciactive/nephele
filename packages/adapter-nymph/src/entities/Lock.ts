@@ -46,7 +46,7 @@ export class Lock extends Entity<LockData> {
     this.$data.resource = Resource.factorySync();
   }
 
-  public $setNymph(nymph: Nymph) {
+  $setNymph(nymph: Nymph) {
     this.$nymph = nymph;
     if (!this.$asleep()) {
       if (this.$data.user) {
@@ -109,12 +109,12 @@ export class Lock extends Entity<LockData> {
   /*
    * This should *never* be accessible on the client.
    */
-  public async $saveSkipAC() {
+  async $saveSkipAC() {
     this.$skipAcWhenSaving = true;
     return await this.$save();
   }
 
-  public $tilmeldSaveSkipAC() {
+  $tilmeldSaveSkipAC() {
     if (this.$skipAcWhenSaving) {
       this.$skipAcWhenSaving = false;
       return true;
@@ -125,12 +125,12 @@ export class Lock extends Entity<LockData> {
   /*
    * This should *never* be accessible on the client.
    */
-  public async $deleteSkipAC() {
+  async $deleteSkipAC() {
     this.$skipAcWhenDeleting = true;
     return await this.$delete();
   }
 
-  public $tilmeldDeleteSkipAC() {
+  $tilmeldDeleteSkipAC() {
     if (this.$skipAcWhenDeleting) {
       this.$skipAcWhenDeleting = false;
       return true;

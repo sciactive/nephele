@@ -1,4 +1,4 @@
-import { EntityUniqueConstraintError, Nymph, Selector } from '@nymphjs/nymph';
+import { EntityUniqueConstraintError, type Nymph } from '@nymphjs/nymph';
 import { Entity, nymphJoiProps } from '@nymphjs/nymph';
 import type { AccessControlData } from '@nymphjs/tilmeld';
 import { enforceTilmeld, tilmeldJoiProps } from '@nymphjs/tilmeld';
@@ -47,13 +47,13 @@ export class Resource extends Entity<ResourceData> {
     this.$data.properties = {};
   }
 
-  public async $getUniques(): Promise<string[]> {
+  async $getUniques() {
     return [
       `${this.$data.user?.guid}:${this.$data.parent?.guid}:${this.$data.name}`,
     ];
   }
 
-  public $setNymph(nymph: Nymph) {
+  $setNymph(nymph: Nymph) {
     this.$nymph = nymph;
     if (!this.$asleep()) {
       if (this.$data.user) {
@@ -295,12 +295,12 @@ export class Resource extends Entity<ResourceData> {
   /*
    * This should *never* be accessible on the client.
    */
-  public async $saveSkipAC() {
+  async $saveSkipAC() {
     this.$skipAcWhenSaving = true;
     return await this.$save();
   }
 
-  public $tilmeldSaveSkipAC() {
+  $tilmeldSaveSkipAC() {
     if (this.$skipAcWhenSaving) {
       this.$skipAcWhenSaving = false;
       return true;
@@ -376,12 +376,12 @@ export class Resource extends Entity<ResourceData> {
   /*
    * This should *never* be accessible on the client.
    */
-  public async $deleteSkipAC() {
+  async $deleteSkipAC() {
     this.$skipAcWhenDeleting = true;
     return await this.$delete();
   }
 
-  public $tilmeldDeleteSkipAC() {
+  $tilmeldDeleteSkipAC() {
     if (this.$skipAcWhenDeleting) {
       this.$skipAcWhenDeleting = false;
       return true;
