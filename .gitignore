@@ -4,5 +4,6 @@ node_modules
 /docs
 /testroot
 /testroot-s3
+/testroot-mysql
 /packages/*/dist
 /packages/*/bin

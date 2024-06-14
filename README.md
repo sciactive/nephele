@@ -105,6 +105,20 @@ Then bring up the Nephele test server like this.
 env S3ENDPOINT="http://127.0.0.1:8081" S3ACCESSKEY="minioadmin" S3SECRETKEY="minioadmin" S3BUCKET="nephele" NOPAM=true USERNAME="admin" PASSWORD="password" DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx tsx testserver.ts
 ```
 
+## Nymph with MySQL
+
+Nephele can use MySQL to run the Nymph adapter. To bring it up with Docker, run this.
+
+```
+docker compose -f testserver-docker-compose.yml up -d
+```
+
+Then bring up the Nephele server like this.
+
+```
+./packages/nephele-serve/nephele-serve.cjs -p 8080 --serve-listings --nymph --nymph-jwt-secret ff8ebb7d-5745-4cbd-b21d-0c5216597557 --nymph-db-driver mysql --nymph-mysql-username nephele --nymph-mysql-password nephele --nymph-mysql-database nephele ./testroot/
+```
+
 # License
 
 Copyright 2022-2024 SciActive Inc
