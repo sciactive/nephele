@@ -331,7 +331,7 @@ Nymph and File Deduplication:
   be a SQLite3, MySQL, or PostgreSQL database, and file contents are stored on
   disk using their SHA-384 hash for deduplication.
 
-  When using the Nymph adapter, unless auth is disable, PAM auth is enabled, or
+  When using the Nymph adapter, unless auth is disabled, PAM auth is enabled, or
   a global username/password is set, the Nymph authenticator will be loaded.
   This authenticator uses Tilmeld, which is a user/group manager for Nymph. The
   first user you create will be the admin user, then you should turn off

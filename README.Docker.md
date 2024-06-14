@@ -140,6 +140,8 @@ services:
 
 Here is an example configured to serve user directories from an S3 bucket and use file encryption. In this case, you would upload a `.htpasswd` file in the root of the bucket.
 
+Be sure to set the three SALTs and ENCRYPTION_GLOBAL_PASSWORD to different random strings. You can generate them here: https://www.uuidgenerator.net/
+
 ```yaml
 services:
   nephele:
@@ -171,7 +173,7 @@ services:
       SERVER_ROOT: ''
 ```
 
-Here is an example configured to serve deduplicated files from a Nymph database.
+Here is an example configured to serve deduplicated files from a MySQL backed Nymph database.
 
 ```yaml
 services:
@@ -193,6 +195,7 @@ services:
       NYMPH_MYSQL_DATABASE: 'nephele'
       NYMPH_MYSQL_USERNAME: 'nephele'
       NYMPH_MYSQL_PASSWORD: 'mysupersecretmysqlpassword'
+
   mysql:
     image: 'mysql:8'
     restart: unless-stopped
@@ -205,7 +208,9 @@ services:
       MYSQL_PASSWORD: 'mysupersecretmysqlpassword'
 ```
 
-Here is another Nymph example, but with HTTPS and user management through Nymph. In this case, you would set up your users, then switch NYMPH_REGISTRATION to "off". The first user you register will be the admin user. You can go to `https://yourserver/!users` to register and manage users. Be sure to set NYMPH_JWT_SECRET to your own random string.
+Here is another Nymph example, but with HTTPS and user management through Nymph. In this case, you would set up your users, then switch NYMPH_REGISTRATION to "off". The first user you register will be the admin user. You can go to `https://yourserver/!users` to register and manage users.
+
+Be sure to set NYMPH_JWT_SECRET to a different random string. You can generate one here: https://www.uuidgenerator.net/
 
 ```yaml
 services:
@@ -232,6 +237,7 @@ services:
       NYMPH_MYSQL_DATABASE: 'nephele'
       NYMPH_MYSQL_USERNAME: 'nephele'
       NYMPH_MYSQL_PASSWORD: 'mysupersecretmysqlpassword'
+
   mysql:
     image: 'mysql:8'
     restart: unless-stopped
@@ -326,6 +332,8 @@ docker run \
 
 ## Encryption
 
+- Important: Remember to generate unique strings for the encryption salts.
+
 Nephele supports file encryption. It uses either a global encryption password or user passwords to encrypt your files.
 
 To enable encryption, set the encryption option and provide three long, random, unique strings for the salt, filename salt, and filename IV salt. You can generate long random strings here: https://www.uuidgenerator.net/
@@ -364,6 +372,29 @@ S3 does not have the concept of an empty directory, since "directories" are just
 
 You can find more information about Nephele's S3 adapter here:
 https://github.com/sciactive/nephele/blob/master/packages/adapter-s3/README.md
+
+## Deduplication with Nymph
+
+- Important: Remember to generate a unique string for the JWT secret (if you're using the Nymph authenticator).
+
+When Nephele is loaded with the Nymph adapter, it will use a deduplicating file storage method. File metadata is stored in the Nymph database, which can be a SQLite3, MySQL, or PostgreSQL database, and file contents are stored on disk using their SHA-384 hash for deduplication.
+
+When using the Nymph adapter, unless auth is disabled, PAM auth is enabled, or a global username/password is set, the Nymph authenticator will be loaded. This authenticator uses Tilmeld, which is a user/group manager for Nymph. The first user you create will be the admin user, then you should turn off registration.
+
+The SQLite3 driver is easier to set up, because the DB can be stored in a file alongside the file blobs, but it is considerably slower if you have many files in your server. It also must be on a local disk, because it uses SQLite's write ahead log.
+
+The MySQL and PostgreSQL drivers are much faster. If you start with a SQLite DB and end up outgrowing it, you can export your Nymph DB to a NEX file, then import it into a new database. The import can take a long time (many hours), so plan for downtime if you do this.
+
+Because the files are deduplicated, this can be a great option if you store something like regular backups, where many files have the same contents.
+
+You can find more information about Nephele's Nymph.js adapter here:
+https://github.com/sciactive/nephele/blob/master/packages/adapter-nymph/README.md
+
+You can find more information about Nephele's Nymph.js authenticator here:
+https://github.com/sciactive/nephele/blob/master/packages/authenticator-nymph/README.md
+
+You can find more information about Nymph.js:
+https://nymph.io
 
 ## Clustering
 
