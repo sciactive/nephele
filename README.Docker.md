@@ -26,7 +26,7 @@ Note: By default, Nephele Serve uses a `.htpasswd` file for user authentication.
 
 # Usage
 
-Setup your server root with a `.htpasswd` file.
+For serving from the file system or S3, setup your server root with a `.htpasswd` file.
 
 ```sh
 cd myserverroot
@@ -94,9 +94,11 @@ Nephele Serve has a number of options available as environment variables. Some o
 - `NYMPH_SQLITE_PREFIX`: The SQLite table prefix if the DB driver is "sqlite". (Defaults to "nymph\_".)
 - `SERVER_ROOT`: The path of the directory to use as the server root. When using S3, this is the path within the bucket. Defaults to `/data/`, which is set to be a volume. You can bind mount an external directory here to serve it. You must set this to an empty string to serve the root of an S3 bucket!
 
-## Examples
+# Examples
 
-### Docker Compose
+## Docker Compose
+
+### Serving from the File System
 
 Here is an example Docker Compose file configured to serve user directories from a local directory `htdocs`. In this case, you would create a `.htpasswd` file in the `htdocs` directory.
 
@@ -138,6 +140,8 @@ services:
       SERVE_LISTINGS: 'on'
 ```
 
+### Serving from S3
+
 Here is an example configured to serve user directories from an S3 bucket and use file encryption. In this case, you would upload a `.htpasswd` file in the root of the bucket.
 
 Be sure to set the three SALTs and ENCRYPTION_GLOBAL_PASSWORD to different random strings. You can generate them here: https://www.uuidgenerator.net/
@@ -172,6 +176,8 @@ services:
       S3_BUCKET: MyBucket
       SERVER_ROOT: ''
 ```
+
+### Serving Deduplicated Files
 
 Here is an example configured to serve deduplicated files from a MySQL backed Nymph database.
 
@@ -250,7 +256,7 @@ services:
       MYSQL_PASSWORD: 'mysupersecretmysqlpassword'
 ```
 
-### Docker Command
+## Docker Command
 
 Serve the current directory with the current user's UID/GID.
 
@@ -330,7 +336,7 @@ docker run \
   sciactive/nephele
 ```
 
-## Encryption
+# Encryption
 
 - Important: Remember to generate unique strings for the encryption salts.
 
@@ -351,7 +357,7 @@ You can also exclude files from encryption by providing a comma separated list o
 You can find more information about Nephele's file encryption here:
 https://github.com/sciactive/nephele/blob/master/packages/plugin-encryption/README.md
 
-## S3 Object Store
+# S3 Object Store
 
 - Important: Remember to set `SERVER_ROOT` to an empty string to serve the root of an S3 bucket.
 
@@ -373,7 +379,7 @@ S3 does not have the concept of an empty directory, since "directories" are just
 You can find more information about Nephele's S3 adapter here:
 https://github.com/sciactive/nephele/blob/master/packages/adapter-s3/README.md
 
-## Deduplication with Nymph
+# Deduplication with Nymph
 
 - Important: Remember to generate a unique string for the JWT secret (if you're using the Nymph authenticator).
 
@@ -396,7 +402,7 @@ https://github.com/sciactive/nephele/blob/master/packages/authenticator-nymph/RE
 You can find more information about Nymph.js:
 https://nymph.io
 
-## Clustering
+# Clustering
 
 The Nephele Serve Docker image uses [PM2](https://pm2.keymetrics.io/docs/usage/cluster-mode/) to run in cluster mode. This lets it answer multiple requests simultaneously. You can scale the number of worker processes with the `WORKERS` environment variable.
 
