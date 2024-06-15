@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.43](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.42...v1.0.0-alpha.43) (2024-06-15)
+
+
+### Bug Fixes
+
+* update nymph adapter for new version ([838299b](https://github.com/sciactive/nephele/commit/838299b6d8accfcb6162d5420a720b58b7607cfa))
+
+
+
+
+
 # [1.0.0-alpha.42](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.41...v1.0.0-alpha.42) (2024-05-27)
 
 

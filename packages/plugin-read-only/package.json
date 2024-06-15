@@ -1,6 +1,6 @@
 {
   "name": "@nephele/plugin-read-only",
-  "version": "1.0.0-alpha.42",
+  "version": "1.0.0-alpha.43",
   "description": "Read-only path plugin for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -45,7 +45,7 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "nephele": "^1.0.0-alpha.42"
+    "nephele": "^1.0.0-alpha.43"
   },
   "engines": {
     "node": ">=18"
