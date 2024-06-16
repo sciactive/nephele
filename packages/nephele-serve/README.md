@@ -95,7 +95,13 @@ Serve an S3 compatible object store bucket, using file encryption to keep your d
 sudo nephele-serve --s3-endpoint "https://mys3endpoint/" --s3-region us-east-1 --s3-access-key "mys3accesskey" --s3-secret-key "mys3secretkeyshhdonttell" --s3-bucket "MyBucket" --encryption --encryption-salt mylongsaltvalue --encryption-filename-salt myotherlongsaltvalue --encryption-filename-iv-salt mylastlongsaltvalue --encryption-global-password supersecretglobalpassword
 ```
 
-Only regular users (UIDs 500-59999) are allowed to log in.
+Serve a deduplicating file store with Nymph, backed by a MySQL database. (Use https://www.uuidgenerator.net/ to generate your own JWT secret.)
+
+```sh
+sudo nephele-serve --serve-listings --nymph --nymph-jwt-secret mylongsecretvalue --nymph-db-driver mysql --nymph-mysql-username mymysqluser --nymph-mysql-password mymysqlpassword --nymph-mysql-database mymysqldatabase ./myfileblobstore/
+```
+
+Note: Only regular users (UIDs 500-59999) are allowed to log in with PAM authentication.
 
 ## Cluster with PM2
 

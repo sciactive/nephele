@@ -8,6 +8,8 @@ Nephele supports serving files from a local file system or from an S3 compatible
 
 It also supports encryption at rest, so you can keep your data private and secure.
 
+It also supports a deduplicating file store, so you can save space when many duplicates of the same file(s) are stored.
+
 # What is WebDAV
 
 WebDAV (Web Distributed Authoring and Versioning) is a protocol that allows users to access and manage files stored on a remote server. It is commonly used for web-based file sharing and collaboration, as it allows users to upload, download, and manage files directly from a web browser or file manager.
