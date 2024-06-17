@@ -3,6 +3,21 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.44](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.43...v1.0.0-alpha.44) (2024-06-17)
+
+
+### Bug Fixes
+
+* content type check regex ([526ac1b](https://github.com/sciactive/nephele/commit/526ac1b024c213495a78fc488346722983494e2f))
+* don't return error on missing blob, don't test hash if same as old hash ([7b85889](https://github.com/sciactive/nephele/commit/7b85889eea370c2453133e96a3cc2092310b3f95))
+* don't throw error on missing blob ([671b5ed](https://github.com/sciactive/nephele/commit/671b5edd1b78babdfe399e3fc4aea785006f64de))
+* use setNymph methods on user and group ([ea670a0](https://github.com/sciactive/nephele/commit/ea670a0d9446b3ecdd16c6e0d0fe097d29e3a55f))
+* validate content-type and remove parameters ([acde7f3](https://github.com/sciactive/nephele/commit/acde7f3099887e2654011faf1923f09ad4a02dc2))
+
+
+
+
+
 # [1.0.0-alpha.43](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.42...v1.0.0-alpha.43) (2024-06-15)
 
 

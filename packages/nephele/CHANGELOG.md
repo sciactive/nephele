@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.44](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.43...v1.0.0-alpha.44) (2024-06-17)
+
+
+### Bug Fixes
+
+* content type check regex ([526ac1b](https://github.com/sciactive/nephele/commit/526ac1b024c213495a78fc488346722983494e2f))
+* validate content-type and remove parameters ([acde7f3](https://github.com/sciactive/nephele/commit/acde7f3099887e2654011faf1923f09ad4a02dc2))
+
+
+
+
+
 # [1.0.0-alpha.43](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.42...v1.0.0-alpha.43) (2024-06-15)
 
 **Note:** Version bump only for package nephele
