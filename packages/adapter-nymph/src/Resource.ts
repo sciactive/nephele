@@ -124,12 +124,12 @@ export default class Resource implements ResourceInterface {
       return;
     }
 
-    // Delete the blob.
-    const blobDir = this.getBlobDirname(hash);
-    await fsp.unlink(path.resolve(blobDir, hash));
-
-    // Delete the dir(s) if empty.
     try {
+      // Delete the blob.
+      const blobDir = this.getBlobDirname(hash);
+      await fsp.unlink(path.resolve(blobDir, hash));
+
+      // Delete the dir(s) if empty.
       await fsp.rmdir(blobDir);
 
       const blob2Dir = path.dirname(blobDir);
@@ -251,7 +251,7 @@ export default class Resource implements ResourceInterface {
 
           await fsp.rename(tempFilename, filename);
 
-          if (oldHash !== EMPTY_HASH) {
+          if (oldHash !== EMPTY_HASH && oldHash !== this.nymphResource.hash) {
             await this.deleteBlobIfOrphaned(oldHash);
           }
 
