@@ -116,7 +116,18 @@ export class PUT extends Method {
     });
 
     const contentLanguage = request.get('Content-Language');
-    const contentType = request.get('Content-Type');
+    let contentType = request.get('Content-Type');
+    if (contentType) {
+      contentType = contentType && contentType.split(';')[0];
+      if (
+        !contentType.match(
+          /(application|audio|font|example|image|message|model|multipart|text|video|X-[a-zA-Z0-9_-+.]+)\/[a-zA-Z0-9][a-zA-Z0-9_-+.]*/,
+        )
+      ) {
+        contentType = undefined;
+      }
+    }
+
     let stream = await this.getBodyStream(request, response);
     await resource.setStream(stream, response.locals.user, contentType);
 
