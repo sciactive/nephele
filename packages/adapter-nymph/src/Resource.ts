@@ -138,7 +138,7 @@ export default class Resource implements ResourceInterface {
       const blob3Dir = path.dirname(blob2Dir);
       await fsp.rmdir(blob3Dir);
     } catch (e: any) {
-      if (e.code !== 'ENOTEMPTY') {
+      if (e.code !== 'ENOTEMPTY' && e.code !== 'ENOENT') {
         throw e;
       }
     }
