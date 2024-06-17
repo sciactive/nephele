@@ -121,7 +121,7 @@ export class PUT extends Method {
       contentType = contentType && contentType.split(';')[0];
       if (
         !contentType.match(
-          /(application|audio|font|example|image|message|model|multipart|text|video|X-[a-zA-Z0-9_-+.]+)\/[a-zA-Z0-9][a-zA-Z0-9_-+.]*/,
+          /^(application|audio|font|example|image|message|model|multipart|text|video|X-[a-zA-Z0-9_\-+.]+)\/[a-zA-Z0-9][a-zA-Z0-9_\-+.]*$/,
         )
       ) {
         contentType = undefined;
