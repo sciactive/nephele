@@ -227,9 +227,18 @@ export default class Resource implements ResourceInterface {
         await handle.close();
         hashStream.writable.destroy();
         hashStream.readable.destroy();
+
+        const hash = await hashPromise;
+        const transaction = `nephele-hash-${hash}`;
+        const nymph = this.nymphResource.$nymph;
+        const tnymph =
+          await this.nymphResource.$nymph.startTransaction(transaction);
+        this.nymphResource.$setNymph(tnymph);
+
+        const oldHash = this.nymphResource.hash;
+
         try {
-          const oldHash = this.nymphResource.hash;
-          this.nymphResource.hash = await hashPromise;
+          this.nymphResource.hash = hash;
           this.nymphResource.size = size;
           this.nymphResource.contentType =
             (await fileTypeFromFile(tempFilename))?.mime ??
@@ -241,7 +250,7 @@ export default class Resource implements ResourceInterface {
 
           // Move temp file to final destination.
           const dirname = this.getBlobDirname();
-          const filename = path.resolve(dirname, this.nymphResource.hash);
+          const filename = path.resolve(dirname, hash);
 
           try {
             await fsp.access(dirname, constants.F_OK);
@@ -251,14 +260,26 @@ export default class Resource implements ResourceInterface {
 
           await fsp.rename(tempFilename, filename);
 
-          if (oldHash !== EMPTY_HASH && oldHash !== this.nymphResource.hash) {
-            await this.deleteBlobIfOrphaned(oldHash);
+          await tnymph.commit(transaction);
+          this.nymphResource.$setNymph(nymph);
+        } catch (e: any) {
+          await tnymph.rollback(transaction);
+          this.nymphResource.$setNymph(nymph);
+
+          try {
+            await fsp.unlink(tempFilename);
+          } catch (e: any) {
+            // ignore error
           }
 
-          resolve();
-        } catch (e: any) {
           reject(e);
         }
+
+        if (oldHash !== EMPTY_HASH && oldHash !== hash) {
+          await this.deleteBlobIfOrphaned(oldHash);
+        }
+
+        resolve();
       });
 
       stream.on('error', async (err) => {
