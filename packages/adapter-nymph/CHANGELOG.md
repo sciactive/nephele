@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.45](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.44...v1.0.0-alpha.45) (2024-06-18)
+
+
+### Bug Fixes
+
+* protect hash update with transaction that gets committed after blob is moved ([5b6b23e](https://github.com/sciactive/nephele/commit/5b6b23e6247bbd336c0510916c2c29b9bf1fceb1))
+
+
+
+
+
 # [1.0.0-alpha.44](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.43...v1.0.0-alpha.44) (2024-06-17)
 
 
