@@ -97,12 +97,13 @@ export class OPTIONS extends Method {
       return;
     }
 
-    response.status(204); // No Content
+    response.status(200); // OK
     response.set({
       'Cache-Control': cacheControl,
       Date: new Date().toUTCString(),
       Allow: allowedMethods.join(', '),
       DAV: complianceClasses.join(', '),
+      'Content-Length': '0',
     });
     response.end();
 
