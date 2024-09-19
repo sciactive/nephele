@@ -23,7 +23,7 @@ import { setup as nymphSetup } from '@nymphjs/tilmeld-setup';
 import type { Adapter } from 'nephele';
 import nepheleServer, { ResourceNotFoundError } from 'nephele';
 import FileSystemAdapter from '@nephele/adapter-file-system';
-import NymphAdapter from '@nephele/adapter-nymph';
+import NymphAdapter, { NymphLock, NymphResource } from '@nephele/adapter-nymph';
 import S3Adapter from '@nephele/adapter-s3';
 import VirtualAdapter from '@nephele/adapter-virtual';
 import CustomAuthenticator, {
@@ -906,25 +906,32 @@ try {
       tilmeld,
     );
 
-    if (nymphExport) {
-      console.log('Nymph DB export started...');
-      if (await nymphInstance.export(nymphExport)) {
-        console.log('Nymph DB export finished.');
-        process.exit(0);
-      } else {
-        console.error('Nymph DB export error.');
-        process.exit(1);
-      }
-    }
+    if (nymphExport || nymphImport) {
+      nymphInstance.addEntityClass(NymphUser);
+      nymphInstance.addEntityClass(NymphGroup);
+      nymphInstance.addEntityClass(NymphLock);
+      nymphInstance.addEntityClass(NymphResource);
 
-    if (nymphImport) {
-      console.log('Nymph DB import started...');
-      if (await nymphInstance.import(nymphImport)) {
-        console.log('Nymph DB import finished.');
-        process.exit(0);
-      } else {
-        console.error('Nymph DB import error.');
-        process.exit(1);
+      if (nymphExport) {
+        console.log('Nymph DB export started...');
+        if (await nymphInstance.export(nymphExport)) {
+          console.log('Nymph DB export finished.');
+          process.exit(0);
+        } else {
+          console.error('Nymph DB export error.');
+          process.exit(1);
+        }
+      }
+
+      if (nymphImport) {
+        console.log('Nymph DB import started...');
+        if (await nymphInstance.import(nymphImport)) {
+          console.log('Nymph DB import finished.');
+          process.exit(0);
+        } else {
+          console.error('Nymph DB import error.');
+          process.exit(1);
+        }
       }
     }
 
