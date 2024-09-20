@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.52](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.51...v1.0.0-alpha.52) (2024-09-20)
+
+
+### Bug Fixes
+
+* in nymph, use null parent instead of undefined, because query is faster ([116a15f](https://github.com/sciactive/nephele/commit/116a15f6a7af319f41fb05cce97ca4c78dfc0692))
+
+
+
+
+
 # [1.0.0-alpha.51](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.50...v1.0.0-alpha.51) (2024-09-20)
 
 **Note:** Version bump only for package @nephele/adapter-nymph
