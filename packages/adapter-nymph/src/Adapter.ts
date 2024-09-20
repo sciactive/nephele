@@ -119,10 +119,31 @@ export default class Adapter implements AdapterInterface {
             { class: this.NymphResource },
             {
               type: '&',
-              '!defined': 'parent',
-              equal: ['collection', true],
+              equal: [
+                ['parent', null],
+                ['collection', true],
+              ],
             },
           );
+
+          if (rootResource == null) {
+            // Check for the old style root resource.
+            // (Root resource used to not have a defined parent, but now they
+            // have a null parent because that is faster to search for.)
+            rootResource = await this.nymph.getEntity(
+              { class: this.NymphResource },
+              {
+                type: '&',
+                '!defined': 'parent',
+                equal: ['collection', true],
+              },
+            );
+
+            if (rootResource) {
+              rootResource.parent = null;
+              await rootResource.$save();
+            }
+          }
 
           if (rootResource == null) {
             rootResource = await this.NymphResource.factory();
@@ -131,6 +152,7 @@ export default class Adapter implements AdapterInterface {
             rootResource.contentType = 'inode/directory';
             rootResource.collection = true;
             rootResource.hash = EMPTY_HASH;
+            rootResource.parent = null;
 
             if (!(await rootResource.$save())) {
               throw new InternalServerError(

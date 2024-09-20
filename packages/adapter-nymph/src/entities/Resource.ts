@@ -20,7 +20,7 @@ export type ResourceData = {
   collection: boolean;
   hash: string;
   properties: { [k: string]: string };
-  parent?: Resource & ResourceData;
+  parent: (Resource & ResourceData) | null;
 } & AccessControlData;
 
 export class Resource extends Entity<ResourceData> {
@@ -45,6 +45,7 @@ export class Resource extends Entity<ResourceData> {
     this.$data.collection = false;
     this.$data.hash = '';
     this.$data.properties = {};
+    this.$data.parent = null;
   }
 
   async $getUniques() {
@@ -248,6 +249,10 @@ export class Resource extends Entity<ResourceData> {
       // No Tilmeld means auth happened elsewhere.
     }
 
+    if (!this.$data.parent) {
+      this.$data.parent = null;
+    }
+
     // Validate the entity's data.
     try {
       Joi.attempt(
@@ -274,7 +279,10 @@ export class Resource extends Entity<ResourceData> {
               Joi.array().items(Joi.string().trim(false).allow('').max(65536)),
             ),
           ),
-          parent: Joi.object().instance(Resource),
+          parent: Joi.alternatives().try(
+            Joi.any().allow(null),
+            Joi.object().instance(Resource),
+          ),
         }),
         'Invalid Resource: ',
       );
