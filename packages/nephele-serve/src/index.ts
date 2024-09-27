@@ -906,6 +906,28 @@ try {
       tilmeld,
     );
 
+    const connect = async () => {
+      if (!nymphInstance) {
+        return false;
+      }
+
+      try {
+        return await nymphInstance.connect();
+      } catch (e: any) {
+        return false;
+      }
+    };
+
+    if (!(await connect())) {
+      console.log('Waiting 45 seconds for the DB to become available...');
+      await new Promise((resolve) => setTimeout(resolve, 45000));
+      if (!(await connect())) {
+        console.error("Couldn't connect to the DB.");
+        process.exit(1);
+      }
+      console.log('Connected to the DB.');
+    }
+
     if (nymphExport || nymphImport) {
       nymphInstance.addEntityClass(NymphUser);
       nymphInstance.addEntityClass(NymphGroup);
@@ -913,6 +935,12 @@ try {
       nymphInstance.addEntityClass(NymphResource);
 
       if (nymphExport) {
+        if (await nymphInstance.needsMigration()) {
+          console.error(
+            'You should not export a DB that needs to be migrated from the new version of Nephele. Please downgrade to the previous version and run the export from it.',
+          );
+        }
+
         console.log('Nymph DB export started...');
         if (await nymphInstance.export(nymphExport)) {
           console.log('Nymph DB export finished.');
@@ -933,6 +961,16 @@ try {
           process.exit(1);
         }
       }
+    }
+
+    if (await nymphInstance.needsMigration()) {
+      console.error(
+        'Your Nymph DB needs to be migrated. Please downgrade back to the version of Nephele you were using before and export the DB using NYMPH_EXPORT or --nymph-export, then clear the DB, then upgrade forward to this version again and import using NYMPH_IMPORT or --nymph-import.',
+      );
+      console.error(
+        'If you are using Docker, there are instructions on the Nephele page on Docker Hub for how to migrate your DB, under the "Exporting and Importing Your Nymph Data" heading.',
+      );
+      throw new Error('Nymph DB needs migration.');
     }
 
     if (directory == null) {

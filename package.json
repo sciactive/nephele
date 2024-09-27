@@ -10,7 +10,7 @@
     "build": "lerna run build",
     "watch": "lerna run watch --concurrency=20",
     "docs": "typedoc",
-    "prepare": "husky install && npm run lint",
+    "prepare": "husky && npm run lint",
     "postinstall": "npm run build",
     "bootstrap:win": "# todo, after workspaces migrations: lerna bootstrap --ignore '@nephele/authenticator-pam' --ignore 'nephele-serve'",
     "test": "lerna run test --concurrency=1 --stream --no-prefix --no-bail -- -- --passWithNoTests"

@@ -404,6 +404,39 @@ https://github.com/sciactive/nephele/blob/master/packages/authenticator-nymph/RE
 You can find more information about Nymph.js:
 https://nymph.io
 
+## Exporting and Importing Your Nymph Data
+
+In order to export your Nymph data, first bring your Docker Compose stack up, so that your database is ready to accept connections. If you are upgrading, you should be running the old version of Nephele, so you may need to pin that version in your docker-compose.yml.
+
+Now make these changes to your docker-compose.yml for the Nephele service:
+
+- Change the restart setting to `restart: no`
+- Add the following environment variables:
+  - `WORKERS: '1 --no-autorestart'`
+  - `NYMPH_EXPORT: '/data/db.nex'`
+
+Restart the Nephele service using `docker compose up -d`.
+
+Run `docker compose logs -f` to watch the output. You will see the Nymph DB export starting, then after a while, it will finish and PM2 will exit. Now you can Ctrl+C to exit the logs.
+
+At this point, you can bring down your stack with `docker compose down`.
+
+Make sure the `db.nex` file you just created looks correct. It should be next to your `blob` and `temp` directories, and it should be more than just a kilobyte or two.
+
+Now you can set up your new database. If you are migrating to a new version of Nephele, you should clear your existing database.
+
+Once you're ready to import, change the `NYMPH_EXPORT` environment variable to `NYMPH_IMPORT`, and bring your Docker Compose stack back up with `docker compose up -d`.
+
+Run `docker compose logs -f` to watch the output.
+
+If you see database connection errors, you may need to restart the Nephele container once your database becomes ready, which you can do with `docker compose start nephele`.
+
+If everything goes well, after a long while, you will see the import finish, and PM2 will exit. Now you can Ctrl+C to exit the logs.
+
+Edit your docker-compose.yml file, and undo the changes you made earlier. You should no longer have either the `NYMPH_EXPORT` or the `NYMPH_IMPORT` environment variables.
+
+Restart the Nephele service using `docker compose up -d`, and everything should be working.
+
 # Clustering
 
 The Nephele Serve Docker image uses [PM2](https://pm2.keymetrics.io/docs/usage/cluster-mode/) to run in cluster mode. This lets it answer multiple requests simultaneously. You can scale the number of worker processes with the `WORKERS` environment variable.
