@@ -1,6 +1,6 @@
 {
   "name": "nephele-serve",
-  "version": "1.0.0-alpha.53",
+  "version": "1.0.0-alpha.54",
   "description": "Command line WebDAV server with browser support. Serves from file system or S3 compatible object store.",
   "type": "module",
   "bin": {
@@ -62,16 +62,16 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@nephele/adapter-file-system": "^1.0.0-alpha.53",
-    "@nephele/adapter-nymph": "^1.0.0-alpha.53",
-    "@nephele/adapter-s3": "^1.0.0-alpha.53",
-    "@nephele/adapter-virtual": "^1.0.0-alpha.53",
-    "@nephele/authenticator-custom": "^1.0.0-alpha.53",
-    "@nephele/authenticator-htpasswd": "^1.0.0-alpha.53",
-    "@nephele/authenticator-none": "^1.0.0-alpha.53",
-    "@nephele/authenticator-nymph": "^1.0.0-alpha.53",
-    "@nephele/plugin-encryption": "^1.0.0-alpha.53",
-    "@nephele/plugin-index": "^1.0.0-alpha.53",
+    "@nephele/adapter-file-system": "^1.0.0-alpha.54",
+    "@nephele/adapter-nymph": "^1.0.0-alpha.54",
+    "@nephele/adapter-s3": "^1.0.0-alpha.54",
+    "@nephele/adapter-virtual": "^1.0.0-alpha.54",
+    "@nephele/authenticator-custom": "^1.0.0-alpha.54",
+    "@nephele/authenticator-htpasswd": "^1.0.0-alpha.54",
+    "@nephele/authenticator-none": "^1.0.0-alpha.54",
+    "@nephele/authenticator-nymph": "^1.0.0-alpha.54",
+    "@nephele/plugin-encryption": "^1.0.0-alpha.54",
+    "@nephele/plugin-index": "^1.0.0-alpha.54",
     "@nymphjs/driver-mysql": "^1.0.0-beta.78",
     "@nymphjs/driver-postgresql": "^1.0.0-beta.78",
     "@nymphjs/driver-sqlite3": "^1.0.0-beta.78",
@@ -81,11 +81,11 @@
     "@nymphjs/tilmeld-setup": "^1.0.0-beta.78",
     "commander": "^12.1.0",
     "express": "^4.19.2",
-    "nephele": "^1.0.0-alpha.53",
+    "nephele": "^1.0.0-alpha.54",
     "update-notifier": "^7.0.0"
   },
   "optionalDependencies": {
-    "@nephele/authenticator-pam": "^1.0.0-alpha.53",
+    "@nephele/authenticator-pam": "^1.0.0-alpha.54",
     "userhomepath": "^1.0.6",
     "userid": "^1.2.5"
   },

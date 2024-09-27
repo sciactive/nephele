@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.54](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.53...v1.0.0-alpha.54) (2024-09-27)
+
+**Note:** Version bump only for package @nephele/authenticator-custom
+
+
+
+
+
 # [1.0.0-alpha.53](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.52...v1.0.0-alpha.53) (2024-09-21)
 
 **Note:** Version bump only for package @nephele/authenticator-custom

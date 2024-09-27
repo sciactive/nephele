@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.54](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.53...v1.0.0-alpha.54) (2024-09-27)
+
+
+### Features
+
+* update nymph and give instructions for db migration ([4e4f1b6](https://github.com/sciactive/nephele/commit/4e4f1b689a3f587c45360364e27310c36bb88a32))
+
+
+
+
+
 # [1.0.0-alpha.53](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.52...v1.0.0-alpha.53) (2024-09-21)
 
 **Note:** Version bump only for package nephele-serve
