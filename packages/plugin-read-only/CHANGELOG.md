@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.56](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.55...v1.0.0-alpha.56) (2024-09-28)
+
+**Note:** Version bump only for package @nephele/plugin-read-only
+
+
+
+
+
 # [1.0.0-alpha.55](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.54...v1.0.0-alpha.55) (2024-09-28)
 
 **Note:** Version bump only for package @nephele/plugin-read-only
