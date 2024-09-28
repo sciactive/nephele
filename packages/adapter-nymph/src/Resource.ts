@@ -116,10 +116,11 @@ export default class Resource implements ResourceInterface {
 
   private async deleteBlobIfOrphaned(hash: string) {
     if (
+      hash === EMPTY_HASH ||
       (await this.adapter.nymph.getEntity(
         { class: this.adapter.NymphResource, skipAc: true },
         { type: '&', equal: ['hash', hash] },
-      )) != null
+      ))
     ) {
       return;
     }
@@ -275,7 +276,7 @@ export default class Resource implements ResourceInterface {
           reject(e);
         }
 
-        if (oldHash !== EMPTY_HASH && oldHash !== hash) {
+        if (oldHash !== hash) {
           await this.deleteBlobIfOrphaned(oldHash);
         }
 

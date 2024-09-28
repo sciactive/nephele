@@ -318,13 +318,14 @@ export class Resource extends Entity<ResourceData> {
 
   async $delete() {
     if (
-      await this.$nymph.getEntity(
+      this.$data.collection &&
+      (await this.$nymph.getEntity(
         { class: this.$nymph.getEntityClass(Resource), skipAc: true },
         {
           type: '&',
           ref: ['parent', this],
         },
-      )
+      ))
     ) {
       throw new ForbiddenError("This resource isn't empty.");
     }
