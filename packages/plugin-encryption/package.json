@@ -1,6 +1,6 @@
 {
   "name": "@nephele/plugin-encryption",
-  "version": "1.0.0-alpha.57",
+  "version": "1.0.0-alpha.58",
   "description": "Filename and file contents encryption at rest plugin for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -52,7 +52,7 @@
     "basic-auth": "^2.0.1",
     "mime": "^4.0.3",
     "minimatch": "^9.0.4",
-    "nephele": "^1.0.0-alpha.57"
+    "nephele": "^1.0.0-alpha.58"
   },
   "engines": {
     "node": ">=18"
