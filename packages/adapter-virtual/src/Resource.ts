@@ -560,15 +560,15 @@ export default class Resource implements ResourceInterface {
 
       const mediaType = mime.getType(this.file.name);
       if (!mediaType) {
-        return 'application/octet-stream';
+        resolve('application/octet-stream');
       } else if (Array.isArray(mediaType)) {
-        return typeof mediaType[0] === 'string'
+        resolve(typeof mediaType[0] === 'string'
           ? mediaType[0]
-          : 'application/octet-stream';
+          : 'application/octet-stream');
       } else if (typeof mediaType === 'string') {
-        return mediaType;
+        resolve(mediaType);
       } else {
-        return 'application/octet-stream';
+        resolve('application/octet-stream');
       }
     });
   }
