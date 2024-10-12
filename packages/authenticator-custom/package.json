@@ -1,6 +1,6 @@
 {
   "name": "@nephele/authenticator-custom",
-  "version": "1.0.0-alpha.60",
+  "version": "1.0.0-alpha.61",
   "description": "Custom logic authenticator for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -45,7 +45,7 @@
   },
   "dependencies": {
     "http-auth-utils-hperrin": "^3.0.4",
-    "nephele": "^1.0.0-alpha.60",
+    "nephele": "^1.0.0-alpha.61",
     "uuid": "^10.0.0"
   },
   "engines": {

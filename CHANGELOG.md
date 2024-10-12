@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.61](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.60...v1.0.0-alpha.61) (2024-10-12)
+
+
+### Bug Fixes
+
+* files appear as folders in adapter root dir under another adapter, virtual adapter issues ([ace4e02](https://github.com/sciactive/nephele/commit/ace4e02dc96dd767e094aeb2b18fc84e59278250)), closes [#8](https://github.com/sciactive/nephele/issues/8)
+
+
+
+
+
 # [1.0.0-alpha.60](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.59...v1.0.0-alpha.60) (2024-10-12)
 
 
