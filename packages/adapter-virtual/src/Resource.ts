@@ -562,9 +562,11 @@ export default class Resource implements ResourceInterface {
       if (!mediaType) {
         resolve('application/octet-stream');
       } else if (Array.isArray(mediaType)) {
-        resolve(typeof mediaType[0] === 'string'
-          ? mediaType[0]
-          : 'application/octet-stream');
+        resolve(
+          typeof mediaType[0] === 'string'
+            ? mediaType[0]
+            : 'application/octet-stream',
+        );
       } else if (typeof mediaType === 'string') {
         resolve(mediaType);
       } else {
