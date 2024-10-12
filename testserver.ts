@@ -48,9 +48,10 @@ const envpass = process.env.PASSWORD;
 const userpassdefined = !!(envuser && envpass);
 const encryption = process.env.ENCRYPTION;
 const userDirs = !!process.env.USERDIRS;
+const WEBROOT = process.env.WEBROOT || '/';
 
 app.use(
-  '/',
+  WEBROOT,
   server({
     adapter: async (_request, response) =>
       virtual

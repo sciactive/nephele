@@ -81,11 +81,24 @@ export default class Plugin implements PluginInterface {
       const indexFile = await this._getIndexFile(response, resource);
 
       if (indexFile != null) {
-        const originalUrl = request.url;
+        const oldUrl = request.url;
+        const oldOriginalUrl = request.originalUrl;
 
-        request.url = (await indexFile.getCanonicalUrl()).pathname;
+        request.url =
+          new URL(
+            request.url,
+            `${request.protocol}://${request.headers.host}`,
+          ).pathname.replace(/\/?$/, '/') +
+          encodeURIComponent(await indexFile.getCanonicalName());
+        request.originalUrl =
+          new URL(
+            request.originalUrl,
+            `${request.protocol}://${request.headers.host}`,
+          ).pathname.replace(/\/?$/, '/') +
+          encodeURIComponent(await indexFile.getCanonicalName());
         await method.run(request, response);
-        request.url = originalUrl;
+        request.url = oldUrl;
+        request.originalUrl = oldOriginalUrl;
 
         return false;
       }
@@ -144,7 +157,10 @@ export default class Plugin implements PluginInterface {
           response,
           'PUT',
           new URL(
-            `${request.url}`.replace(/\/?$/, '/') + '--nephele-new-file-name--',
+            new URL(
+              request.originalUrl,
+              `${request.protocol}://${request.headers.host}`,
+            ).pathname.replace(/\/?$/, '/') + '--nephele-new-file-name--',
             `${request.protocol}://${request.headers.host}`,
           ),
         );
@@ -159,8 +175,10 @@ export default class Plugin implements PluginInterface {
           response,
           'MKCOL',
           new URL(
-            `${request.url}`.replace(/\/?$/, '/') +
-              '--nephele-new-directory-name--',
+            new URL(
+              request.originalUrl,
+              `${request.protocol}://${request.headers.host}`,
+            ).pathname.replace(/\/?$/, '/') + '--nephele-new-directory-name--',
             `${request.protocol}://${request.headers.host}`,
           ),
         );

@@ -137,7 +137,10 @@ export class Method {
     if (
       !(await response.locals.adapter.isAuthorized(
         url ||
-          new URL(request.url, `${request.protocol}://${request.headers.host}`),
+          new URL(
+            request.originalUrl,
+            `${request.protocol}://${request.headers.host}`,
+          ),
         method || request.method,
         response.locals.baseUrl,
         response.locals.user,
@@ -859,7 +862,7 @@ export class Method {
 
   getRequestUrl(request: Request) {
     return new URL(
-      request.url,
+      request.originalUrl,
       `${request.protocol}://${request.headers.host}`,
     );
   }
@@ -939,7 +942,10 @@ export class Method {
       try {
         destination = new URL(
           destinationHeader,
-          new URL(request.url, `${request.protocol}://${request.headers.host}`),
+          new URL(
+            request.originalUrl,
+            `${request.protocol}://${request.headers.host}`,
+          ),
         );
       } catch (e: any) {
         throw new BadRequestError('Destination header must be a valid URI.');
