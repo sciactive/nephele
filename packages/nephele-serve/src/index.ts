@@ -156,30 +156,47 @@ program
   .option(
     '--home-directories',
     "Serve users' home directories to them when they log in. (Impies --pam-auth.)",
+    ['true', 'on', '1'].includes(
+      (process.env.HOME_DIRECTORIES || '').toLowerCase(),
+    ),
   )
   .option(
     '--user-directories',
     'Serve users their own directory under the server root when they log in.',
+    ['true', 'on', '1'].includes(
+      (process.env.USER_DIRECTORIES || '').toLowerCase(),
+    ),
   )
   .option(
     '--serve-indexes',
     'Serve index.html and index.htm files when the user requests a directory.',
+    ['true', 'on', '1'].includes(
+      (process.env.SERVE_INDEXES || '').toLowerCase(),
+    ),
   )
   .option(
     '--serve-listings',
     'Serve directory listings with file management forms when the user requests a directory.',
+    ['true', 'on', '1'].includes(
+      (process.env.SERVE_LISTINGS || '').toLowerCase(),
+    ),
   )
   .option(
     '--no-auth',
     "Don't require authentication. (Not compatible with --home-directories or --user-directories.)",
+    !['false', 'off', '0'].includes((process.env.AUTH || '').toLowerCase()),
   )
-  .option('--pam-auth', 'Use PAM authentication. (Requires PAM libraries.)')
   .option(
-    '--auth-user-filename',
+    '--pam-auth',
+    'Use PAM authentication. (Requires PAM libraries.)',
+    ['true', 'on', '1'].includes((process.env.PAM_AUTH || '').toLowerCase()),
+  )
+  .option(
+    '--auth-user-filename <filename>',
     "htpasswd filename. (Defaults to '.htpasswd'.)",
   )
   .option(
-    '--auth-user-file',
+    '--auth-user-file <path>',
     'A specific htpasswd file to use for every request.',
   )
   .option(
@@ -190,7 +207,11 @@ program
     '--auth-password <password>',
     'Authenticate with a given password instead.',
   )
-  .option('--encryption', 'Enable filename and file contents encryption.')
+  .option(
+    '--encryption',
+    'Enable filename and file contents encryption.',
+    ['true', 'on', '1'].includes((process.env.ENCRYPTION || '').toLowerCase()),
+  )
   .option(
     '--encryption-salt <salt>',
     'The salt used to generate file content encryption keys.',
@@ -223,6 +244,7 @@ program
   .option(
     '--nymph',
     'Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.)',
+    ['true', 'on', '1'].includes((process.env.NYMPH || '').toLowerCase()),
   )
   .option(
     '--nymph-jwt-secret <jwt-secret>',
@@ -239,6 +261,9 @@ program
   .option(
     '--no-nymph-registration',
     "Don't allow new user registration through the Nymph user setup app.",
+    !['false', 'off', '0'].includes(
+      (process.env.NYMPH_REGISTRATION || '').toLowerCase(),
+    ),
   )
   .option(
     '--nymph-export <filename>',
@@ -312,7 +337,13 @@ program
     '--nymph-sqlite-prefix <prefix>',
     'The SQLite table prefix if the DB driver is "sqlite". (Defaults to "nymph_".)',
   )
-  .option('--no-update-check', "Don't check for updates.")
+  .option(
+    '--no-update-check',
+    "Don't check for updates.",
+    !['false', 'off', '0'].includes(
+      (process.env.UPDATE_CHECK || '').toLowerCase(),
+    ),
+  )
   .argument(
     '[directory]',
     'The path of the directory to use as the server root. When using S3, this is the path within the bucket.',
@@ -574,31 +605,10 @@ try {
     realm: process.env.REALM || hostname(),
     cert: process.env.CERT_FILE,
     key: process.env.KEY_FILE,
-    homeDirectories: ['true', 'on', '1'].includes(
-      (process.env.HOME_DIRECTORIES || '').toLowerCase(),
-    ),
-    userDirectories: ['true', 'on', '1'].includes(
-      (process.env.USER_DIRECTORIES || '').toLowerCase(),
-    ),
-    serveIndexes: ['true', 'on', '1'].includes(
-      (process.env.SERVE_INDEXES || '').toLowerCase(),
-    ),
-    serveListings: ['true', 'on', '1'].includes(
-      (process.env.SERVE_LISTINGS || '').toLowerCase(),
-    ),
-    auth: !['false', 'off', '0'].includes(
-      (process.env.AUTH || '').toLowerCase(),
-    ),
-    pamAuth: ['true', 'on', '1'].includes(
-      (process.env.PAM_AUTH || '').toLowerCase(),
-    ),
     authUserFilename: process.env.AUTH_USER_FILENAME,
     authUserFile: process.env.AUTH_USER_FILE,
     authUsername: process.env.AUTH_USERNAME,
     authPassword: process.env.AUTH_PASSWORD,
-    encryption: ['true', 'on', '1'].includes(
-      (process.env.ENCRYPTION || '').toLowerCase(),
-    ),
     encryptionSalt: process.env.ENCRYPTION_SALT,
     encryptionFilenameSalt: process.env.ENCRYPTION_FILENAME_SALT,
     encryptionFilenameIvSalt: process.env.ENCRYPTION_FILENAME_IV_SALT,
@@ -610,15 +620,9 @@ try {
     s3AccessKey: process.env.S3_ACCESS_KEY,
     s3SecretKey: process.env.S3_SECRET_KEY,
     s3Bucket: process.env.S3_BUCKET,
-    nymph: ['true', 'on', '1'].includes(
-      (process.env.NYMPH || '').toLowerCase(),
-    ),
     nymphJwtSecret: process.env.NYMPH_JWT_SECRET,
     nymphRestPath: process.env.NYMPH_REST_PATH,
     nymphSetupPath: process.env.NYMPH_SETUP_PATH,
-    nymphRegistration: !['false', 'off', '0'].includes(
-      (process.env.NYMPH_REGISTRATION || '').toLowerCase(),
-    ),
     nymphExport: process.env.NYMPH_EXPORT,
     nymphImport: process.env.NYMPH_IMPORT,
     nymphDbDriver: process.env.NYMPH_DB_DRIVER,
@@ -636,9 +640,6 @@ try {
     nymphPostgresPrefix: process.env.NYMPH_POSTGRES_PREFIX,
     nymphSqliteCacheSize: process.env.NYMPH_SQLITE_CACHE_SIZE,
     nymphSqlitePrefix: process.env.NYMPH_SQLITE_PREFIX,
-    updateCheck: !['false', 'off', '0'].includes(
-      (process.env.UPDATE_CHECK || '').toLowerCase(),
-    ),
     directory: program.args.length
       ? path.resolve(program.args[0])
       : process.env.SERVER_ROOT && path.resolve(process.env.SERVER_ROOT),
