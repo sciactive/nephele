@@ -115,7 +115,7 @@ export default class Resource implements ResourceInterface {
       const part = parentParts.shift();
 
       if (!part || part === '.') {
-        break;
+        continue;
       }
 
       if (parent == null || !('children' in parent)) {

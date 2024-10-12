@@ -170,7 +170,7 @@ export default class Adapter implements AdapterInterface {
           }
 
           const parent = await this.getResource(
-            new URL(this.dirname(url.toString())),
+            new URL(this.dirname(url.pathname), baseUrl),
             baseUrl,
           );
 

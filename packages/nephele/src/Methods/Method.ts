@@ -209,11 +209,13 @@ export class Method {
 
     const parentAdapter = _getAdapter(
       decodeURIComponent(
-        path.dirname(
-          new URL(url.toString().replace(/\/?$/, () => '/')).pathname.substring(
-            request.baseUrl.length,
-          ),
-        ),
+        path
+          .dirname(
+            new URL(
+              url.toString().replace(/\/?$/, () => '/'),
+            ).pathname.substring(request.baseUrl.length),
+          )
+          .replace(/\/?$/, () => '/'),
       ),
       response.locals.adapterConfig,
     ).adapter;

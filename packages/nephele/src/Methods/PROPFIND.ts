@@ -130,12 +130,12 @@ export class PROPFIND extends Method {
 
     let level = 0;
     const addResourceProps = async (
-      resource: Resource,
+      curResource: Resource,
       skipRootCheck = false,
     ) => {
-      const url = await resource.getCanonicalUrl();
+      const url = await curResource.getCanonicalUrl();
       response.locals.debug(
-        `Retrieving props for ${await resource.getCanonicalPath()}`,
+        `Retrieving props for ${await curResource.getCanonicalPath()}`,
       );
 
       try {
@@ -155,7 +155,7 @@ export class PROPFIND extends Method {
               absoluteUrl.pathname.substring(request.baseUrl.length),
             ),
           );
-          resource = await adapter.getResource(absoluteUrl, absoluteUrl);
+          curResource = await adapter.getResource(absoluteUrl, absoluteUrl);
         }
       } catch (e: any) {
         const error = new Status(url, 500);
@@ -168,10 +168,10 @@ export class PROPFIND extends Method {
       // Use the resource's adapter and baseUrl, because this could be on
       // another adapter than the request.
       if (
-        !(await resource.adapter.isAuthorized(
+        !(await curResource.adapter.isAuthorized(
           url,
           'PROPFIND',
-          resource.baseUrl,
+          curResource.baseUrl,
           response.locals.user,
         ))
       ) {
@@ -184,11 +184,11 @@ export class PROPFIND extends Method {
       }
 
       const status = new Status(url, 207);
-      const props = await resource.getProperties();
+      const props = await curResource.getProperties();
 
       try {
         const supportsLocks = (
-          await resource.adapter.getComplianceClasses(url, request, response)
+          await curResource.adapter.getComplianceClasses(url, request, response)
         ).includes('2');
 
         if (propname) {
@@ -264,7 +264,7 @@ export class PROPFIND extends Method {
             const currentLocks = await this.getLocks(
               request,
               response,
-              resource,
+              curResource,
             );
             propObj.lockdiscovery = await this.formatLocks(currentLocks.all);
           }
@@ -342,10 +342,10 @@ export class PROPFIND extends Method {
         return;
       }
 
-      if (await resource.isCollection()) {
+      if (await curResource.isCollection()) {
         let children: Resource[] = [];
         try {
-          children = await resource.getInternalMembers(response.locals.user);
+          children = await curResource.getInternalMembers(response.locals.user);
         } catch (e: any) {
           if (!(e instanceof UnauthorizedError)) {
             throw e;
