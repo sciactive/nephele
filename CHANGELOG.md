@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.60](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.59...v1.0.0-alpha.60) (2024-10-12)
+
+
+### Bug Fixes
+
+* reading env vars in nephele-serve ([75e6839](https://github.com/sciactive/nephele/commit/75e683915f63da3f153f33f14e6a6316cdd725c3)), closes [#4](https://github.com/sciactive/nephele/issues/4)
+* use correct url from express in method code ([fd12aaa](https://github.com/sciactive/nephele/commit/fd12aaac13fe471066be1cbb291d6b389aea47ca)), closes [#6](https://github.com/sciactive/nephele/issues/6)
+
+
+
+
+
 # [1.0.0-alpha.59](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.58...v1.0.0-alpha.59) (2024-10-12)
 
 **Note:** Version bump only for package nephele-repo
