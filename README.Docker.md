@@ -239,6 +239,7 @@ services:
       KEY_FILE: /cert/live/example.com/privkey.pem
       SERVE_LISTINGS: 'on'
       NYMPH: 'on'
+      NYMPH_REGISTRATION: 'on'
       NYMPH_JWT_SECRET: 11341666-f7cb-425d-8adf-7afb5f875fbc
       NYMPH_DB_DRIVER: 'mysql'
       NYMPH_MYSQL_HOST: 'mysql'
