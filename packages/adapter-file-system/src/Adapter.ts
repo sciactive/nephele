@@ -74,14 +74,6 @@ export default class Adapter implements AdapterInterface {
       () => path.sep,
     );
     this.contentEtagMaxBytes = contentEtagMaxBytes;
-
-    try {
-      fs.accessSync(this.root, constants.R_OK);
-    } catch (e: any) {
-      throw new Error(
-        "Can't read from given file system root. Does the directory exist?",
-      );
-    }
   }
 
   urlToRelativePath(url: URL, baseUrl: URL) {
@@ -199,8 +191,8 @@ export default class Adapter implements AdapterInterface {
       this.root,
       ...pathname.split(path.sep).filter((str) => str !== ''),
     ];
-    let exists = true;
 
+    let exists = true;
     try {
       await fsp.access(
         absolutePathname,
@@ -305,6 +297,7 @@ export default class Adapter implements AdapterInterface {
       adapter: this,
       baseUrl,
       path,
+      collection: false,
     });
   }
 

@@ -1,5 +1,6 @@
 import { Readable } from 'node:stream';
 import fsp from 'node:fs/promises';
+import type { Stats } from 'node:fs';
 import { constants } from 'node:fs';
 import path from 'node:path';
 import mime from 'mime';
@@ -52,31 +53,42 @@ export default class Resource implements ResourceInterface {
   adapter: Adapter;
   baseUrl: URL;
   path: string;
-  private createCollection: boolean | undefined = undefined;
+  // Don't use this directly. Call isCollection() instead.
+  private collection: boolean | undefined = undefined;
   private etag: string | undefined = undefined;
+  private stats: Stats | undefined = undefined;
 
   constructor({
     adapter,
     baseUrl,
-    path,
+    path: myPath,
     collection,
+    stats,
   }: {
     adapter: Adapter;
     baseUrl: URL;
     path: string;
-    collection?: true;
+    collection?: boolean;
+    stats?: Stats;
   }) {
     this.adapter = adapter;
     this.baseUrl = baseUrl;
-    this.path = path;
+    this.path = myPath.replace(
+      new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
+      '',
+    );
 
-    if (collection) {
-      this.createCollection = true;
+    if (collection != null) {
+      this.collection = collection;
+    }
+
+    if (stats) {
+      this.stats = stats;
     }
   }
 
   get absolutePath() {
-    return path.join(this.adapter.root, this.path);
+    return `${this.adapter.root}${path.sep}${this.path}`;
   }
 
   async getLocks() {
@@ -188,6 +200,9 @@ export default class Resource implements ResourceInterface {
     const handle = await fsp.open(this.absolutePath, 'w');
     const stream = handle.createWriteStream();
 
+    // Reset stats, since they are going to change.
+    this.stats = undefined;
+
     input.pipe(stream);
 
     // Throttle throughput. Maybe add this as an option.
@@ -239,7 +254,7 @@ export default class Resource implements ResourceInterface {
       );
     }
 
-    if (this.createCollection) {
+    if (this.collection) {
       await fsp.mkdir(this.absolutePath);
     } else {
       await fsp.writeFile(this.absolutePath, Uint8Array.from([]));
@@ -288,13 +303,16 @@ export default class Resource implements ResourceInterface {
 
     if (user.uid != null) {
       // Check if the user can delete it.
-      const stats = await fsp.stat(this.absolutePath);
+
+      if (!this.stats) {
+        this.stats = await fsp.stat(this.absolutePath);
+      }
 
       if (
         !(
-          stats.mode & otherWriteBit ||
-          (stats.uid === uid && stats.mode & userWriteBit) ||
-          (gids.includes(stats.gid) && stats.mode & groupWriteBit)
+          this.stats.mode & otherWriteBit ||
+          (this.stats.uid === uid && this.stats.mode & userWriteBit) ||
+          (gids.includes(this.stats.gid) && this.stats.mode & groupWriteBit)
         )
       ) {
         throw new UnauthorizedError(
@@ -313,6 +331,9 @@ export default class Resource implements ResourceInterface {
     } else {
       await fsp.unlink(this.absolutePath);
     }
+
+    // Reset stats.
+    this.stats = undefined;
   }
 
   async copy(destination: URL, baseUrl: URL, user: User) {
@@ -388,7 +409,7 @@ export default class Resource implements ResourceInterface {
       try {
         const stat = await fsp.stat(destinationPath);
         if (stat.isDirectory()) {
-          const metaFilePath = path.join(destinationPath, '.nephelemeta');
+          const metaFilePath = `${destinationPath}${path.sep}.nephelemeta`;
           const contents = await fsp.readdir(destinationPath);
 
           if (
@@ -422,7 +443,7 @@ export default class Resource implements ResourceInterface {
         }
       }
       try {
-        metaFilePath = path.join(destinationPath, '.nephelemeta');
+        metaFilePath = `${destinationPath}${path.sep}.nephelemeta`;
 
         try {
           await fsp.unlink(metaFilePath);
@@ -442,7 +463,7 @@ export default class Resource implements ResourceInterface {
       try {
         const dirname = path.dirname(destinationPath);
         const basename = path.basename(destinationPath);
-        metaFilePath = path.join(dirname, `${basename}.nephelemeta`);
+        metaFilePath = `${dirname}${path.sep}${basename}.nephelemeta`;
 
         try {
           await fsp.unlink(metaFilePath);
@@ -465,32 +486,36 @@ export default class Resource implements ResourceInterface {
 
       // Set owner info.
       await fsp.chown(destinationPath, uid, gid);
-      const stat = await fsp.stat(this.absolutePath);
+      if (!this.stats) {
+        this.stats = await fsp.stat(this.absolutePath);
+      }
       // Set permissions.
-      await fsp.chmod(destinationPath, stat.mode % 0o1000);
+      await fsp.chmod(destinationPath, this.stats.mode % 0o1000);
 
       if (metaFilePath != null) {
         try {
           await fsp.chown(metaFilePath, uid, gid);
-          await fsp.chmod(metaFilePath, stat.mode % 0o1000);
+          await fsp.chmod(metaFilePath, this.stats.mode % 0o1000);
         } catch (e: any) {
           // Ignore errors chown/chmod a possibly non-existent file.
         }
       }
     }
 
-    const stat = await fsp.stat(this.absolutePath);
+    if (!this.stats) {
+      this.stats = await fsp.stat(this.absolutePath);
+    }
 
     // Copy mode.
     try {
-      await fsp.chmod(destinationPath, stat.mode);
+      await fsp.chmod(destinationPath, this.stats.mode);
     } catch (e: any) {
       // Ignore errors copying mode.
     }
 
     // Copy dates.
     try {
-      await fsp.utimes(destinationPath, stat.atime, stat.mtime);
+      await fsp.utimes(destinationPath, this.stats.atime, this.stats.mtime);
     } catch (e: any) {
       // Ignore errors copying dates.
     }
@@ -543,13 +568,15 @@ export default class Resource implements ResourceInterface {
 
     if (user.uid != null) {
       // Check if the user can move it.
-      const stats = await fsp.stat(this.absolutePath);
+      if (!this.stats) {
+        this.stats = await fsp.stat(this.absolutePath);
+      }
 
       if (
         !(
-          stats.mode & otherWriteBit ||
-          (stats.uid === uid && stats.mode & userWriteBit) ||
-          (gids.includes(stats.gid) && stats.mode & groupWriteBit)
+          this.stats.mode & otherWriteBit ||
+          (this.stats.uid === uid && this.stats.mode & userWriteBit) ||
+          (gids.includes(this.stats.gid) && this.stats.mode & groupWriteBit)
         )
       ) {
         throw new UnauthorizedError(
@@ -591,7 +618,7 @@ export default class Resource implements ResourceInterface {
     try {
       const dirname = path.dirname(destinationPath);
       const basename = path.basename(destinationPath);
-      const destMetaFilePath = path.join(dirname, `${basename}.nephelemeta`);
+      const destMetaFilePath = `${dirname}${path.sep}${basename}.nephelemeta`;
       try {
         await fsp.unlink(destMetaFilePath);
       } catch (e: any) {
@@ -610,7 +637,8 @@ export default class Resource implements ResourceInterface {
       // Ignore errors while moving metadata files.
     }
 
-    return;
+    // Reset stats.
+    this.stats = undefined;
   }
 
   async getLength() {
@@ -618,9 +646,11 @@ export default class Resource implements ResourceInterface {
       return 0;
     }
 
-    const stat = await fsp.stat(this.absolutePath);
+    if (!this.stats) {
+      this.stats = await fsp.stat(this.absolutePath);
+    }
 
-    return stat.size;
+    return this.stats.size;
   }
 
   async getEtag() {
@@ -628,17 +658,19 @@ export default class Resource implements ResourceInterface {
       return this.etag;
     }
 
-    const stat = await fsp.stat(this.absolutePath);
+    if (!this.stats) {
+      this.stats = await fsp.stat(this.absolutePath);
+    }
 
     let etag: string;
     if (
       (await this.isCollection()) ||
-      stat.size > this.adapter.contentEtagMaxBytes
+      this.stats.size > this.adapter.contentEtagMaxBytes
     ) {
       etag = crc32
         .c(
           Buffer.from(
-            `size: ${stat.size}; birthtime: ${stat.birthtimeMs}; mtime: ${stat.mtimeMs}`,
+            `size: ${this.stats.size}; birthtime: ${this.stats.birthtimeMs}; mtime: ${this.stats.mtimeMs}`,
             'utf8',
           ),
         )
@@ -719,13 +751,16 @@ export default class Resource implements ResourceInterface {
   }
 
   async isCollection() {
-    if (this.createCollection) {
-      return true;
+    if (this.collection != null) {
+      return this.collection;
     }
 
     try {
-      const stats = await fsp.stat(this.absolutePath);
-      return stats.isDirectory();
+      if (!this.stats) {
+        this.stats = await fsp.stat(this.absolutePath);
+      }
+      this.collection = this.stats.isDirectory();
+      return this.collection;
     } catch (e: any) {
       return false;
     }
@@ -742,13 +777,15 @@ export default class Resource implements ResourceInterface {
 
     if (user.uid != null) {
       // Check if the user can list its contents.
-      const stats = await fsp.stat(this.absolutePath);
+      if (!this.stats) {
+        this.stats = await fsp.stat(this.absolutePath);
+      }
 
       if (
         !(
-          stats.mode & otherExecuteBit ||
-          (stats.uid === uid && stats.mode & userExecuteBit) ||
-          (gids.includes(stats.gid) && stats.mode & groupExecuteBit)
+          this.stats.mode & otherExecuteBit ||
+          (this.stats.uid === uid && this.stats.mode & userExecuteBit) ||
+          (gids.includes(this.stats.gid) && this.stats.mode & groupExecuteBit)
         )
       ) {
         throw new UnauthorizedError(
@@ -757,42 +794,43 @@ export default class Resource implements ResourceInterface {
       }
     }
 
-    const listing = await fsp.readdir(this.absolutePath);
+    const listing = await fsp.readdir(this.absolutePath, {
+      withFileTypes: true,
+    });
     const resources: Resource[] = [];
 
-    for (let name of listing) {
-      if (name.endsWith('.nephelemeta')) {
+    for (let dir of listing) {
+      if (dir.name.endsWith('.nephelemeta')) {
         continue;
       }
 
       try {
-        const absolutePath = path.join(this.absolutePath, name);
-        const stats = await fsp.stat(absolutePath);
         // This adapter only supports directories, files, and symlinks.
-        if (
-          !stats.isDirectory() &&
-          !stats.isFile() &&
-          !stats.isSymbolicLink()
-        ) {
+        if (!dir.isDirectory() && !dir.isFile() && !dir.isSymbolicLink()) {
           continue;
         }
+
+        resources.push(
+          new Resource({
+            path: `${this.path}${path.sep}${dir.name}`,
+            baseUrl: this.baseUrl,
+            adapter: this.adapter,
+            collection: dir.isDirectory(),
+          }),
+        );
       } catch (e: any) {
         continue;
       }
-
-      resources.push(
-        new Resource({
-          path: path.join(this.path, name),
-          baseUrl: this.baseUrl,
-          adapter: this.adapter,
-        }),
-      );
     }
 
     return resources;
   }
 
   async exists() {
+    if (this.stats && this.stats.birthtime != null) {
+      return true;
+    }
+
     try {
       await fsp.access(this.absolutePath, constants.F_OK);
     } catch (e: any) {
@@ -803,7 +841,10 @@ export default class Resource implements ResourceInterface {
   }
 
   async getStats() {
-    return await fsp.stat(this.absolutePath);
+    if (!this.stats) {
+      this.stats = await fsp.stat(this.absolutePath);
+    }
+    return this.stats;
   }
 
   async setMode(mode: number) {
@@ -827,11 +868,11 @@ export default class Resource implements ResourceInterface {
 
   async getMetadataFilePath() {
     if (await this.isCollection()) {
-      return path.join(this.absolutePath, '.nephelemeta');
+      return `${this.absolutePath}${path.sep}.nephelemeta`;
     } else {
       const dirname = path.dirname(this.absolutePath);
       const basename = path.basename(this.absolutePath);
-      return path.join(dirname, `${basename}.nephelemeta`);
+      return `${dirname}${path.sep}${basename}.nephelemeta`;
     }
   }
 
@@ -886,7 +927,9 @@ export default class Resource implements ResourceInterface {
       await fsp.writeFile(metaFilePath, JSON.stringify(meta, null, 2));
 
       try {
-        const stat = await fsp.stat(filePath ?? this.absolutePath);
+        const stat = filePath
+          ? await fsp.stat(filePath)
+          : await this.getStats();
         await fsp.chown(metaFilePath, stat.uid, stat.gid);
         await fsp.chmod(metaFilePath, stat.mode % 0o1000);
       } catch (e: any) {
@@ -923,7 +966,7 @@ export default class Resource implements ResourceInterface {
     const orphans = Array.from(metaFiles);
 
     for (let name of orphans) {
-      const orphanPath = path.join(this.absolutePath, name);
+      const orphanPath = `${this.absolutePath}${path.sep}${name}`;
       await fsp.unlink(orphanPath);
     }
   }

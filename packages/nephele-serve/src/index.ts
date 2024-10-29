@@ -1021,8 +1021,8 @@ try {
           let adapter: Adapter;
 
           if (nymph) {
-            if (directory == null || !fs.statSync(directory).isDirectory()) {
-              throw new Error('Server root is not an accessible directory.');
+            if (directory == null) {
+              throw new Error('Directory not provided.');
             }
 
             if (nymphInstance == null) {
@@ -1060,15 +1060,12 @@ try {
               });
             }
           } else if (s3Endpoint == null) {
-            if (directory == null || !fs.statSync(directory).isDirectory()) {
-              throw new Error('Server root is not an accessible directory.');
+            if (directory == null) {
+              throw new Error('Directory not provided.');
             }
 
             if (userDirectories && response.locals.user != null) {
-              const root = path.join(
-                directory,
-                response.locals.user.username.replace(/\//g, '_'),
-              );
+              const root = `${directory}${path.sep}${response.locals.user.username.replace(/\//g, '_')}`;
 
               try {
                 fs.accessSync(root);
