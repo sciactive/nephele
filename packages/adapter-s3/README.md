@@ -29,16 +29,16 @@ app.use(
     adapter: new S3Adapter({
       s3Config: {
         endpoint: 'https://mys3endpointurl/',
-        region: 'us-east-1,
+        region: 'us-east-1',
         credentials: {
           accessKeyId: 'my-s3-access-key',
           secretAccessKey: 'my-s3-secret-key-shh-dont-tell',
         },
       },
-      bucket: 'MyBucket,
+      bucket: 'MyBucket',
     }),
     authenticator: new ExampleAuthenticator(),
-  })
+  }),
 );
 
 app.listen(port, () => {
