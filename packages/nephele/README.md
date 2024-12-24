@@ -30,7 +30,7 @@ npm i -s nephele
 
 # Usage
 
-Nephele provides all of the business logic of implementing WebDAV, but it requires [an adapter](https://www.npmjs.com/search?q=keywords%3Anephele%20adapter) to store and serve resources from a storage backend, and [an authenticator](https://www.npmjs.com/search?q=keywords%3Anephele%20authenticator) to authenticate users. It also can use [plugins](https://www.npmjs.com/search?q=keywords%3Anephele%20plugin) to provide additional features.
+Nephele provides all of the business logic of implementing WebDAV, but it requires [an adapter](https://www.npmjs.com/search?q=keywords%3A%22nephele%20adapter%22) to store and serve resources from a storage backend, and [an authenticator](https://www.npmjs.com/search?q=keywords%3A%22nephele%20authenticator%22) to authenticate users. It also can use [plugins](https://www.npmjs.com/search?q=keywords%3A%22nephele%20plugin%22) to provide additional features.
 
 ```js
 import express from 'express';
@@ -227,7 +227,7 @@ Nephele implements the WebDAV spec while being storage and authentication agnost
 
 ## Adapters
 
-Nephele handles resource storage, listing, retrieval, and manipulation by using [adapters](https://www.npmjs.com/search?q=keywords%3Anephele%20adapter). An adapter is responsible for actually performing changes in the storage backend.
+Nephele handles resource storage, listing, retrieval, and manipulation by using [adapters](https://www.npmjs.com/search?q=keywords%3A%22nephele%20adapter%22). An adapter is responsible for actually performing changes in the storage backend.
 
 ### Resources
 
@@ -243,7 +243,7 @@ Properties are the metadata associated with resources. Live properties are data 
 
 ## Authenticators
 
-Nephele handles access control by using [authenticators](https://www.npmjs.com/search?q=keywords%3Anephele%20authenticator). An authenticator is responsible for authenticating the HTTP request and providing a user for Nephele to give to the adapter.
+Nephele handles access control by using [authenticators](https://www.npmjs.com/search?q=keywords%3A%22nephele%20authenticator%22). An authenticator is responsible for authenticating the HTTP request and providing a user for Nephele to give to the adapter.
 
 ### Users
 
@@ -251,7 +251,7 @@ Users are extremely flexible in Nephele. Basically Nephele hands your authentica
 
 ## Plugins
 
-Nephele offers additional features using [plugins](https://www.npmjs.com/search?q=keywords%3Anephele%20plugin). A plugin is given the chance to alter the behavior and response throughout [the lifecycle of a Nephele request](https://github.com/sciactive/nephele/blob/master/packages/nephele/src/Interfaces/Plugin.ts).
+Nephele offers additional features using [plugins](https://www.npmjs.com/search?q=keywords%3A%22nephele%20plugin%22). A plugin is given the chance to alter the behavior and response throughout [the lifecycle of a Nephele request](https://github.com/sciactive/nephele/blob/master/packages/nephele/src/Interfaces/Plugin.ts).
 
 # License
 
