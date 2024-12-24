@@ -44,8 +44,8 @@
     "typescript": "^5.4.5"
   },
   "dependencies": {
-    "@nymphjs/nymph": "^1.0.0-beta.81",
-    "@nymphjs/tilmeld": "^1.0.0-beta.81",
+    "@nymphjs/nymph": "^1.0.0-beta.84",
+    "@nymphjs/tilmeld": "^1.0.0-beta.84",
     "basic-auth": "^2.0.1",
     "nephele": "^1.0.0-alpha.62"
   },
