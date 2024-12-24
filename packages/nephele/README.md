@@ -251,7 +251,7 @@ Users are extremely flexible in Nephele. Basically Nephele hands your authentica
 
 ## Plugins
 
-Nephele offers additional features using [plugins](https://www.npmjs.com/search?q=keywords%3Anephele%20plugin). A plugin is given the chance to alter the behavior and response throughout [the lifecycle of a Nephele request](src/Interfaces/Plugin.ts).
+Nephele offers additional features using [plugins](https://www.npmjs.com/search?q=keywords%3Anephele%20plugin). A plugin is given the chance to alter the behavior and response throughout [the lifecycle of a Nephele request](https://github.com/sciactive/nephele/blob/master/packages/nephele/src/Interfaces/Plugin.ts).
 
 # License
 
