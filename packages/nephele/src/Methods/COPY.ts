@@ -316,7 +316,7 @@ export class COPY extends Method {
                   destination.toString().replace(/\/?$/, () => '/') +
                     encodeURIComponent(name) +
                     ((await child.isCollection()) ? '/' : ''),
-                  `${destination.protocol}://${destination.host}`,
+                  `${destination.protocol}//${destination.host}`,
                 );
 
                 await recursivelyCopy(child, destinationUrl, false);
