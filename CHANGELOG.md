@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.62](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.61...v1.0.0-alpha.62) (2024-12-24)
+
+
+### Bug Fixes
+
+* depth infinity copies of a collection ([89ffd0e](https://github.com/sciactive/nephele/commit/89ffd0eca9d6b256ac4b81411a6ea2b134e22249)), closes [#9](https://github.com/sciactive/nephele/issues/9)
+* show multistatus errors on web form ([b42cc13](https://github.com/sciactive/nephele/commit/b42cc13fb4ad48a33834ffc392e2fe161a7c2107))
+
+
+
+
+
 # [1.0.0-alpha.61](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.60...v1.0.0-alpha.61) (2024-10-12)
 
 
