@@ -8,6 +8,24 @@
       const tasks = document.getElementById('tasks');
       let requests = [];
 
+      function findMultiStatusErrors(responseXML) {
+        const multistatus = [...responseXML.childNodes].find(
+          (node) => node.nodeName === 'multistatus',
+        );
+        const responses = [...multistatus.childNodes].filter(
+          (node) => node.nodeName === 'response',
+        );
+        const statuses = responses.map(
+          (node) =>
+            [...node.childNodes].find((node) => node.nodeName === 'status')
+              .textContent,
+        );
+        return statuses.filter((status) => {
+          const code = parseInt(status.split(' ')[1]);
+          return code >= 400 && code < 600;
+        });
+      }
+
       /**
        * Make Directory
        */
@@ -410,7 +428,14 @@
                   xhr.status >= 200 &&
                   xhr.status < 300
                 ) {
-                  progress.innerText = 'Success.';
+                  if (xhr.status === 207) {
+                    const errors = findMultiStatusErrors(xhr.responseXML);
+                    progress.innerText = errors.length
+                      ? `${errors.length} error(s)`
+                      : 'Success.';
+                  } else {
+                    progress.innerText = 'Success.';
+                  }
                 } else {
                   progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
                 }
@@ -462,7 +487,14 @@
                   xhr.status >= 200 &&
                   xhr.status < 300
                 ) {
-                  progress.innerText = 'Success.';
+                  if (xhr.status === 207) {
+                    const errors = findMultiStatusErrors(xhr.responseXML);
+                    progress.innerText = errors.length
+                      ? `${errors.length} error(s)`
+                      : 'Success.';
+                  } else {
+                    progress.innerText = 'Success.';
+                  }
                 } else {
                   progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
                 }
@@ -548,7 +580,14 @@
                   xhr.status >= 200 &&
                   xhr.status < 300
                 ) {
-                  progress.innerText = 'Success.';
+                  if (xhr.status === 207) {
+                    const errors = findMultiStatusErrors(xhr.responseXML);
+                    progress.innerText = errors.length
+                      ? `${errors.length} error(s)`
+                      : 'Success.';
+                  } else {
+                    progress.innerText = 'Success.';
+                  }
                 } else {
                   progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
                 }
@@ -642,7 +681,14 @@
                   xhr.status >= 200 &&
                   xhr.status < 300
                 ) {
-                  progress.innerText = 'Success.';
+                  if (xhr.status === 207) {
+                    const errors = findMultiStatusErrors(xhr.responseXML);
+                    progress.innerText = errors.length
+                      ? `${errors.length} error(s)`
+                      : 'Success.';
+                  } else {
+                    progress.innerText = 'Success.';
+                  }
                 } else {
                   progress.innerText = `Error: ${xhr.status} ${xhr.statusText}`;
                 }
