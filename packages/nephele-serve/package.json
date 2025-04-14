@@ -53,13 +53,13 @@
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
   "devDependencies": {
-    "@tsconfig/recommended": "^1.0.6",
+    "@tsconfig/recommended": "^1.0.8",
     "@types/express": "^4.17.21",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^29.5.14",
     "@types/update-notifier": "^6.0.8",
     "jest": "^29.7.0",
-    "ts-jest": "^29.1.4",
-    "typescript": "^5.4.5"
+    "ts-jest": "^29.3.2",
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "@nephele/adapter-file-system": "^1.0.0-alpha.62",
@@ -72,17 +72,17 @@
     "@nephele/authenticator-nymph": "^1.0.0-alpha.62",
     "@nephele/plugin-encryption": "^1.0.0-alpha.62",
     "@nephele/plugin-index": "^1.0.0-alpha.62",
-    "@nymphjs/driver-mysql": "^1.0.0-beta.84",
-    "@nymphjs/driver-postgresql": "^1.0.0-beta.84",
-    "@nymphjs/driver-sqlite3": "^1.0.0-beta.84",
-    "@nymphjs/nymph": "^1.0.0-beta.84",
-    "@nymphjs/server": "^1.0.0-beta.84",
-    "@nymphjs/tilmeld": "^1.0.0-beta.84",
-    "@nymphjs/tilmeld-setup": "^1.0.0-beta.84",
+    "@nymphjs/driver-mysql": "^1.0.0-beta.92",
+    "@nymphjs/driver-postgresql": "^1.0.0-beta.92",
+    "@nymphjs/driver-sqlite3": "^1.0.0-beta.92",
+    "@nymphjs/nymph": "^1.0.0-beta.92",
+    "@nymphjs/server": "^1.0.0-beta.92",
+    "@nymphjs/tilmeld": "^1.0.0-beta.92",
+    "@nymphjs/tilmeld-setup": "^1.0.0-beta.92",
     "commander": "^12.1.0",
-    "express": "^4.19.2",
+    "express": "^4.21.2",
     "nephele": "^1.0.0-alpha.62",
-    "update-notifier": "^7.0.0"
+    "update-notifier": "^7.3.1"
   },
   "optionalDependencies": {
     "@nephele/authenticator-pam": "^1.0.0-alpha.62",
