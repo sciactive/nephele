@@ -90,7 +90,7 @@ export default class Authenticator implements AuthenticatorInterface {
 
       const user = new User({ username });
 
-      await user.authenticate(password, request.hostname);
+      await user.authenticate(password, request.ip);
       await user.checkUID(this.allowedUIDs);
 
       return user;

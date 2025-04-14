@@ -1,7 +1,5 @@
 /**
- * This file requires the --experimental-specifier-resolution=node option.
- *
- * sudo node --experimental-specifier-resolution=node testserver-home.mjs
+ * sudo node testserver-home.mjs
  */
 import { hostname } from 'node:os';
 import express from 'express';
@@ -49,7 +47,11 @@ app.use(
   }),
 );
 
-app.listen(port, () => {
+app.listen(port, (err) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
   debug(`Listening on ${host}:${port}.`);
   debug(`Serving files from user home directories.`);
   console.log(`Example Nephele WebDAV server listening on port ${port}`);

@@ -33,7 +33,11 @@ app.use(
   }),
 );
 
-app.listen(port, () => {
+app.listen(port, (err) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
   console.log(`Nephele WebDAV server listening on port ${port}`);
 });
 ```

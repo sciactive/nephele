@@ -50,7 +50,11 @@ app.use(
   }),
 );
 
-app.listen(port, () => {
+app.listen(port, (err) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
   console.log(`Nephele WebDAV server listening on port ${port}`);
 });
 ```
@@ -58,8 +62,6 @@ app.listen(port, () => {
 # Requirements
 
 Read the details on https://www.npmjs.com/package/authenticate-pam, which is used for the actual PAM authentication.
-
-You may also need to use `NODE_OPTIONS='--experimental-specifier-resolution=node'` when you launch your server.
 
 # Options / Defaults
 

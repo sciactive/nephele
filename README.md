@@ -74,13 +74,13 @@ To bring up the testing server, run the `testserver.ts` file, like this.
 
 ```
 mkdir testroot
-env DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx tsx testserver.ts testroot
+env DEBUG="nephele:*" npx tsx testserver.ts testroot
 ```
 
 If you want to run it without PAM authentication (allow unrestricted access to any user who can reach your host on the network), set the `NOPAM` env var, like this.
 
 ```
-env NOPAM=true DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx tsx testserver.ts testroot
+env NOPAM=true DEBUG="nephele:*" npx tsx testserver.ts testroot
 ```
 
 You can also run the `nephele-serve` script like this.
@@ -102,7 +102,7 @@ Then use the MinIO console at http://127.0.0.1:9001 to create a bucket called "n
 Then bring up the Nephele test server like this.
 
 ```
-env S3ENDPOINT="http://127.0.0.1:8081" S3ACCESSKEY="minioadmin" S3SECRETKEY="minioadmin" S3BUCKET="nephele" NOPAM=true USERNAME="admin" PASSWORD="password" DEBUG="nephele:*" NODE_OPTIONS='--experimental-specifier-resolution=node' npx tsx testserver.ts
+env S3ENDPOINT="http://127.0.0.1:8081" S3ACCESSKEY="minioadmin" S3SECRETKEY="minioadmin" S3BUCKET="nephele" NOPAM=true USERNAME="admin" PASSWORD="password" DEBUG="nephele:*" npx tsx testserver.ts
 ```
 
 ## Nymph with MySQL

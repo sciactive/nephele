@@ -412,23 +412,23 @@ export default function createServer(
     },
   );
 
-  app.options('*', runMethodCatchErrors(new OPTIONS(opts)));
-  app.get('*', runMethodCatchErrors(new GET_HEAD(opts)));
-  app.head('*', runMethodCatchErrors(new GET_HEAD(opts)));
-  app.put('*', runMethodCatchErrors(new PUT(opts)));
-  app.delete('*', runMethodCatchErrors(new DELETE(opts)));
-  app.copy('*', runMethodCatchErrors(new COPY(opts)));
-  app.move('*', runMethodCatchErrors(new MOVE(opts)));
-  app.mkcol('*', runMethodCatchErrors(new MKCOL(opts)));
-  app.lock('*', runMethodCatchErrors(new LOCK(opts)));
-  app.unlock('*', runMethodCatchErrors(new UNLOCK(opts)));
+  app.options('/{*splat}', runMethodCatchErrors(new OPTIONS(opts)));
+  app.get('/{*splat}', runMethodCatchErrors(new GET_HEAD(opts)));
+  app.head('/{*splat}', runMethodCatchErrors(new GET_HEAD(opts)));
+  app.put('/{*splat}', runMethodCatchErrors(new PUT(opts)));
+  app.delete('/{*splat}', runMethodCatchErrors(new DELETE(opts)));
+  app.copy('/{*splat}', runMethodCatchErrors(new COPY(opts)));
+  app.move('/{*splat}', runMethodCatchErrors(new MOVE(opts)));
+  app.mkcol('/{*splat}', runMethodCatchErrors(new MKCOL(opts)));
+  app.lock('/{*splat}', runMethodCatchErrors(new LOCK(opts)));
+  app.unlock('/{*splat}', runMethodCatchErrors(new UNLOCK(opts)));
   // TODO: Available once rfc5323 is implemented.
-  // app.search('*', runMethodCatchErrors(new SEARCH(opts)));
+  // app.search('/{*splat}', runMethodCatchErrors(new SEARCH(opts)));
 
   const propfind = runMethodCatchErrors(new PROPFIND(opts));
   const proppatch = runMethodCatchErrors(new PROPPATCH(opts));
 
-  app.all('*', async (request, response: AuthResponse) => {
+  app.all('/{*splat}', async (request, response: AuthResponse) => {
     switch (request.method) {
       case 'PROPFIND':
         await propfind(request, response);

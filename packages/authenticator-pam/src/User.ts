@@ -1,7 +1,10 @@
-import pam from 'authenticate-pam';
+import { createRequire } from 'node:module';
 import userid from 'userid';
 import type { User as UserInterface } from 'nephele';
 import { ForbiddenError, UnauthorizedError } from 'nephele';
+
+const require = createRequire(import.meta.url);
+const pam = require('authenticate-pam');
 
 const { ids, groupname, gids } = userid;
 
@@ -32,7 +35,7 @@ export default class User implements UserInterface {
     }
   }
 
-  async authenticate(password: string, remoteHost: string = 'localhost') {
+  async authenticate(password: string, remoteHost: string = '127.0.0.1') {
     if (this.authenticated) {
       return;
     }

@@ -8,6 +8,11 @@
       const tasks = document.getElementById('tasks');
       let requests = [];
 
+      // Refresh button.
+      refresh.addEventListener('click', () => {
+        window.location.reload();
+      });
+
       function findMultiStatusErrors(responseXML) {
         const multistatus = [...responseXML.childNodes].find(
           (node) => node.nodeName === 'multistatus',
@@ -875,7 +880,7 @@
   </div>
 
   <div id="refreshContainer" style="margin-top: 1em; display: none;">
-    <button id="refresh" onclick="window.location.reload()">Refresh</button>
+    <button id="refresh">Refresh</button>
   </div>
 {/if}
 
@@ -883,13 +888,15 @@
 <p style="font-size: smaller; text-align: right;">Served by {name}</p>
 
 <script>
-  export let entries = [];
-  export let self;
-  export let urlParams;
-  export let name;
-  export let showForms;
-  export let canUpload;
-  export let canMkdir;
+  let {
+    entries = [],
+    self,
+    urlParams,
+    name,
+    showForms,
+    canUpload,
+    canMkdir,
+  } = $props();
 
   function sortEntries() {
     return entries.sort((a, b) => {

@@ -27,7 +27,7 @@ RUN npm i -g pm2 nephele-serve@${VERSION}
 EXPOSE 80
 EXPOSE 443
 
-CMD pm2-runtime start -i $WORKERS --node-args "--experimental-specifier-resolution=node" nephele-serve -- $SERVER_ROOT
+CMD pm2-runtime start -i $WORKERS nephele-serve -- $SERVER_ROOT
 
 # Note to future Hunter: This is the command to build for both amd64 and arm64 and push to Docker Hub.
 #  VERSION=$(docker run --rm -i ghcr.io/jqlang/jq:latest < lerna.json -r '.version') docker buildx build --build-arg VERSION=$VERSION --platform linux/amd64,linux/arm64 -t sciactive/nephele:latest -t sciactive/nephele:$VERSION --push .

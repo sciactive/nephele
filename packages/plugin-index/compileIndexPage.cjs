@@ -8,7 +8,7 @@ const svelte = require('svelte/compiler');
   ).toString();
   const IndexPage = svelte.compile(IndexPageSrc, {
     name: 'IndexPage',
-    generate: 'ssr',
+    generate: 'server',
   });
 
   console.log('Compiling Svelte index page...');

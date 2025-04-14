@@ -111,7 +111,6 @@ Nephele Serve supports clustering for handling high loads. Here's how to set up 
 sudo npm install -g pm2
 sudo pm2 start -i 8 -u root --uid 0 \
   nephele-serve \
-  --node-args "--experimental-specifier-resolution=node" \
   -- \
   --home-directories
 ```
@@ -370,17 +369,6 @@ Copyright (C) 2022-2025 SciActive, Inc
 https://sciactive.com/
 ```
 
-# Node Warning
-
-If you see this warning:
-
-```
-(node:319632) ExperimentalWarning: The Node.js specifier resolution flag is experimental. It could change or be removed at any time.
-(Use `node --trace-warnings ...` to show where the warning was created)
-```
-
-Don't worry, it's because the script is using `--experimental-specifier-resolution=node` to be able to load the PAM authentication module from an ES module.
-
 # Comprehensive Example
 
 This example shows the steps for a setup where you:
@@ -406,7 +394,6 @@ sudo npm i -g nephele-serve pm2
 # Start a nephele-serve cluster.
 sudo pm2 start -i 8 -u root --uid 0 \
   nephele-serve \
-  --node-args "--experimental-specifier-resolution=node" \
   -- \
   --pam-auth \
   --user-directories \

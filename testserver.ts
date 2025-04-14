@@ -1,7 +1,5 @@
 /**
- * This file requires the --experimental-specifier-resolution=node option.
- *
- * env NODE_OPTIONS='--experimental-specifier-resolution=node' npx tsx testserver.ts testroot
+ * npx tsx testserver.ts testroot
  */
 import { hostname } from 'node:os';
 import { dirname, resolve, join } from 'node:path';
@@ -143,7 +141,11 @@ app.use(
   }),
 );
 
-app.listen(port, () => {
+app.listen(port, (err) => {
+  if (err) {
+    console.error(err);
+    return;
+  }
   debug(`Listening on ${host}:${port}.`);
   debug(`Serving files from ${virtual ? 'RAM' : `"${root}"`}.`);
   console.log(`Example Nephele WebDAV server listening on port ${port}`);

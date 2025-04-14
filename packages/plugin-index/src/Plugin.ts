@@ -1,4 +1,5 @@
 import type { Request } from 'express';
+import { render } from 'svelte/server';
 import type {
   Plugin as PluginInterface,
   AuthResponse,
@@ -186,17 +187,19 @@ export default class Plugin implements PluginInterface {
         canMkdir = false;
       }
 
-      const { head, html, css } = IndexPage.render({
-        entries,
-        self: {
-          name: await resource.getCanonicalName(),
-          url: await resource.getCanonicalUrl(),
+      const { head, body } = render(IndexPage, {
+        props: {
+          entries,
+          self: {
+            name: await resource.getCanonicalName(),
+            url: await resource.getCanonicalUrl(),
+          },
+          urlParams: request.query,
+          name: this.name,
+          showForms: this.showForms,
+          canUpload,
+          canMkdir,
         },
-        urlParams: request.query,
-        name: this.name,
-        showForms: this.showForms,
-        canUpload,
-        canMkdir,
       });
 
       response.set({
@@ -213,12 +216,9 @@ export default class Plugin implements PluginInterface {
       new URL(request.url, `http://${request.headers.host}/`).pathname
     }</title>
     ${head}
-    <style type="text/css">
-      ${css.code}
-    </style>
   </head>
   <body>
-    ${html}
+    ${body}
   </body>
 </html>
 `);
