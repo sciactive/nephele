@@ -523,7 +523,7 @@ program.addHelpText(
   'afterAll',
   `
 Nephele repo: https://github.com/sciactive/nephele
-Copyright (C) 2022-2024 SciActive, Inc
+Copyright (C) 2022-2025 SciActive, Inc
 https://sciactive.com/`,
 );
 

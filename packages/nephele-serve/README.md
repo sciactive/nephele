@@ -366,7 +366,7 @@ Nymph and File Deduplication:
   https://nymph.io
 
 Nephele repo: https://github.com/sciactive/nephele
-Copyright (C) 2022-2024 SciActive, Inc
+Copyright (C) 2022-2025 SciActive, Inc
 https://sciactive.com/
 ```
 
@@ -424,7 +424,7 @@ I recommend installing Node from NodeSource instead of apt, because apt tends to
 
 # License
 
-Copyright 2022-2024 SciActive Inc
+Copyright 2022-2025 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

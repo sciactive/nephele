@@ -72,7 +72,7 @@ When a file is deleted, the adapter will check for any other files that share th
 
 # License
 
-Copyright 2022-2024 SciActive Inc
+Copyright 2022-2025 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
