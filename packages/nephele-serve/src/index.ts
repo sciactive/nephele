@@ -1184,13 +1184,6 @@ try {
                   password === authPassword?.trim()
                 );
               },
-
-              async authDigest(user) {
-                if (user.username === authUsername?.trim()) {
-                  return { password: authPassword?.trim() };
-                }
-                return null;
-              },
             });
           }
 
