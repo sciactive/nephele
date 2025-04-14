@@ -153,9 +153,15 @@ export default class Authenticator implements AuthenticatorInterface {
         if (auth.type === 'Basic' && 'password' in auth.data) {
           let { username, password } = auth.data;
 
-          if (this.authBasic == null || (!username && !password)) {
+          if (this.authBasic == null) {
             throw new UnauthorizedError(
-              'You must authenticate to access this server.',
+              'Basic authentication is not supported on this server.',
+            );
+          }
+
+          if (!username && !password) {
+            throw new UnauthorizedError(
+              'You must provide a username and password to access this server.',
             );
           }
 
@@ -188,17 +194,37 @@ export default class Authenticator implements AuthenticatorInterface {
             opaque,
           } = auth.data;
 
+          if (this.authDigest == null) {
+            throw new UnauthorizedError(
+              'Digest authentication is not supported on this server.',
+            );
+          }
+
+          if (!username) {
+            throw new UnauthorizedError(
+              'You must provide a username to access this server.',
+            );
+          }
+
+          if (opaque == null) {
+            throw new UnauthorizedError(
+              'You must provide an opaque value to access this server.',
+            );
+          }
+
+          if (realm !== this.realm) {
+            throw new UnauthorizedError(
+              'The provided realm does not match this server.',
+            );
+          }
+
           if (
-            this.authDigest == null ||
-            !username ||
-            opaque == null ||
-            realm !== this.realm ||
-            (uri !== request.url &&
-              uri !==
-                `${request.protocol}://${request.headers.host}${request.url}`)
+            uri !== request.url &&
+            uri !==
+              `${request.protocol}://${request.headers.host}${request.url}`
           ) {
             throw new UnauthorizedError(
-              'You must authenticate to access this server.',
+              'The provided auth URI does not match this request.',
             );
           }
 
