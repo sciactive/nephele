@@ -1,5 +1,4 @@
 import path from 'node:path';
-import fs from 'node:fs';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
 import type { Request } from 'express';
@@ -36,6 +35,10 @@ export type AdapterConfig = {
    */
   root: string;
   /**
+   * Whether to follow symlinks.
+   */
+  followLinks?: boolean;
+  /**
    * The maximum filesize in bytes to calculate etags by a CRC-32C checksum of
    * the file contents.
    *
@@ -66,13 +69,21 @@ export type AdapterConfig = {
  */
 export default class Adapter implements AdapterInterface {
   root: string;
+  followLinks: boolean;
+  stat: typeof fsp.stat;
   contentEtagMaxBytes: number;
 
-  constructor({ root, contentEtagMaxBytes = -1 }: AdapterConfig) {
+  constructor({
+    root,
+    followLinks = true,
+    contentEtagMaxBytes = -1,
+  }: AdapterConfig) {
     this.root = root.replace(
       new RegExp(`${path.sep.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}?$`),
       () => path.sep,
     );
+    this.followLinks = followLinks;
+    this.stat = this.followLinks ? fsp.stat : fsp.lstat;
     this.contentEtagMaxBytes = contentEtagMaxBytes;
   }
 
@@ -208,7 +219,7 @@ export default class Adapter implements AdapterInterface {
 
         // Check if the user can access it.
         try {
-          const stats = await fsp.stat(ipathname);
+          const stats = await this.stat(ipathname);
 
           if (access === 'x' || i < parts.length) {
             if (
@@ -271,11 +282,7 @@ export default class Adapter implements AdapterInterface {
       );
     }
 
-    const resource = new Resource({
-      adapter: this,
-      baseUrl,
-      path,
-    });
+    const resource = new Resource({ adapter: this, baseUrl, path });
 
     if (!(await resource.exists())) {
       throw new ResourceNotFoundError('Resource not found.');
@@ -293,12 +300,7 @@ export default class Adapter implements AdapterInterface {
       );
     }
 
-    return new Resource({
-      adapter: this,
-      baseUrl,
-      path,
-      collection: false,
-    });
+    return new Resource({ adapter: this, baseUrl, path, collection: false });
   }
 
   async newCollection(url: URL, baseUrl: URL) {
@@ -310,12 +312,7 @@ export default class Adapter implements AdapterInterface {
       );
     }
 
-    return new Resource({
-      adapter: this,
-      baseUrl,
-      path,
-      collection: true,
-    });
+    return new Resource({ adapter: this, baseUrl, path, collection: true });
   }
 
   getMethod(method: string): typeof Method {

@@ -24,9 +24,7 @@ const port = 8080;
 app.use(
   '/',
   nepheleServer({
-    adapter: new FileSystemAdapter({
-      root: '/path/to/webdav/root',
-    }),
+    adapter: new FileSystemAdapter({ root: '/path/to/webdav/root' }),
     authenticator: new ExampleAuthenticator(),
   }),
 );
@@ -43,6 +41,7 @@ app.listen(port, (err) => {
 # Options / Defaults
 
 - `root`: The absolute path of the directory that acts as the root directory for the service.
+- `followLinks` = `true`: Whether to follow symlinks.
 - `contentEtagMaxBytes` = `-1`: The maximum filesize in bytes to calculate etags by a CRC-32C checksum of the file contents.
 
 ## contentEtagMaxBytes

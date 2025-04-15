@@ -33,9 +33,7 @@ import Properties from './Properties.js';
 import Lock from './Lock.js';
 
 export type MetaStorage = {
-  props?: {
-    [name: string]: any;
-  };
+  props?: { [name: string]: any };
   locks?: {
     [token: string]: {
       username: string;
@@ -305,7 +303,7 @@ export default class Resource implements ResourceInterface {
       // Check if the user can delete it.
 
       if (!this.stats) {
-        this.stats = await fsp.stat(this.absolutePath);
+        this.stats = await this.adapter.stat(this.absolutePath);
       }
 
       if (
@@ -377,7 +375,7 @@ export default class Resource implements ResourceInterface {
 
     if (user.uid != null) {
       // Check if the user can put it in the destination.
-      const dstats = await fsp.stat(path.dirname(destinationPath));
+      const dstats = await this.adapter.stat(path.dirname(destinationPath));
 
       if (
         !(
@@ -407,7 +405,7 @@ export default class Resource implements ResourceInterface {
     let metaFilePath: string | undefined = undefined;
     if (await this.isCollection()) {
       try {
-        const stat = await fsp.stat(destinationPath);
+        const stat = await this.adapter.stat(destinationPath);
         if (stat.isDirectory()) {
           const metaFilePath = `${destinationPath}${path.sep}.nephelemeta`;
           const contents = await fsp.readdir(destinationPath);
@@ -437,7 +435,7 @@ export default class Resource implements ResourceInterface {
       } catch (e: any) {
         // We don't care if the function failed just because it's a directory
         // that already exists.
-        const stat = await fsp.stat(destinationPath);
+        const stat = await this.adapter.stat(destinationPath);
         if (!stat.isDirectory()) {
           throw e;
         }
@@ -487,7 +485,7 @@ export default class Resource implements ResourceInterface {
       // Set owner info.
       await fsp.chown(destinationPath, uid, gid);
       if (!this.stats) {
-        this.stats = await fsp.stat(this.absolutePath);
+        this.stats = await this.adapter.stat(this.absolutePath);
       }
       // Set permissions.
       await fsp.chmod(destinationPath, this.stats.mode % 0o1000);
@@ -503,7 +501,7 @@ export default class Resource implements ResourceInterface {
     }
 
     if (!this.stats) {
-      this.stats = await fsp.stat(this.absolutePath);
+      this.stats = await this.adapter.stat(this.absolutePath);
     }
 
     // Copy mode.
@@ -569,7 +567,7 @@ export default class Resource implements ResourceInterface {
     if (user.uid != null) {
       // Check if the user can move it.
       if (!this.stats) {
-        this.stats = await fsp.stat(this.absolutePath);
+        this.stats = await this.adapter.stat(this.absolutePath);
       }
 
       if (
@@ -585,7 +583,7 @@ export default class Resource implements ResourceInterface {
       }
 
       // Check if the user can put it in the destination.
-      const dstats = await fsp.stat(path.dirname(destinationPath));
+      const dstats = await this.adapter.stat(path.dirname(destinationPath));
 
       if (
         !(
@@ -647,7 +645,7 @@ export default class Resource implements ResourceInterface {
     }
 
     if (!this.stats) {
-      this.stats = await fsp.stat(this.absolutePath);
+      this.stats = await this.adapter.stat(this.absolutePath);
     }
 
     return this.stats.size;
@@ -659,7 +657,7 @@ export default class Resource implements ResourceInterface {
     }
 
     if (!this.stats) {
-      this.stats = await fsp.stat(this.absolutePath);
+      this.stats = await this.adapter.stat(this.absolutePath);
     }
 
     let etag: string;
@@ -686,10 +684,7 @@ export default class Resource implements ResourceInterface {
       try {
         etag = await new Promise(async (resolve, reject) => {
           const stream = (await this.getStream()).pipe(
-            crc32.createHash({
-              seed: 0,
-              table: crc32.TABLE.CASTAGNOLI,
-            }),
+            crc32.createHash({ seed: 0, table: crc32.TABLE.CASTAGNOLI }),
           );
           stream.on('error', reject);
           stream.on('data', (buffer: Buffer) => {
@@ -757,7 +752,7 @@ export default class Resource implements ResourceInterface {
 
     try {
       if (!this.stats) {
-        this.stats = await fsp.stat(this.absolutePath);
+        this.stats = await this.adapter.stat(this.absolutePath);
       }
       this.collection = this.stats.isDirectory();
       return this.collection;
@@ -778,7 +773,7 @@ export default class Resource implements ResourceInterface {
     if (user.uid != null) {
       // Check if the user can list its contents.
       if (!this.stats) {
-        this.stats = await fsp.stat(this.absolutePath);
+        this.stats = await this.adapter.stat(this.absolutePath);
       }
 
       if (
@@ -805,19 +800,40 @@ export default class Resource implements ResourceInterface {
       }
 
       try {
+        const isDir = dir.isDirectory();
+        const isFile = dir.isFile();
+        const isLink = dir.isSymbolicLink();
+
         // This adapter only supports directories, files, and symlinks.
-        if (!dir.isDirectory() && !dir.isFile() && !dir.isSymbolicLink()) {
+        if (!isDir && !isFile && !isLink) {
           continue;
         }
 
-        resources.push(
-          new Resource({
-            path: `${this.path}${path.sep}${dir.name}`,
-            baseUrl: this.baseUrl,
-            adapter: this.adapter,
-            collection: dir.isDirectory(),
-          }),
-        );
+        const filepath = `${this.path}${path.sep}${dir.name}`;
+
+        if (isLink && this.adapter.followLinks) {
+          const stats = await this.adapter.stat(
+            `${this.absolutePath}${path.sep}${dir.name}`,
+          );
+          resources.push(
+            new Resource({
+              path: filepath,
+              baseUrl: this.baseUrl,
+              adapter: this.adapter,
+              collection: stats.isDirectory(),
+              stats,
+            }),
+          );
+        } else {
+          resources.push(
+            new Resource({
+              path: filepath,
+              baseUrl: this.baseUrl,
+              adapter: this.adapter,
+              collection: isDir,
+            }),
+          );
+        }
       } catch (e: any) {
         continue;
       }
@@ -842,7 +858,7 @@ export default class Resource implements ResourceInterface {
 
   async getStats() {
     if (!this.stats) {
-      this.stats = await fsp.stat(this.absolutePath);
+      this.stats = await this.adapter.stat(this.absolutePath);
     }
     return this.stats;
   }
@@ -928,7 +944,7 @@ export default class Resource implements ResourceInterface {
 
       try {
         const stat = filePath
-          ? await fsp.stat(filePath)
+          ? await this.adapter.stat(filePath)
           : await this.getStats();
         await fsp.chown(metaFilePath, stat.uid, stat.gid);
         await fsp.chmod(metaFilePath, stat.mode % 0o1000);
