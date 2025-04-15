@@ -980,9 +980,9 @@ try {
   }
 
   if (nymphInstance && tilmeld) {
-    app.use(nymphRestPath ?? '/!nymph', nymphServer(nymphInstance));
+    app.use(nymphRestPath ?? '/\\!nymph', nymphServer(nymphInstance));
     app.use(
-      nymphSetupPath ?? '/!users',
+      nymphSetupPath ?? '/\\!users',
       nymphSetup(
         {
           restUrl: nymphRestPath ?? '/!nymph',

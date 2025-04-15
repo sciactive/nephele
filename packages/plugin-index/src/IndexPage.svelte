@@ -796,10 +796,10 @@
         <td>
           <a href="{`${self.url.pathname}`.replace(/\/[^\/]*\/?$/, '')}/">..</a>
         </td>
-        <td />
-        <td />
+        <td></td>
+        <td></td>
         <td>Parent Directory</td>
-        <td class="action" style="display: none;" />
+        <td class="action" style="display: none;"></td>
       </tr>
     {/if}
     {#each sortEntries() as entry, i (entry.name)}
@@ -846,7 +846,7 @@
 
 {#if showForms}
   <div id="copymoveContainer" style="margin-top: 1em; display: none;">
-    Selected: <code id="copymoveSelected" />
+    Selected: <code id="copymoveSelected"></code>
 
     <div>
       <button id="copyButton" class="copy">Copy Here</button>
@@ -876,7 +876,7 @@
   <div id="tasksContainer" style="margin-top: 1em; display: none;">
     Tasks
 
-    <div id="tasks" />
+    <div id="tasks"></div>
   </div>
 
   <div id="refreshContainer" style="margin-top: 1em; display: none;">
