@@ -55,7 +55,7 @@ Nephele Serve has a number of options available as environment variables. Some o
 - `TIMEOUT`: Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.
 - `KEEPALIVETIMEOUT`: Server will wait this long for additional data after writing its last response.
 
-## TLS Encryption
+### TLS Encryption
 
 - `CERT_FILE`: The filename of a certificate to use for HTTPS in PEM format.
 - `CERT`: Text of a cert in PEM format.
