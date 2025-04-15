@@ -4,11 +4,13 @@
 
 Run [Nephele WebDAV server](https://github.com/sciactive/nephele).
 
-Nephele supports serving files from a local file system or from an S3 compatible object store.
+Nephele supports:
 
-It also supports encryption at rest, so you can keep your data private and secure.
-
-It also supports a deduplicating file store, so you can save space when many duplicates of the same file(s) are stored.
+- serving files from a local file system
+- serving files from an S3 compatible object store
+- encryption at rest, so you can keep your data private and secure
+- deduplicating file store, so you can save space when many duplicates of the same file(s) are stored
+- managing files through your browser
 
 # What is WebDAV
 
@@ -24,7 +26,7 @@ Pull the latest image with Docker:
 docker pull sciactive/nephele
 ```
 
-Note: By default, Nephele Serve uses a `.htpasswd` file for user authentication. Create this file in the directory you're serving, or upload this file to your S3 bucket. Use Apache's `htpasswd` utility or an online generator like http://aspirine.org/htpasswd_en.html for ease.
+Note: By default, Nephele Serve uses a `.htpasswd` file for user authentication. Create this file in the directory you're serving, or upload this file to your S3 bucket. Use Apache's `htpasswd` utility or an online generator like http://aspirine.org/htpasswd_en.html.
 
 # Usage
 
@@ -42,24 +44,40 @@ If you are using an S3 object store, upload this file to the root of your bucket
 
 Nephele Serve has a number of options available as environment variables. Some options available to [the underlying app](https://github.com/sciactive/nephele/tree/master/packages/nephele-serve#readme) have been left out, because they don't make sense to configure in a Docker container.
 
+### General and Network
+
+- `SERVER_ROOT`: The path of the directory to use as the server root. When using S3, this is the path within the bucket. Defaults to `/data/`, which is set to be a volume. You can bind mount an external directory here to serve it. You must set this to an empty string to serve the root of an S3 bucket!
+
 - `WORKERS`: Number of cluster workers. Higher number means more requests can be answered simultaneously, but more memory is used. Defaults to 8.
 - `REALM`: The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.
 - `PORT`: The port to listen on (inside the container). Defaults to 443 if a cert is provided, 80 otherwise.
 - `REDIRECT_PORT`: The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
 - `TIMEOUT`: Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.
 - `KEEPALIVETIMEOUT`: Server will wait this long for additional data after writing its last response.
+
+## TLS Encryption
+
 - `CERT_FILE`: The filename of a certificate to use for HTTPS in PEM format.
 - `CERT`: Text of a cert in PEM format.
 - `KEY_FILE`: The filename of a private key to use for HTTPS in PEM format.
 - `KEY`: Text of a key in PEM format.
+
+### Service Options
+
 - `USER_DIRECTORIES`: Serve users their own directory under the server root when they log in. (When set to "true", "on" or "1".)
 - `SERVE_INDEXES`: Serve index.html and index.htm files when the user requests a directory. (When set to "true", "on" or "1".)
 - `SERVE_LISTINGS`: Serve directory listings with file management forms when the user requests a directory. (When set to "true", "on" or "1".)
+
+### Authentication
+
 - `AUTH` Don't require authentication. (Not compatible with `USER_DIRECTORIES`.) (When set to "false", "off" or "0".)
 - `AUTH_USER_FILENAME`: htpasswd filename. (Defaults to '.htpasswd'.)
 - `AUTH_USER_FILE`: A specific htpasswd file to use for every request.
 - `AUTH_USERNAME`: Authenticate with a given username instead.
 - `AUTH_PASSWORD`: Authenticate with a given password instead.
+
+### Encryption at Rest
+
 - `ENCRYPTION`: Enable filename and file contents encryption. (When set to "true", "on" or "1".)
 - `ENCRYPTION_SALT`: The salt used to generate file content encryption keys.
 - `ENCRYPTION_FILENAME_SALT`: The salt used to generate filename encryption keys.
@@ -67,34 +85,44 @@ Nephele Serve has a number of options available as environment variables. Some o
 - `ENCRYPTION_FILENAME_ENCODING`: The encoding to use for filenames ('base64' or 'ascii85').
 - `ENCRYPTION_GLOBAL_PASSWORD`: A password to use globally instead of user passwords.
 - `ENCRYPTION_EXCLUDE`: A list of glob patterns to exclude from the encryption/decryption process.
+
+### S3 Storage Backend
+
 - `S3_ENDPOINT`: The S3 endpoint URL to connect to.
 - `S3_REGION`: The S3 region.
 - `S3_ACCESS_KEY`: The S3 access key.
 - `S3_SECRET_KEY`: The S3 secret key.
 - `S3_BUCKET`: The S3 bucket.
+
+### Nymph Deduplicating Storage Backend
+
 - `NYMPH`: Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.) (When set to "true", "on" or "1".)
 - `NYMPH_JWT_SECRET`: A random string to use as the JWT secret for the Nymph user setup app.
 - `NYMPH_REST_PATH`: The path to use for the Nymph rest server used by the user setup app. (Defaults to "/!nymph".)
 - `NYMPH_SETUP_PATH`: The path to use for the Nymph user setup app. (Defaults to "/!users".)
 - `NYMPH_REGISTRATION`: Don't allow new user registration through the Nymph user setup app. (When set to "false", "off" or "0".)
+
 - `NYMPH_EXPORT`: Export the Nymph database to a NEX file. (Set this to the filename.)
 - `NYMPH_IMPORT`: Import the Nymph database from a NEX file. (Set this to the filename.)
+
 - `NYMPH_DB_DRIVER`: The type of the DB driver to use. (Can be "mysql", "postgres", or "sqlite". Defaults to "sqlite").
+
 - `NYMPH_MYSQL_HOST`: The MySQL host if the DB driver is "mysql". (Defaults to "localhost".)
 - `NYMPH_MYSQL_PORT`: The MySQL port if the DB driver is "mysql". (Defaults to 3306.)
 - `NYMPH_MYSQL_DATABASE`: The MySQL database if the DB driver is "mysql". (Defaults to "nymph".)
 - `NYMPH_MYSQL_USERNAME`: The MySQL username if the DB driver is "mysql". (Defaults to "nymph".)
 - `NYMPH_MYSQL_PASSWORD`: The MySQL password if the DB driver is "mysql". (Defaults to "password".)
 - `NYMPH_MYSQL_PREFIX`: The MySQL table prefix if the DB driver is "mysql". (Defaults to "nymph\_".)
+
 - `NYMPH_POSTGRES_HOST`: The PostgreSQL host if the DB driver is "postgres". (Defaults to "localhost".)
 - `NYMPH_POSTGRES_PORT`: The PostgreSQL port if the DB driver is "postgres". (Defaults to 5432.)
 - `NYMPH_POSTGRES_DATABASE`: The PostgreSQL database if the DB driver is "postgres". (Defaults to "nymph".)
 - `NYMPH_POSTGRES_USERNAME`: The PostgreSQL username if the DB driver is "postgres". (Defaults to "nymph".)
 - `NYMPH_POSTGRES_PASSWORD`: The PostgreSQL password if the DB driver is "postgres". (Defaults to "password".)
 - `NYMPH_POSTGRES_PREFIX`: The PostgreSQL table prefix if the DB driver is "postgres". (Defaults to "nymph\_".)
+
 - `NYMPH_SQLITE_CACHE_SIZE`: The SQLite cache size to maintain in memory. (Defaults to 100MB).
 - `NYMPH_SQLITE_PREFIX`: The SQLite table prefix if the DB driver is "sqlite". (Defaults to "nymph\_".)
-- `SERVER_ROOT`: The path of the directory to use as the server root. When using S3, this is the path within the bucket. Defaults to `/data/`, which is set to be a volume. You can bind mount an external directory here to serve it. You must set this to an empty string to serve the root of an S3 bucket!
 
 # Examples
 
@@ -188,6 +216,9 @@ services:
   nephele:
     image: 'sciactive/nephele'
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_started
     ports:
       - '80:80'
     volumes:
@@ -225,6 +256,9 @@ services:
   nephele:
     image: 'sciactive/nephele'
     restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_started
     ports:
       - '80:80'
       - '443:443'
@@ -239,7 +273,7 @@ services:
       KEY_FILE: /cert/live/example.com/privkey.pem
       SERVE_LISTINGS: 'on'
       NYMPH: 'on'
-      NYMPH_REGISTRATION: 'on'
+      NYMPH_REGISTRATION: 'on' # Change this to 'off' once you've made your first user.
       NYMPH_JWT_SECRET: 11341666-f7cb-425d-8adf-7afb5f875fbc
       NYMPH_DB_DRIVER: 'mysql'
       NYMPH_MYSQL_HOST: 'mysql'
@@ -402,7 +436,7 @@ https://github.com/sciactive/nephele/blob/master/packages/adapter-nymph/README.m
 You can find more information about Nephele's Nymph.js authenticator here:
 https://github.com/sciactive/nephele/blob/master/packages/authenticator-nymph/README.md
 
-You can find more information about Nymph.js:
+You can find more information about Nymph.js here:
 https://nymph.io
 
 ## Exporting and Importing Your Nymph Data
@@ -422,7 +456,7 @@ Run `docker compose logs -f` to watch the output. You will see the Nymph DB expo
 
 At this point, you can bring down your stack with `docker compose down`.
 
-Make sure the `db.nex` file you just created looks correct. It should be next to your `blob` and `temp` directories, and it should be more than just a kilobyte or two.
+Make sure the `db.nex` file you just created looks correct. It should be next to your `blob` and `temp` directories, and it should be more than just a kilobyte or two. It's a good idea to copy this file somewhere else in case anything goes wrong during the import.
 
 Now you can set up your new database. If you are migrating to a new version of Nephele, you should clear your existing database.
 
