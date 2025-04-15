@@ -3,6 +3,24 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.63](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.62...v1.0.0-alpha.63) (2025-04-15)
+
+
+### Bug Fixes
+
+* express 5 nymph paths ([001e163](https://github.com/sciactive/nephele/commit/001e1630a2a6c4baf50c444909ade1d9dac443bf))
+* improve custom auth error messages, add digest auth to nephele-serve ([c88e0ff](https://github.com/sciactive/nephele/commit/c88e0ff3ea80a362e486f0869c3173e445640410))
+* remove digest auth from nephele-serve, since this prevents clustering ([9cc524f](https://github.com/sciactive/nephele/commit/9cc524f363611d1dbc3ae9da291f3806a9ed1d23))
+
+
+### Features
+
+* upgrade to Express 5, support PAM auth in newer versions of Node ([1cd4cc8](https://github.com/sciactive/nephele/commit/1cd4cc83f7ebf396cd348174a103fb18e3ed88b6))
+
+
+
+
+
 # [1.0.0-alpha.62](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.61...v1.0.0-alpha.62) (2024-12-24)
 
 

@@ -1,6 +1,6 @@
 {
   "name": "@nephele/adapter-nymph",
-  "version": "1.0.0-alpha.62",
+  "version": "1.0.0-alpha.63",
   "description": "Nymph.js based deduping file adapter for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -55,7 +55,7 @@
     "check-disk-space": "^3.4.0",
     "file-type": "^20.4.1",
     "joi": "^17.13.3",
-    "nephele": "^1.0.0-alpha.62",
+    "nephele": "^1.0.0-alpha.63",
     "uuid": "^11.1.0"
   },
   "engines": {

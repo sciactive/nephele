@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.63](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.62...v1.0.0-alpha.63) (2025-04-15)
+
+
+### Features
+
+* upgrade to Express 5, support PAM auth in newer versions of Node ([1cd4cc8](https://github.com/sciactive/nephele/commit/1cd4cc83f7ebf396cd348174a103fb18e3ed88b6))
+
+
+
+
+
 # [1.0.0-alpha.62](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.61...v1.0.0-alpha.62) (2024-12-24)
 
 **Note:** Version bump only for package @nephele/authenticator-none
