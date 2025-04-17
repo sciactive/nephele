@@ -163,17 +163,18 @@ Options:
   --redirect-port <redirect_port>            The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
   -t, --timeout <milliseconds>               Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.
   --keep-alive-timeout <milliseconds>        Server will wait this long for additional data after writing its last response.
-  --home-directories                         Serve users' home directories to them when they log in. (Impies --pam-auth.)
-  --user-directories                         Serve users their own directory under the server root when they log in.
-  --serve-indexes                            Serve index.html and index.htm files when the user requests a directory.
-  --serve-listings                           Serve directory listings with file management forms when the user requests a directory.
+  --home-directories                         Serve users' home directories to them when they log in. (Impies --pam-auth.) (default: false)
+  --user-directories                         Serve users their own directory under the server root when they log in. (default: false)
+  --serve-indexes                            Serve index.html and index.htm files when the user requests a directory. (default: false)
+  --serve-listings                           Serve directory listings with file management forms when the user requests a directory. (default: false)
+  --no-follow-links                          Don't follow symlinks.
   --no-auth                                  Don't require authentication. (Not compatible with --home-directories or --user-directories.)
-  --pam-auth                                 Use PAM authentication. (Requires PAM libraries.)
-  --auth-user-filename                       htpasswd filename. (Defaults to '.htpasswd'.)
-  --auth-user-file                           A specific htpasswd file to use for every request.
+  --pam-auth                                 Use PAM authentication. (Requires PAM libraries.) (default: false)
+  --auth-user-filename <filename>            htpasswd filename. (Defaults to '.htpasswd'.)
+  --auth-user-file <path>                    A specific htpasswd file to use for every request.
   --auth-username <username>                 Authenticate with a given username instead.
   --auth-password <password>                 Authenticate with a given password instead.
-  --encryption                               Enable filename and file contents encryption.
+  --encryption                               Enable filename and file contents encryption. (default: false)
   --encryption-salt <salt>                   The salt used to generate file content encryption keys.
   --encryption-filename-salt <salt>          The salt used to generate filename encryption keys.
   --encryption-filename-iv-salt <salt>       The salt used to generate filename initialization vectors.
@@ -185,7 +186,7 @@ Options:
   --s3-access-key <access-key>               The S3 access key.
   --s3-secret-key <secret-key>               The S3 secret key.
   --s3-bucket <bucket-name>                  The S3 bucket.
-  --nymph                                    Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.)
+  --nymph                                    Use Nymph adapter for a deduplicated file system. (Not compatible with home/user directories, .htpasswd auth, S3, or encryption.) (default: false)
   --nymph-jwt-secret <jwt-secret>            A random string to use as the JWT secret for the Nymph user setup app.
   --nymph-rest-path <rest-path>              The path to use for the Nymph rest server used by the user setup app. (Defaults to "/!nymph".)
   --nymph-setup-path <setup-path>            The path to use for the Nymph user setup app. (Defaults to "/!users".)
@@ -225,6 +226,7 @@ Environment Variables:
   USER_DIRECTORIES                           Same as --user-directories when set to "true", "on" or "1".
   SERVE_INDEXES                              Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS                             Same as --serve-listings when set to "true", "on" or "1".
+  FOLLOW_LINKS                               Same as --no-follow-links when set to "false", "off" or "0".
   AUTH                                       Same as --no-auth when set to "false", "off" or "0".
   PAM_AUTH                                   Same as --pam-auth when set to "true", "on" or "1".
   AUTH_USER_FILENAME                         Same as --auth-user-filename.

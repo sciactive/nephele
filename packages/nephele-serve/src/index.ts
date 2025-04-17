@@ -36,11 +36,7 @@ import IndexPlugin from '@nephele/plugin-index';
 import EncryptionPlugin from '@nephele/plugin-encryption';
 import updateNotifier from 'update-notifier';
 
-type Hosts = {
-  name: string;
-  family: string;
-  address: string;
-}[];
+type Hosts = { name: string; family: string; address: string }[];
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -62,6 +58,7 @@ type Conf = {
   userDirectories: boolean;
   serveIndexes: boolean;
   serveListings: boolean;
+  followLinks: boolean;
   auth: boolean;
   pamAuth: boolean;
   authUserFilename?: string;
@@ -179,6 +176,13 @@ program
     'Serve directory listings with file management forms when the user requests a directory.',
     ['true', 'on', '1'].includes(
       (process.env.SERVE_LISTINGS || '').toLowerCase(),
+    ),
+  )
+  .option(
+    '--no-follow-links',
+    "Don't follow symlinks.",
+    !['false', 'off', '0'].includes(
+      (process.env.FOLLOW_LINKS || '').toLowerCase(),
     ),
   )
   .option(
@@ -367,6 +371,7 @@ Environment Variables:
   USER_DIRECTORIES                           Same as --user-directories when set to "true", "on" or "1".
   SERVE_INDEXES                              Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS                             Same as --serve-listings when set to "true", "on" or "1".
+  FOLLOW_LINKS                               Same as --no-follow-links when set to "false", "off" or "0".
   AUTH                                       Same as --no-auth when set to "false", "off" or "0".
   PAM_AUTH                                   Same as --pam-auth when set to "true", "on" or "1".
   AUTH_USER_FILENAME                         Same as --auth-user-filename.
@@ -558,6 +563,7 @@ try {
     userDirectories,
     serveIndexes,
     serveListings,
+    followLinks,
     auth,
     pamAuth,
     authUserFilename,
@@ -899,10 +905,7 @@ try {
     }
 
     nymphInstance = new Nymph(
-      {
-        cache: true,
-        cacheThreshold: 1,
-      },
+      { cache: true, cacheThreshold: 1 },
       nymphDriver,
       tilmeld,
     );
@@ -983,13 +986,9 @@ try {
     app.use(nymphRestPath ?? '/\\!nymph', nymphServer(nymphInstance));
     app.use(
       nymphSetupPath ?? '/\\!users',
-      nymphSetup(
-        {
-          restUrl: nymphRestPath ?? '/!nymph',
-        },
-        nymphInstance,
-        { allowRegistration: nymphRegistration },
-      ),
+      nymphSetup({ restUrl: nymphRestPath ?? '/!nymph' }, nymphInstance, {
+        allowRegistration: nymphRegistration,
+      }),
     );
   }
 
@@ -1015,7 +1014,7 @@ try {
           if (homeDirectories) {
             const { homedir: userHomePath } = await import('userhomepath');
             const root = await userHomePath(response.locals.user.username);
-            return new FileSystemAdapter({ root });
+            return new FileSystemAdapter({ root, followLinks });
           }
 
           let adapter: Adapter;
@@ -1049,10 +1048,7 @@ try {
               await authTilmeld.fillSession(user);
               response.locals.user = user as NymphUser &
                 NymphUserData & { username: string };
-              adapter = new NymphAdapter({
-                root: directory,
-                nymph: authNymph,
-              });
+              adapter = new NymphAdapter({ root: directory, nymph: authNymph });
             } else {
               adapter = new NymphAdapter({
                 root: directory,
@@ -1079,9 +1075,9 @@ try {
                 }
               }
 
-              adapter = new FileSystemAdapter({ root });
+              adapter = new FileSystemAdapter({ root, followLinks });
             } else {
-              adapter = new FileSystemAdapter({ root: directory });
+              adapter = new FileSystemAdapter({ root: directory, followLinks });
             }
           } else {
             if (s3Bucket == null) {
