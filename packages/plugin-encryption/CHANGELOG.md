@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.64](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.63...v1.0.0-alpha.64) (2025-05-31)
+
+**Note:** Version bump only for package @nephele/plugin-encryption
+
+
+
+
+
 # [1.0.0-alpha.63](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.62...v1.0.0-alpha.63) (2025-04-15)
 
 

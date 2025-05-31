@@ -3,6 +3,18 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.64](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.63...v1.0.0-alpha.64) (2025-05-31)
+
+
+### Features
+
+* add followLinks option to file system adapter ([03cb886](https://github.com/sciactive/nephele/commit/03cb886a0450fa2e61ac095d0b08d2ff78cce300))
+* add followLinks option to nephele-serve ([1dc6cca](https://github.com/sciactive/nephele/commit/1dc6cca3920ba475048498834507a827aa13b3c4))
+
+
+
+
+
 # [1.0.0-alpha.63](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.62...v1.0.0-alpha.63) (2025-04-15)
 
 
