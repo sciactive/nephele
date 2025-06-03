@@ -47,7 +47,7 @@ Nephele Serve has a number of options available as environment variables. Some o
 ### General and Network
 
 - `SERVER_ROOT`: The path of the directory to use as the server root. When using S3, this is the path within the bucket. Defaults to `/data/`, which is set to be a volume. You can bind mount an external directory here to serve it. You must set this to an empty string to serve the root of an S3 bucket!
-
+  - &nbsp;
 - `WORKERS`: Number of cluster workers. Higher number means more requests can be answered simultaneously, but more memory is used. Defaults to 8.
 - `REALM`: The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.
 - `PORT`: The port to listen on (inside the container). Defaults to 443 if a cert is provided, 80 otherwise.
@@ -67,6 +67,7 @@ Nephele Serve has a number of options available as environment variables. Some o
 - `USER_DIRECTORIES`: Serve users their own directory under the server root when they log in. (When set to "true", "on" or "1".)
 - `SERVE_INDEXES`: Serve index.html and index.htm files when the user requests a directory. (When set to "true", "on" or "1".)
 - `SERVE_LISTINGS`: Serve directory listings with file management forms when the user requests a directory. (When set to "true", "on" or "1".)
+- `FOLLOW_LINKS`: Don't follow symlinks. (When set to "false", "off" or "0".)
 
 ### Authentication
 
@@ -101,26 +102,26 @@ Nephele Serve has a number of options available as environment variables. Some o
 - `NYMPH_REST_PATH`: The path to use for the Nymph rest server used by the user setup app. (Defaults to "/!nymph".)
 - `NYMPH_SETUP_PATH`: The path to use for the Nymph user setup app. (Defaults to "/!users".)
 - `NYMPH_REGISTRATION`: Don't allow new user registration through the Nymph user setup app. (When set to "false", "off" or "0".)
-
+  - &nbsp;
 - `NYMPH_EXPORT`: Export the Nymph database to a NEX file. (Set this to the filename.)
 - `NYMPH_IMPORT`: Import the Nymph database from a NEX file. (Set this to the filename.)
-
+  - &nbsp;
 - `NYMPH_DB_DRIVER`: The type of the DB driver to use. (Can be "mysql", "postgres", or "sqlite". Defaults to "sqlite").
-
+  - &nbsp;
 - `NYMPH_MYSQL_HOST`: The MySQL host if the DB driver is "mysql". (Defaults to "localhost".)
 - `NYMPH_MYSQL_PORT`: The MySQL port if the DB driver is "mysql". (Defaults to 3306.)
 - `NYMPH_MYSQL_DATABASE`: The MySQL database if the DB driver is "mysql". (Defaults to "nymph".)
 - `NYMPH_MYSQL_USERNAME`: The MySQL username if the DB driver is "mysql". (Defaults to "nymph".)
 - `NYMPH_MYSQL_PASSWORD`: The MySQL password if the DB driver is "mysql". (Defaults to "password".)
 - `NYMPH_MYSQL_PREFIX`: The MySQL table prefix if the DB driver is "mysql". (Defaults to "nymph\_".)
-
+  - &nbsp;
 - `NYMPH_POSTGRES_HOST`: The PostgreSQL host if the DB driver is "postgres". (Defaults to "localhost".)
 - `NYMPH_POSTGRES_PORT`: The PostgreSQL port if the DB driver is "postgres". (Defaults to 5432.)
 - `NYMPH_POSTGRES_DATABASE`: The PostgreSQL database if the DB driver is "postgres". (Defaults to "nymph".)
 - `NYMPH_POSTGRES_USERNAME`: The PostgreSQL username if the DB driver is "postgres". (Defaults to "nymph".)
 - `NYMPH_POSTGRES_PASSWORD`: The PostgreSQL password if the DB driver is "postgres". (Defaults to "password".)
 - `NYMPH_POSTGRES_PREFIX`: The PostgreSQL table prefix if the DB driver is "postgres". (Defaults to "nymph\_".)
-
+  - &nbsp;
 - `NYMPH_SQLITE_CACHE_SIZE`: The SQLite cache size to maintain in memory. (Defaults to 100MB).
 - `NYMPH_SQLITE_PREFIX`: The SQLite table prefix if the DB driver is "sqlite". (Defaults to "nymph\_".)
 
