@@ -223,7 +223,7 @@ export default class Resource implements ResourceInterface {
     input.pipe(hashStream.writable);
     hashStream.readable.pipe(stream);
 
-    return new Promise<void>((resolve, reject) => {
+    return await new Promise<void>((resolve, reject) => {
       stream.on('close', async () => {
         await handle.close();
         hashStream.writable.destroy();

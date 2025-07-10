@@ -39,6 +39,43 @@ export type AdapterConfig = {
    */
   followLinks?: boolean;
   /**
+   * How to handle client requested properties.
+   *
+   * The client can request to add any arbitrary property it wants (the WebDAV
+   * spec calls these "dead properties"), and this controls how that situation
+   * is handled.
+   *
+   * - "meta-files": Save these properties in ".nephelemeta" files.
+   * - "disallow": Refuse to save them and return an error to the client.
+   * - "emulate": Don't actually save them, but return a success to the client.
+   *
+   * "meta-files" is the default, as the WebDAV spec states that WebDAV servers
+   * "should" support setting these properties. However, if you don't want meta
+   * files cluttering up your file system, you can make a choice:
+   *
+   * "disallow" will tell the client that any property it tries to set is
+   * protected. A well written client will understand this and move on.
+   *
+   * "emulate" will tell the client that the property was successfully set, even
+   * though it wasn't really. If a client is poorly written and can't handle an
+   * error on property setting, this will allow Nephele to still work with that
+   * client.
+   *
+   * This setting does not affect "live properties", like last modified date and
+   * content length.
+   */
+  properties?: 'meta-files' | 'disallow' | 'emulate';
+  /**
+   * How to handle client requested locks.
+   *
+   * This works the same as "properties", except that "disallow" also causes
+   * Nephele to report to the client that locks are not supported at all.
+   *
+   * Again, a poorly written WebDAV client may require "emulate" to work with
+   * Nephele.
+   */
+  locks?: 'meta-files' | 'disallow' | 'emulate';
+  /**
    * The maximum filesize in bytes to calculate etags by a CRC-32C checksum of
    * the file contents.
    *
@@ -70,12 +107,16 @@ export type AdapterConfig = {
 export default class Adapter implements AdapterInterface {
   root: string;
   followLinks: boolean;
+  properties: 'meta-files' | 'disallow' | 'emulate';
+  locks: 'meta-files' | 'disallow' | 'emulate';
   stat: typeof fsp.stat;
   contentEtagMaxBytes: number;
 
   constructor({
     root,
     followLinks = true,
+    properties = 'meta-files',
+    locks = 'meta-files',
     contentEtagMaxBytes = -1,
   }: AdapterConfig) {
     this.root = root.replace(
@@ -83,6 +124,8 @@ export default class Adapter implements AdapterInterface {
       () => path.sep,
     );
     this.followLinks = followLinks;
+    this.properties = properties;
+    this.locks = locks;
     this.stat = this.followLinks ? fsp.stat : fsp.lstat;
     this.contentEtagMaxBytes = contentEtagMaxBytes;
   }
@@ -132,6 +175,11 @@ export default class Adapter implements AdapterInterface {
     _request: Request,
     _response: AuthResponse,
   ) {
+    if (this.locks === 'disallow') {
+      // Locks are disabled.
+      return [];
+    }
+
     // This adapter supports locks.
     return ['2'];
   }

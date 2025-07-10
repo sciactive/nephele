@@ -219,7 +219,7 @@ export default class Resource implements ResourceInterface {
     //   await stream.close();
     // });
 
-    return new Promise<void>((resolve, reject) => {
+    return await new Promise<void>((resolve, reject) => {
       stream.on('close', async () => {
         await handle.close();
         resolve();
@@ -418,6 +418,12 @@ export default class Resource implements ResourceInterface {
           }
 
           try {
+            if (
+              this.adapter.properties !== 'meta-files' &&
+              this.adapter.locks !== 'meta-files'
+            ) {
+              throw new Error('Ignored error. Bypass metadata file deletion.');
+            }
             await fsp.unlink(metaFilePath);
           } catch (e: any) {
             // Ignore errors deleting possible non-existent file.
@@ -441,6 +447,13 @@ export default class Resource implements ResourceInterface {
         }
       }
       try {
+        if (
+          this.adapter.properties !== 'meta-files' &&
+          this.adapter.locks !== 'meta-files'
+        ) {
+          throw new Error('Ignored error. Bypass metadata file deletion.');
+        }
+
         metaFilePath = `${destinationPath}${path.sep}.nephelemeta`;
 
         try {
@@ -459,6 +472,13 @@ export default class Resource implements ResourceInterface {
     } else {
       await fsp.copyFile(this.absolutePath, destinationPath);
       try {
+        if (
+          this.adapter.properties !== 'meta-files' &&
+          this.adapter.locks !== 'meta-files'
+        ) {
+          throw new Error('Ignored error. Bypass metadata file deletion.');
+        }
+
         const dirname = path.dirname(destinationPath);
         const basename = path.basename(destinationPath);
         metaFilePath = `${dirname}${path.sep}${basename}.nephelemeta`;
@@ -614,6 +634,12 @@ export default class Resource implements ResourceInterface {
     const meta = await this.readMetadataFile();
     await fsp.rename(this.absolutePath, destinationPath);
     try {
+      if (
+        this.adapter.properties !== 'meta-files' &&
+        this.adapter.locks !== 'meta-files'
+      ) {
+        throw new Error('Ignored error. Bypass metadata file deletion.');
+      }
       const dirname = path.dirname(destinationPath);
       const basename = path.basename(destinationPath);
       const destMetaFilePath = `${dirname}${path.sep}${basename}.nephelemeta`;
@@ -795,7 +821,11 @@ export default class Resource implements ResourceInterface {
     const resources: Resource[] = [];
 
     for (let dir of listing) {
-      if (dir.name.endsWith('.nephelemeta')) {
+      if (
+        (this.adapter.properties === 'meta-files' ||
+          this.adapter.locks === 'meta-files') &&
+        dir.name.endsWith('.nephelemeta')
+      ) {
         continue;
       }
 
@@ -896,6 +926,13 @@ export default class Resource implements ResourceInterface {
     const filepath = await this.getMetadataFilePath();
     let meta: MetaStorage = {};
 
+    if (
+      this.adapter.properties !== 'meta-files' &&
+      this.adapter.locks !== 'meta-files'
+    ) {
+      return meta;
+    }
+
     try {
       meta = JSON.parse((await fsp.readFile(filepath)).toString());
     } catch (e: any) {
@@ -912,6 +949,18 @@ export default class Resource implements ResourceInterface {
     filePath?: string,
     metaFilePath?: string,
   ) {
+    const saveProperties = this.adapter.properties === 'meta-files';
+    const saveLocks = this.adapter.locks === 'meta-files';
+    if (!saveProperties && !saveLocks) {
+      return;
+    }
+    if (!saveProperties) {
+      delete meta.props;
+    }
+    if (!saveLocks) {
+      delete meta.locks;
+    }
+
     if (!metaFilePath) {
       metaFilePath = await this.getMetadataFilePath();
     }
@@ -957,6 +1006,13 @@ export default class Resource implements ResourceInterface {
   async deleteOrphanedMetadataFiles() {
     if (!(await this.isCollection())) {
       throw new MethodNotSupportedError('This is not a collection.');
+    }
+
+    if (
+      this.adapter.properties !== 'meta-files' &&
+      this.adapter.locks !== 'meta-files'
+    ) {
+      return;
     }
 
     const listing = await fsp.readdir(this.absolutePath);

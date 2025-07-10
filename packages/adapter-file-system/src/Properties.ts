@@ -161,6 +161,7 @@ export default class Properties implements PropertiesInterface {
       const [action, name, value] = instruction;
 
       if (
+        this.resource.adapter.properties === 'disallow' ||
         [
           'creationdate',
           'getcontentlength',

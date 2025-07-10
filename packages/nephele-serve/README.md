@@ -168,6 +168,8 @@ Options:
   --serve-indexes                            Serve index.html and index.htm files when the user requests a directory. (default: false)
   --serve-listings                           Serve directory listings with file management forms when the user requests a directory. (default: false)
   --no-follow-links                          Don't follow symlinks.
+  --file-properties <setting>                How to deal with properties on a real file system. ('meta-files', 'disallow', or 'emulate') (Defaults to 'meta-files'.) (choices: "meta-files", "disallow", "emulate", default: "meta-files")
+  --file-locks <setting>                     How to deal with locks on a real file system. ('meta-files', 'disallow', or 'emulate') (Defaults to 'meta-files'.) (choices: "meta-files", "disallow", "emulate", default: "meta-files")
   --no-auth                                  Don't require authentication. (Not compatible with --home-directories or --user-directories.)
   --pam-auth                                 Use PAM authentication. (Requires PAM libraries.) (default: false)
   --auth-user-filename <filename>            htpasswd filename. (Defaults to '.htpasswd'.)
@@ -227,6 +229,8 @@ Environment Variables:
   SERVE_INDEXES                              Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS                             Same as --serve-listings when set to "true", "on" or "1".
   FOLLOW_LINKS                               Same as --no-follow-links when set to "false", "off" or "0".
+  FILE_PROPERTIES                            Same as --file-properties.
+  FILE_LOCKS                                 Same as --file-locks.
   AUTH                                       Same as --no-auth when set to "false", "off" or "0".
   PAM_AUTH                                   Same as --pam-auth when set to "true", "on" or "1".
   AUTH_USER_FILENAME                         Same as --auth-user-filename.
@@ -271,6 +275,43 @@ Environment Variables:
   SERVER_ROOT                                Same as [directory].
 
 Options given on the command line take precedence over options from an environment variable.
+
+Properties and Locks:
+  When Nephele is loaded with the file system adapter, you can customize how it
+  handles properties and locks. This can help you keep your file system clean.
+
+  FILE_PROPERTIES:
+
+  The client can request to add any arbitrary property it wants (the WebDAV spec
+  calls these "dead properties"), and this controls how that situation is
+  handled.
+
+  - "meta-files": Save these properties in ".nephelemeta" files.
+  - "disallow": Refuse to save them and return an error to the client.
+  - "emulate": Don't actually save them, but return a success to the client.
+
+  "meta-files" is the default, as the WebDAV spec states that WebDAV servers
+  "should" support setting these properties. However, if you don't want meta
+  files cluttering up your file system, you can make a choice:
+
+  "disallow" will tell the client that any property it tries to set is
+  protected. A well written client will understand this and move on.
+
+  "emulate" will tell the client that the property was successfully set, even
+  though it wasn't really. If a client is poorly written and can't handle an
+  error on property setting, this will allow Nephele to still work with that
+  client.
+
+  This setting does not affect "live properties", like last modified date and
+  content length.
+
+  FILE_LOCKS:
+
+  This works the same as "properties", except that "disallow" also causes
+  Nephele to report to the client that locks are not supported at all.
+
+  Again, a poorly written WebDAV client may require "emulate" to work with
+  Nephele.
 
 Encryption:
   Nephele supports file encryption. It uses either a global encryption password

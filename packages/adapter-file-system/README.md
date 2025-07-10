@@ -42,7 +42,31 @@ app.listen(port, (err) => {
 
 - `root`: The absolute path of the directory that acts as the root directory for the service.
 - `followLinks` = `true`: Whether to follow symlinks.
+- `properties` = `'meta-files'`: How to handle client requested properties.
+- `locks` = `'meta-files'`: How to handle client requested locks.
 - `contentEtagMaxBytes` = `-1`: The maximum filesize in bytes to calculate etags by a CRC-32C checksum of the file contents.
+
+## properties
+
+The client can request to add any arbitrary property it wants (the WebDAV spec calls these "dead properties"), and this controls how that situation is handled.
+
+- "meta-files": Save these properties in ".nephelemeta" files.
+- "disallow": Refuse to save them and return an error to the client.
+- "emulate": Don't actually save them, but return a success to the client.
+
+"meta-files" is the default, as the WebDAV spec states that WebDAV servers "should" support setting these properties. However, if you don't want meta files cluttering up your file system, you can make a choice:
+
+"disallow" will tell the client that any property it tries to set is protected. A well written client will understand this and move on.
+
+"emulate" will tell the client that the property was successfully set, even though it wasn't really. If a client is poorly written and can't handle an error on property setting, this will allow Nephele to still work with that client.
+
+This setting does not affect "live properties", like last modified date and content length.
+
+## locks
+
+This works the same as "properties", except that "disallow" also causes Nephele to report to the client that locks are not supported at all.
+
+Again, a poorly written WebDAV client may require "emulate" to work with Nephele.
 
 ## contentEtagMaxBytes
 
@@ -55,7 +79,7 @@ By default, all etags will be based on file size, created date, and modified dat
 
 # Properties and Locks
 
-WebDAV properties and locks are stored in ".nephelemeta" files. For directories, it's a file in the directory named ".nephelemeta", and for files, it's a file with the same name and the extension ".nephelemeta".
+By default, WebDAV properties and locks are stored in ".nephelemeta" files. For directories, it's a file in the directory named ".nephelemeta", and for files, it's a file with the same name and the extension ".nephelemeta".
 
 # License
 

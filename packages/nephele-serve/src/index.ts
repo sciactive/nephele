@@ -59,6 +59,8 @@ type Conf = {
   serveIndexes: boolean;
   serveListings: boolean;
   followLinks: boolean;
+  fileProperties: 'meta-files' | 'disallow' | 'emulate';
+  fileLocks: 'meta-files' | 'disallow' | 'emulate';
   auth: boolean;
   pamAuth: boolean;
   authUserFilename?: string;
@@ -184,6 +186,22 @@ program
     !['false', 'off', '0'].includes(
       (process.env.FOLLOW_LINKS || '').toLowerCase(),
     ),
+  )
+  .addOption(
+    new Option(
+      '--file-properties <setting>',
+      "How to deal with properties on a real file system. ('meta-files', 'disallow', or 'emulate') (Defaults to 'meta-files'.)",
+    )
+      .choices(['meta-files', 'disallow', 'emulate'])
+      .default('meta-files'),
+  )
+  .addOption(
+    new Option(
+      '--file-locks <setting>',
+      "How to deal with locks on a real file system. ('meta-files', 'disallow', or 'emulate') (Defaults to 'meta-files'.)",
+    )
+      .choices(['meta-files', 'disallow', 'emulate'])
+      .default('meta-files'),
   )
   .option(
     '--no-auth',
@@ -372,6 +390,8 @@ Environment Variables:
   SERVE_INDEXES                              Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS                             Same as --serve-listings when set to "true", "on" or "1".
   FOLLOW_LINKS                               Same as --no-follow-links when set to "false", "off" or "0".
+  FILE_PROPERTIES                            Same as --file-properties.
+  FILE_LOCKS                                 Same as --file-locks.
   AUTH                                       Same as --no-auth when set to "false", "off" or "0".
   PAM_AUTH                                   Same as --pam-auth when set to "true", "on" or "1".
   AUTH_USER_FILENAME                         Same as --auth-user-filename.
@@ -416,6 +436,47 @@ Environment Variables:
   SERVER_ROOT                                Same as [directory].
 
 Options given on the command line take precedence over options from an environment variable.`,
+);
+
+program.addHelpText(
+  'after',
+  `
+Properties and Locks:
+  When Nephele is loaded with the file system adapter, you can customize how it
+  handles properties and locks. This can help you keep your file system clean.
+
+  FILE_PROPERTIES:
+  
+  The client can request to add any arbitrary property it wants (the WebDAV spec
+  calls these "dead properties"), and this controls how that situation is
+  handled.
+
+  - "meta-files": Save these properties in ".nephelemeta" files.
+  - "disallow": Refuse to save them and return an error to the client.
+  - "emulate": Don't actually save them, but return a success to the client.
+
+  "meta-files" is the default, as the WebDAV spec states that WebDAV servers
+  "should" support setting these properties. However, if you don't want meta
+  files cluttering up your file system, you can make a choice:
+
+  "disallow" will tell the client that any property it tries to set is
+  protected. A well written client will understand this and move on.
+
+  "emulate" will tell the client that the property was successfully set, even
+  though it wasn't really. If a client is poorly written and can't handle an
+  error on property setting, this will allow Nephele to still work with that
+  client.
+
+  This setting does not affect "live properties", like last modified date and
+  content length.
+
+  FILE_LOCKS:
+
+  This works the same as "properties", except that "disallow" also causes
+  Nephele to report to the client that locks are not supported at all.
+
+  Again, a poorly written WebDAV client may require "emulate" to work with
+  Nephele.`,
 );
 
 program.addHelpText(
@@ -564,6 +625,8 @@ try {
     serveIndexes,
     serveListings,
     followLinks,
+    fileProperties,
+    fileLocks,
     auth,
     pamAuth,
     authUserFilename,
@@ -611,6 +674,8 @@ try {
     realm: process.env.REALM || hostname(),
     cert: process.env.CERT_FILE,
     key: process.env.KEY_FILE,
+    fileProperties: process.env.FILE_PROPERTIES,
+    fileLocks: process.env.FILE_LOCKS,
     authUserFilename: process.env.AUTH_USER_FILENAME,
     authUserFile: process.env.AUTH_USER_FILE,
     authUsername: process.env.AUTH_USERNAME,
@@ -1014,7 +1079,12 @@ try {
           if (homeDirectories) {
             const { homedir: userHomePath } = await import('userhomepath');
             const root = await userHomePath(response.locals.user.username);
-            return new FileSystemAdapter({ root, followLinks });
+            return new FileSystemAdapter({
+              root,
+              followLinks,
+              properties: fileProperties,
+              locks: fileLocks,
+            });
           }
 
           let adapter: Adapter;
@@ -1075,9 +1145,19 @@ try {
                 }
               }
 
-              adapter = new FileSystemAdapter({ root, followLinks });
+              adapter = new FileSystemAdapter({
+                root,
+                followLinks,
+                properties: fileProperties,
+                locks: fileLocks,
+              });
             } else {
-              adapter = new FileSystemAdapter({ root: directory, followLinks });
+              adapter = new FileSystemAdapter({
+                root: directory,
+                followLinks,
+                properties: fileProperties,
+                locks: fileLocks,
+              });
             }
           } else {
             if (s3Bucket == null) {
