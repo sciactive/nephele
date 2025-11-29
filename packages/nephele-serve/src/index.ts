@@ -1032,7 +1032,8 @@ try {
       }
     }
 
-    if (await nymphInstance.needsMigration()) {
+    const needsMigration = await nymphInstance.needsMigration();
+    if (needsMigration && needsMigration !== 'tokens') {
       console.error(
         'Your Nymph DB needs to be migrated. Please downgrade back to the version of Nephele you were using before and export the DB using NYMPH_EXPORT or --nymph-export, then clear the DB, then upgrade forward to this version again and import using NYMPH_IMPORT or --nymph-import.',
       );
@@ -1040,6 +1041,13 @@ try {
         'If you are using Docker, there are instructions on the Nephele page on Docker Hub for how to migrate your DB, under the "Exporting and Importing Your Nymph Data" heading.',
       );
       throw new Error('Nymph DB needs migration.');
+    } else if (needsMigration === 'tokens') {
+      // Nephele doesn't use full text search, so doesn't need to fill the
+      // token tables.
+      console.warn(
+        "I am automatically migrating your DB to the latest Nymph version's format, but I'm not filling the token tables. Nephele doesn't use full text search, so this shouldn't matter, but you may want to export and reimport your DB if you want the tables filled. If Nephele ever supports FTS in the future, you will need to do this.",
+      );
+      await nymphInstance.liveMigration('tokenTables');
     }
 
     if (directory == null) {
@@ -1233,9 +1241,8 @@ try {
 
       authenticator: async (_request, _response) => {
         if (pamAuth) {
-          const { Authenticator: PamAuthenticator } = await import(
-            '@nephele/authenticator-pam'
-          );
+          const { Authenticator: PamAuthenticator } =
+            await import('@nephele/authenticator-pam');
           return new PamAuthenticator({ realm });
         }
 

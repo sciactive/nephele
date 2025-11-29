@@ -191,18 +191,14 @@ export const compressedMediaTypes: { [k: string]: boolean } = {
   'application/x-ogm': true,
   'application/x-ogm-audio': true,
   'application/x-ogm-video': true,
-  'application/vnd.openxmlformats-officedocument.presentationml.presentation':
-    true,
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': true,
   'application/vnd.openxmlformats-officedocument.presentationml.slide': true,
-  'application/vnd.openxmlformats-officedocument.presentationml.slideshow':
-    true,
+  'application/vnd.openxmlformats-officedocument.presentationml.slideshow': true,
   'application/vnd.openxmlformats-officedocument.presentationml.template': true,
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': true,
   'application/vnd.openxmlformats-officedocument.spreadsheetml.template': true,
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
-    true,
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.template':
-    true,
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document': true,
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.template': true,
   'application/pdf': false,
   'application/x-pdf': false,
   'application/x-php': false,
