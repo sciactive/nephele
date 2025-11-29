@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.67](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.66...v1.0.0-alpha.67) (2025-11-29)
+
+
+### Bug Fixes
+
+* update packages and fix docker build file ([fba6a2d](https://github.com/sciactive/nephele/commit/fba6a2d64b101899d26eaa93a9100f811b2dbc8c))
+
+
+
+
+
 # [1.0.0-alpha.66](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.65...v1.0.0-alpha.66) (2025-11-29)
 
 
