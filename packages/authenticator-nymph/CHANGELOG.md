@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.66](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.65...v1.0.0-alpha.66) (2025-11-29)
+
+
+### Bug Fixes
+
+* update nymph to get tokenizer fix ([11cb10f](https://github.com/sciactive/nephele/commit/11cb10f37cbf3e784c34fd32a5ba0d4739913029))
+
+
+
+
+
 # [1.0.0-alpha.65](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.64...v1.0.0-alpha.65) (2025-11-29)
 
 

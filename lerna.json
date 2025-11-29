@@ -1,6 +1,6 @@
 {
   "packages": ["packages/*"],
-  "version": "1.0.0-alpha.65",
+  "version": "1.0.0-alpha.66",
   "command": {
     "version": {
       "allowBranch": ["master"],
