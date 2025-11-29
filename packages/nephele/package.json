@@ -1,6 +1,6 @@
 {
   "name": "nephele",
-  "version": "1.0.0-alpha.64",
+  "version": "1.0.0-alpha.65",
   "description": "Highly customizable and extensible WebDAV server for Node.js and Express.",
   "type": "module",
   "main": "dist/index.js",

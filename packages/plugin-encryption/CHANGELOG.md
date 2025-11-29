@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.65](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.64...v1.0.0-alpha.65) (2025-11-29)
+
+
+### Features
+
+* upgrade dependencies, add nymph live migration ([c1aed23](https://github.com/sciactive/nephele/commit/c1aed237d82290e838641d3a63845852e4d45f25))
+
+
+
+
+
 # [1.0.0-alpha.64](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.63...v1.0.0-alpha.64) (2025-05-31)
 
 **Note:** Version bump only for package @nephele/plugin-encryption

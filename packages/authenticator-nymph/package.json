@@ -1,6 +1,6 @@
 {
   "name": "@nephele/authenticator-nymph",
-  "version": "1.0.0-alpha.64",
+  "version": "1.0.0-alpha.65",
   "description": "Nymph.js authenticator for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -47,7 +47,7 @@
     "@nymphjs/nymph": "^1.0.0-beta.99",
     "@nymphjs/tilmeld": "^1.0.0-beta.99",
     "basic-auth": "^2.0.1",
-    "nephele": "^1.0.0-alpha.64"
+    "nephele": "^1.0.0-alpha.65"
   },
   "engines": {
     "node": ">=18"
