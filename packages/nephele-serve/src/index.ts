@@ -143,7 +143,7 @@ program
   .addOption(
     new Option(
       '-t, --timeout <milliseconds>',
-      'Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.',
+      'Request timeout (in milliseconds). Requests will be terminated if they take longer than this time. Defaults to 7200000 (2 hours).',
     ).argParser(parseInt),
   )
   .addOption(

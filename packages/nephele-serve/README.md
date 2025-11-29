@@ -161,7 +161,7 @@ Options:
   --key <key_file>                           The filename of a private key to use for HTTPS in PEM format.
   -p, --port <port>                          The port to listen on. Defaults to 443 if a cert is provided, 80 otherwise.
   --redirect-port <redirect_port>            The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
-  -t, --timeout <milliseconds>               Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.
+  -t, --timeout <milliseconds>               Request timeout (in milliseconds). Requests will be terminated if they take longer than this time. Defaults to 7200000 (2 hours).
   --keep-alive-timeout <milliseconds>        Server will wait this long for additional data after writing its last response.
   --home-directories                         Serve users' home directories to them when they log in. (Impies --pam-auth.) (default: false)
   --user-directories                         Serve users their own directory under the server root when they log in. (default: false)

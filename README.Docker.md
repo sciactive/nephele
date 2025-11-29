@@ -46,13 +46,13 @@ Nephele Serve has a number of options available as environment variables. Some o
 
 ### General and Network
 
-- `SERVER_ROOT`: The path of the directory to use as the server root. When using S3, this is the path within the bucket. Defaults to `/data/`, which is set to be a volume. You can bind mount an external directory here to serve it. You must set this to an empty string to serve the root of an S3 bucket!
-  - &nbsp;
+- `SERVER_ROOT`: The path of the directory to use as the server root. When using S3, this is the path within the bucket. Defaults to `/data/`, which is set to be a volume. You can bind mount an external directory here to serve it.
+  - **You must set this to an empty string to serve the root of an S3 bucket!**
 - `WORKERS`: Number of cluster workers. Higher number means more requests can be answered simultaneously, but more memory is used. Defaults to 8.
 - `REALM`: The realm reported to the user by the server when authentication is requested. Defaults to the system hostname.
 - `PORT`: The port to listen on (inside the container). Defaults to 443 if a cert is provided, 80 otherwise.
 - `REDIRECT_PORT`: The port to redirect HTTP traffic to HTTPS. Set this to 80 if you want to redirect plain HTTP requests.
-- `TIMEOUT`: Request timeout. Requests will be terminated if they take longer than this time. Defaults to 7200000, or 2 hours.
+- `TIMEOUT`: Request timeout (in milliseconds). Requests will be terminated if they take longer than this time. Defaults to 7200000 (2 hours).
 - `KEEPALIVETIMEOUT`: Server will wait this long for additional data after writing its last response.
 
 ### TLS Encryption
