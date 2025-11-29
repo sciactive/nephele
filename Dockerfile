@@ -22,7 +22,9 @@ ENV UPDATE_CHECK=false
 
 VOLUME ["/data"]
 
+RUN apk add --update --no-cache python3 build-base
 RUN npm i -g pm2 nephele-serve@${VERSION}
+RUN apk del python3 build-base
 
 EXPOSE 80
 EXPOSE 443
