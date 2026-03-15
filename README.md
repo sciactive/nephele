@@ -119,6 +119,12 @@ Then bring up the Nephele server like this.
 ./packages/nephele-serve/nephele-serve.cjs -p 8080 --serve-listings --nymph --nymph-jwt-secret ff8ebb7d-5745-4cbd-b21d-0c5216597557 --nymph-db-driver mysql --nymph-mysql-username nephele --nymph-mysql-password nephele --nymph-mysql-database nephele ./testroot/
 ```
 
+# Human Authorship
+
+This project adheres to the [SciActive Human Contribution Policy](HUMAN-CONTRIBUTION-POLICY.md).
+
+[![Seal of Human Authorship](https://sciactive.com/wp-content/uploads/2026/03/Seal-of-Human-Authorship-300.png)](https://sciactive.com/human-contribution-policy/)
+
 # License
 
 Copyright 2022-2025 SciActive Inc
