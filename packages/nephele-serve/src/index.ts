@@ -865,14 +865,6 @@ try {
     pamAuth = true;
   }
 
-  if (!pamAuth) {
-    console.log(
-      '\x1b[43m\x1b[37m\x1b[1m%s\x1b[0m\x1b[33m\x1b[1m%s\x1b[0m',
-      ' ⚠  ',
-      ' BREAKING CHANGE: nephele-serve 1.0.0-alpha.34 and above require the `@nephele/authenticator-pam` package and `--pam-auth` option to authenticate with system users.',
-    );
-  }
-
   if (encryption) {
     if (!encryptionSalt) {
       throw new Error('You must provide a salt to use file encryption.');
@@ -1049,6 +1041,12 @@ try {
       );
       await nymphInstance.liveMigration('tokenTables');
     }
+
+    console.log(
+      '\x1b[43m\x1b[37m\x1b[1m%s\x1b[0m\x1b[33m\x1b[1m%s\x1b[0m',
+      ' ⚠  ',
+      ' NOTICE: nephele-serve 1.0.0-alpha.68 and above use a substantially newer version of Nymph. Even though it is DB compatible, you should export and reimport your DB if you upgraded from a previous version.',
+    );
 
     if (directory == null) {
       throw new Error('Directory is required when using Nymph adapter.');
