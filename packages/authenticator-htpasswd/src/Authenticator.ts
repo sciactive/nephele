@@ -3,8 +3,8 @@ import crypto from 'node:crypto';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
 import type { Request } from 'express';
-import basicAuth from 'basic-auth';
-import apacheMD5 from 'apache-md5';
+import { parse as basicAuthParse } from 'basic-auth';
+import apacheMD5Import from 'apache-md5';
 import crypt from 'apache-crypt';
 import bcrypt from 'bcrypt';
 import type {
@@ -20,6 +20,9 @@ import {
 } from 'nephele';
 
 import User from './User.js';
+
+// TODO: Remove this if this package is fixed.
+const apacheMD5 = apacheMD5Import as unknown as typeof apacheMD5Import.default;
 
 export type AuthenticatorConfig = {
   /**
@@ -129,7 +132,7 @@ export default class Authenticator implements AuthenticatorInterface {
     }
 
     if (authorization) {
-      const auth = basicAuth.parse(authorization);
+      const auth = basicAuthParse(authorization);
       if (auth) {
         username = auth.name;
         password = auth.pass;

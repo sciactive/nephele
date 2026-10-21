@@ -1,4 +1,9 @@
-import { EntityUniqueConstraintError, type Nymph } from '@nymphjs/nymph';
+import {
+  EntityUniqueConstraintError,
+  transaction,
+  transactional,
+  type Nymph,
+} from '@nymphjs/nymph';
 import { Entity, nymphJoiProps } from '@nymphjs/nymph';
 import type { AccessControlData } from '@nymphjs/tilmeld';
 import { enforceTilmeld, tilmeldJoiProps } from '@nymphjs/tilmeld';
@@ -74,73 +79,73 @@ export class Resource extends Entity<ResourceData> {
     name: string,
     existingResource?: Resource & ResourceData,
   ) {
-    const transaction = 'resource-copy-' + this.guid;
-    const nymph = this.$nymph;
-    const tnymph = await nymph.startTransaction(transaction);
-    this.$setNymph(tnymph);
-
-    try {
-      if (existingResource) {
-        existingResource.$setNymph(tnymph);
-
-        if (
-          await this.$nymph.getEntity(
-            { class: this.$nymph.getEntityClass(Resource), skipAc: true },
-            {
-              type: '&',
-              ref: ['parent', existingResource],
-            },
-          )
-        ) {
-          throw new ForbiddenError('The destination resource is not empty.');
-        }
-
-        if (!(await existingResource.$delete())) {
-          throw new InternalServerError(
-            "Couldn't delete destination resource.",
-          );
-        }
-      }
-
-      const newNymphResource = await this.$nymph
-        .getEntityClass(Resource)
-        .factory();
-      newNymphResource.name = name;
-      newNymphResource.size = this.$data.size;
-      newNymphResource.contentType = this.$data.contentType;
-      newNymphResource.collection = this.$data.collection;
-      newNymphResource.hash = this.$data.hash;
-      newNymphResource.properties = JSON.parse(
-        JSON.stringify(this.$data.properties),
-      );
-      newNymphResource.parent = destinationParent;
-
-      if (!(await newNymphResource.$save())) {
-        throw new InternalServerError("Couldn't save destination resource.");
-      }
-
-      await tnymph.commit(transaction);
-      this.$setNymph(nymph);
-      if (existingResource) {
-        existingResource.$setNymph(nymph);
-      }
-    } catch (e: any) {
-      await tnymph.rollback(transaction);
-      this.$setNymph(nymph);
-      if (existingResource) {
-        existingResource.$setNymph(nymph);
-      }
-      try {
-        // Refresh the entity, since there might be referenced entities that
-        // think they're deleted, but aren't really because of the rollback.
+    await transaction(
+      this.$nymph,
+      'resource-copy-' + this.guid,
+      async (nymph) => {
+        this.$setNymph(nymph);
         if (existingResource) {
-          existingResource.$refresh();
+          existingResource.$setNymph(nymph);
+
+          if (
+            await this.$nymph.getEntity(
+              { class: this.$nymph.getEntityClass(Resource), skipAc: true },
+              {
+                type: '&',
+                ref: ['parent', existingResource],
+              },
+            )
+          ) {
+            throw new ForbiddenError('The destination resource is not empty.');
+          }
+
+          try {
+            await existingResource.$delete();
+          } catch (e: any) {
+            throw new InternalServerError(
+              "Couldn't delete destination resource.",
+            );
+          }
         }
-      } catch (e: any) {
-        // Ignore this error.
-      }
-      throw e;
-    }
+
+        const newNymphResource = await this.$nymph
+          .getEntityClass(Resource)
+          .factory();
+        newNymphResource.name = name;
+        newNymphResource.size = this.$data.size;
+        newNymphResource.contentType = this.$data.contentType;
+        newNymphResource.collection = this.$data.collection;
+        newNymphResource.hash = this.$data.hash;
+        newNymphResource.properties = JSON.parse(
+          JSON.stringify(this.$data.properties),
+        );
+        newNymphResource.parent = destinationParent;
+
+        try {
+          await newNymphResource.$save();
+        } catch (e: any) {
+          throw new InternalServerError("Couldn't save destination resource.");
+        }
+      },
+      async (nymph, committed) => {
+        this.$setNymph(nymph);
+        if (existingResource) {
+          existingResource.$setNymph(nymph);
+        }
+        try {
+          // Refresh the entity, since there might be referenced entities that
+          // think they're deleted, but aren't really because of the rollback.
+          if (!committed) {
+            await this.$refresh();
+            if (existingResource) {
+              existingResource.$refresh();
+            }
+          }
+        } catch (e: any) {
+          // Ignore this error.
+        }
+      },
+    );
   }
 
   async $move(
@@ -160,83 +165,75 @@ export class Resource extends Entity<ResourceData> {
       throw new ForbiddenError('This resource is not empty.');
     }
 
-    const transaction = 'resource-move-' + this.guid;
-    const nymph = this.$nymph;
-    const tnymph = await nymph.startTransaction(transaction);
-    this.$setNymph(tnymph);
-
-    try {
-      if (existingResource) {
-        existingResource.$setNymph(tnymph);
-
-        if (
-          await tnymph.getEntity(
-            { class: tnymph.getEntityClass(Resource), skipAc: true },
-            {
-              type: '&',
-              ref: ['parent', existingResource],
-            },
-          )
-        ) {
-          throw new ForbiddenError('The destination resource is not empty.');
-        }
-
-        // Delete the existing resource.
-        if (!(await existingResource.$delete())) {
-          throw new InternalServerError(
-            "Couldn't delete destination resource.",
-          );
-        }
-      }
-
-      // Delete existing locks on this resource.
-      const locks = await tnymph.getEntities(
-        {
-          class: tnymph.getEntityClass(NymphLock),
-          skipAc: true,
-        },
-        {
-          type: '&',
-          ref: ['resource', this],
-        },
-      );
-
-      for (let lock of locks) {
-        if (!(await lock.$deleteSkipAC())) {
-          throw new InternalServerError("Couldn't delete associated lock.");
-        }
-      }
-
-      this.$data.name = name;
-      this.$data.parent = destinationParent;
-
-      if (!(await this.$save())) {
-        throw new InternalServerError("Couldn't save destination resource.");
-      }
-
-      await tnymph.commit(transaction);
-      this.$setNymph(nymph);
-      if (existingResource) {
-        existingResource.$setNymph(nymph);
-      }
-    } catch (e: any) {
-      await tnymph.rollback(transaction);
-      this.$setNymph(nymph);
-      if (existingResource) {
-        existingResource.$setNymph(nymph);
-      }
-      try {
-        // Refresh the entity, since there might be referenced entities that
-        // think they're deleted, but aren't really because of the rollback.
-        await this.$refresh();
+    await transaction(
+      this.$nymph,
+      'resource-move-' + this.guid,
+      async (nymph) => {
+        this.$setNymph(nymph);
         if (existingResource) {
-          existingResource.$refresh();
+          existingResource.$setNymph(nymph);
+
+          if (
+            await this.$nymph.getEntity(
+              { class: Resource, skipAc: true },
+              { type: '&', ref: ['parent', existingResource] },
+            )
+          ) {
+            throw new ForbiddenError('The destination resource is not empty.');
+          }
+
+          // Delete the existing resource.
+          try {
+            await existingResource.$delete();
+          } catch (e: any) {
+            throw new InternalServerError(
+              "Couldn't delete destination resource.",
+            );
+          }
         }
-      } catch (e: any) {
-        // Ignore this error.
-      }
-      throw e;
-    }
+
+        // Delete existing locks on this resource.
+        const locks = await this.$nymph.getEntities(
+          { class: NymphLock, skipAc: true },
+          { type: '&', ref: ['resource', this] },
+        );
+
+        for (let lock of locks) {
+          try {
+            await lock.$deleteSkipAC();
+          } catch (e: any) {
+            throw new InternalServerError("Couldn't delete associated lock.");
+          }
+        }
+
+        this.$data.name = name;
+        this.$data.parent = destinationParent;
+
+        try {
+          await this.$save();
+        } catch (e: any) {
+          throw new InternalServerError("Couldn't save destination resource.");
+        }
+      },
+      async (nymph, committed) => {
+        this.$setNymph(nymph);
+        if (existingResource) {
+          existingResource.$setNymph(nymph);
+        }
+        try {
+          // Refresh the entity, since there might be referenced entities that
+          // think they're deleted, but aren't really because of the rollback.
+          if (!committed) {
+            await this.$refresh();
+            if (existingResource) {
+              existingResource.$refresh();
+            }
+          }
+        } catch (e: any) {
+          // Ignore this error.
+        }
+      },
+    );
   }
 
   async $save() {
@@ -316,70 +313,34 @@ export class Resource extends Entity<ResourceData> {
     return false;
   }
 
+  @transactional
   async $delete() {
     if (
       this.$data.collection &&
       (await this.$nymph.getEntity(
         { class: this.$nymph.getEntityClass(Resource), skipAc: true },
-        {
-          type: '&',
-          ref: ['parent', this],
-        },
+        { type: '&', ref: ['parent', this] },
       ))
     ) {
       throw new ForbiddenError("This resource isn't empty.");
     }
 
-    const transaction = 'resource-delete-' + this.guid;
-    const nymph = this.$nymph;
-    const tnymph = await nymph.startTransaction(transaction);
-    this.$setNymph(tnymph);
+    // Delete this entity's locks.
+    const locks = await this.$nymph.getEntities(
+      { class: NymphLock, skipAc: true },
+      { type: '&', ref: ['resource', this] },
+    );
 
-    try {
-      // Delete this entity's locks.
-      const locks = await tnymph.getEntities(
-        {
-          class: tnymph.getEntityClass(NymphLock),
-          skipAc: true,
-        },
-        {
-          type: '&',
-          ref: ['resource', this],
-        },
-      );
-
-      for (let lock of locks) {
-        if (!(await lock.$deleteSkipAC())) {
-          throw new InternalServerError("Couldn't delete associated lock.");
-        }
-      }
-
-      // Delete resource.
-      let success = await super.$delete();
-      if (success) {
-        success = await tnymph.commit(transaction);
-      } else {
-        await tnymph.rollback(transaction);
-      }
-      this.$setNymph(nymph);
-      if (!success) {
-        // Refresh the entity, since there might be referenced entities that
-        // think they're deleted, but aren't really because of the rollback.
-        await this.$refresh();
-      }
-      return success;
-    } catch (e: any) {
-      await tnymph.rollback(transaction);
-      this.$setNymph(nymph);
+    for (let lock of locks) {
       try {
-        // Refresh the entity, since there might be referenced entities that
-        // think they're deleted, but aren't really because of the rollback.
-        await this.$refresh();
+        await lock.$deleteSkipAC();
       } catch (e: any) {
-        // Ignore this error.
+        throw new InternalServerError("Couldn't delete associated lock.");
       }
-      throw e;
     }
+
+    // Delete resource.
+    await super.$delete();
   }
 
   /*

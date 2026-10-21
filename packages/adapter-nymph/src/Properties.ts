@@ -172,7 +172,9 @@ export default class Properties implements PropertiesInterface {
 
     if (changed) {
       try {
-        if (!(await nymphResource.$save())) {
+        try {
+          await nymphResource.$save();
+        } catch (e: any) {
           return errorEverything(new Error("Couldn't save resource entity."));
         }
       } catch (e: any) {

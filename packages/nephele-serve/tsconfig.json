@@ -2,9 +2,11 @@
   "extends": "@tsconfig/recommended/tsconfig.json",
 
   "compilerOptions": {
-    "target": "es2020",
-    "module": "ES2022",
-    "moduleResolution": "Node",
+    "types": ["node", "jest"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["es2024"],
+    "target": "es2024",
     "noImplicitAny": true,
     "removeComments": true,
     "sourceMap": true,

@@ -3,7 +3,7 @@ import { pipeline, Readable } from 'node:stream';
 import path from 'node:path';
 import type { Request } from 'express';
 import * as xml2js from 'xml2js';
-import contentType from 'content-type';
+import * as contentType from 'content-type';
 import { splitn } from '@sciactive/splitn';
 import vary from 'vary';
 

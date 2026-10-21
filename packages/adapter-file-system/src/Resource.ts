@@ -4,7 +4,7 @@ import type { Stats } from 'node:fs';
 import { constants } from 'node:fs';
 import path from 'node:path';
 import mime from 'mime';
-import checkDiskSpace from 'check-disk-space';
+import checkDiskSpaceImport from 'check-disk-space';
 import crc32 from 'cyclic-32';
 import type { Resource as ResourceInterface, User } from 'nephele';
 import {
@@ -31,6 +31,10 @@ import {
 } from './FileSystemBits.js';
 import Properties from './Properties.js';
 import Lock from './Lock.js';
+
+// TODO: Remove this if this package is fixed.
+const checkDiskSpace =
+  checkDiskSpaceImport as unknown as typeof checkDiskSpaceImport.default;
 
 export type MetaStorage = {
   props?: { [name: string]: any };
@@ -306,13 +310,11 @@ export default class Resource implements ResourceInterface {
         this.stats = await this.adapter.stat(this.absolutePath);
       }
 
-      if (
-        !(
-          this.stats.mode & otherWriteBit ||
-          (this.stats.uid === uid && this.stats.mode & userWriteBit) ||
-          (gids.includes(this.stats.gid) && this.stats.mode & groupWriteBit)
-        )
-      ) {
+      if (!(
+        this.stats.mode & otherWriteBit ||
+        (this.stats.uid === uid && this.stats.mode & userWriteBit) ||
+        (gids.includes(this.stats.gid) && this.stats.mode & groupWriteBit)
+      )) {
         throw new UnauthorizedError(
           'You do not have permission to delete this resource.',
         );
@@ -377,25 +379,21 @@ export default class Resource implements ResourceInterface {
       // Check if the user can put it in the destination.
       const dstats = await this.adapter.stat(path.dirname(destinationPath));
 
-      if (
-        !(
-          dstats.mode & otherReadBit ||
-          (dstats.uid === uid && dstats.mode & userReadBit) ||
-          (gids.includes(dstats.gid) && dstats.mode & groupReadBit)
-        )
-      ) {
+      if (!(
+        dstats.mode & otherReadBit ||
+        (dstats.uid === uid && dstats.mode & userReadBit) ||
+        (gids.includes(dstats.gid) && dstats.mode & groupReadBit)
+      )) {
         throw new UnauthorizedError(
           'You do not have permission to access the destination.',
         );
       }
 
-      if (
-        !(
-          dstats.mode & otherWriteBit ||
-          (dstats.uid === uid && dstats.mode & userWriteBit) ||
-          (gids.includes(dstats.gid) && dstats.mode & groupWriteBit)
-        )
-      ) {
+      if (!(
+        dstats.mode & otherWriteBit ||
+        (dstats.uid === uid && dstats.mode & userWriteBit) ||
+        (gids.includes(dstats.gid) && dstats.mode & groupWriteBit)
+      )) {
         throw new UnauthorizedError(
           'You do not have permission to write to the destination.',
         );
@@ -590,13 +588,11 @@ export default class Resource implements ResourceInterface {
         this.stats = await this.adapter.stat(this.absolutePath);
       }
 
-      if (
-        !(
-          this.stats.mode & otherWriteBit ||
-          (this.stats.uid === uid && this.stats.mode & userWriteBit) ||
-          (gids.includes(this.stats.gid) && this.stats.mode & groupWriteBit)
-        )
-      ) {
+      if (!(
+        this.stats.mode & otherWriteBit ||
+        (this.stats.uid === uid && this.stats.mode & userWriteBit) ||
+        (gids.includes(this.stats.gid) && this.stats.mode & groupWriteBit)
+      )) {
         throw new UnauthorizedError(
           'You do not have permission to move this resource.',
         );
@@ -605,25 +601,21 @@ export default class Resource implements ResourceInterface {
       // Check if the user can put it in the destination.
       const dstats = await this.adapter.stat(path.dirname(destinationPath));
 
-      if (
-        !(
-          dstats.mode & otherReadBit ||
-          (dstats.uid === uid && dstats.mode & userReadBit) ||
-          (gids.includes(dstats.gid) && dstats.mode & groupReadBit)
-        )
-      ) {
+      if (!(
+        dstats.mode & otherReadBit ||
+        (dstats.uid === uid && dstats.mode & userReadBit) ||
+        (gids.includes(dstats.gid) && dstats.mode & groupReadBit)
+      )) {
         throw new UnauthorizedError(
           'You do not have permission to access the destination.',
         );
       }
 
-      if (
-        !(
-          dstats.mode & otherWriteBit ||
-          (dstats.uid === uid && dstats.mode & userWriteBit) ||
-          (gids.includes(dstats.gid) && dstats.mode & groupWriteBit)
-        )
-      ) {
+      if (!(
+        dstats.mode & otherWriteBit ||
+        (dstats.uid === uid && dstats.mode & userWriteBit) ||
+        (gids.includes(dstats.gid) && dstats.mode & groupWriteBit)
+      )) {
         throw new UnauthorizedError(
           'You do not have permission to write to the destination.',
         );
@@ -802,13 +794,11 @@ export default class Resource implements ResourceInterface {
         this.stats = await this.adapter.stat(this.absolutePath);
       }
 
-      if (
-        !(
-          this.stats.mode & otherExecuteBit ||
-          (this.stats.uid === uid && this.stats.mode & userExecuteBit) ||
-          (gids.includes(this.stats.gid) && this.stats.mode & groupExecuteBit)
-        )
-      ) {
+      if (!(
+        this.stats.mode & otherExecuteBit ||
+        (this.stats.uid === uid && this.stats.mode & userExecuteBit) ||
+        (gids.includes(this.stats.gid) && this.stats.mode & groupExecuteBit)
+      )) {
         throw new UnauthorizedError(
           "You do not have permission to list this collection's members.",
         );

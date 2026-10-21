@@ -20,8 +20,7 @@ type DynamicAdapter = {
 };
 
 export type AuthenticatorConfig =
-  | Authenticator
-  | { [k: string]: Authenticator };
+  Authenticator | { [k: string]: Authenticator };
 
 type DefinedAuthenticator = {
   authenticator: AuthenticatorConfig;

@@ -1,5 +1,5 @@
 import type { Request } from 'express';
-import basicAuth from 'basic-auth';
+import { parse as basicAuthParse } from 'basic-auth';
 import type { Nymph } from '@nymphjs/nymph';
 import {
   User as UserClass,
@@ -51,7 +51,7 @@ export default class Authenticator implements AuthenticatorInterface {
     let password = '';
 
     if (authorization) {
-      const auth = basicAuth.parse(authorization);
+      const auth = basicAuthParse(authorization);
       if (auth) {
         username = auth.name;
         password = auth.pass;

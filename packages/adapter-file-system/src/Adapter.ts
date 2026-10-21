@@ -270,25 +270,21 @@ export default class Adapter implements AdapterInterface {
           const stats = await this.stat(ipathname);
 
           if (access === 'x' || i < parts.length) {
-            if (
-              !(
-                stats.mode & otherExecuteBit ||
-                (stats.uid === uid && stats.mode & userExecuteBit) ||
-                (gids.includes(stats.gid) && stats.mode & groupExecuteBit)
-              )
-            ) {
+            if (!(
+              stats.mode & otherExecuteBit ||
+              (stats.uid === uid && stats.mode & userExecuteBit) ||
+              (gids.includes(stats.gid) && stats.mode & groupExecuteBit)
+            )) {
               return false;
             }
           }
 
           if (i === parts.length && access === 'r' && exists) {
-            if (
-              !(
-                stats.mode & otherReadBit ||
-                (stats.uid === uid && stats.mode & userReadBit) ||
-                (gids.includes(stats.gid) && stats.mode & groupReadBit)
-              )
-            ) {
+            if (!(
+              stats.mode & otherReadBit ||
+              (stats.uid === uid && stats.mode & userReadBit) ||
+              (gids.includes(stats.gid) && stats.mode & groupReadBit)
+            )) {
               return false;
             }
           }
@@ -297,13 +293,11 @@ export default class Adapter implements AdapterInterface {
             (i === parts.length && access === 'w') ||
             (!exists && i === parts.length - 1)
           ) {
-            if (
-              !(
-                stats.mode & otherWriteBit ||
-                (stats.uid === uid && stats.mode & userWriteBit) ||
-                (gids.includes(stats.gid) && stats.mode & groupWriteBit)
-              )
-            ) {
+            if (!(
+              stats.mode & otherWriteBit ||
+              (stats.uid === uid && stats.mode & userWriteBit) ||
+              (gids.includes(stats.gid) && stats.mode & groupWriteBit)
+            )) {
               return false;
             }
           }

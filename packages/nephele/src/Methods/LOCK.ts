@@ -31,8 +31,7 @@ export class LOCK extends Method {
     await this.checkAuthorization(request, response, 'LOCK');
 
     const depth: '0' | 'infinity' = (request.get('Depth') || 'infinity') as
-      | '0'
-      | 'infinity';
+      '0' | 'infinity';
     const timeoutHeader = request.get('Timeout') || 'Infinite';
     const contentType = request.accepts('application/xml', 'text/xml');
     if (!contentType) {

@@ -9,7 +9,7 @@ import type { Readable } from 'node:stream';
 import type { Request } from 'express';
 import type { Plugin as PluginInterface, AuthResponse, Adapter } from 'nephele';
 import { UnauthorizedError, InternalServerError } from 'nephele';
-import basicAuth from 'basic-auth';
+import { parse as basicAuthParse } from 'basic-auth';
 import base85 from 'base85';
 import { BackPressureTransform } from '@sciactive/back-pressure-transform';
 
@@ -151,7 +151,7 @@ export default class Plugin implements PluginInterface {
         return;
       }
 
-      const auth = basicAuth.parse(authorization);
+      const auth = basicAuthParse(authorization);
       if (!auth || auth.pass.trim() === '') {
         throw new UnauthorizedError(
           'Authentication is required to use this server.',

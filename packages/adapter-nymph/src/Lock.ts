@@ -79,13 +79,17 @@ export default class Lock implements LockInterface {
   }
 
   async save() {
-    if (!(await this.nymphLock.$save())) {
+    try {
+      await this.nymphLock.$save();
+    } catch (e: any) {
       throw new InternalServerError("Couldn't save lock.");
     }
   }
 
   async delete() {
-    if (!(await this.nymphLock.$deleteSkipAC())) {
+    try {
+      await this.nymphLock.$deleteSkipAC();
+    } catch (e: any) {
       throw new InternalServerError("Couldn't delete lock.");
     }
   }

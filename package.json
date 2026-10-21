@@ -29,21 +29,21 @@
     "packages/*"
   ],
   "devDependencies": {
-    "@commitlint/cli": "^20.1.0",
-    "@commitlint/config-conventional": "^20.0.0",
+    "@commitlint/cli": "^21.2.4",
+    "@commitlint/config-conventional": "^21.2.4",
     "@tsconfig/recommended": "^1.0.13",
-    "@types/debug": "^4.1.12",
-    "@types/express": "^5.0.5",
+    "@types/debug": "^4.1.13",
+    "@types/express": "^5.0.6",
     "@types/xml2js": "^0.4.14",
     "debug": "^4.4.3",
-    "express": "^5.1.0",
+    "express": "^5.3.0",
     "husky": "^9.1.7",
-    "lerna": "^9.0.3",
-    "lint-staged": "^16.2.7",
-    "prettier": "^3.7.3",
-    "prettier-plugin-svelte": "^3.4.0",
-    "tsx": "^4.20.6",
-    "typedoc": "^0.28.15",
+    "lerna": "^10.1.1",
+    "lint-staged": "^17.6.0",
+    "prettier": "^3.9.10",
+    "prettier-plugin-svelte": "^4.1.1",
+    "tsx": "^4.23.15",
+    "typedoc": "^0.28.20",
     "userhomepath": "^1.0.6",
     "xml2js": "^0.6.2"
   },
@@ -52,5 +52,16 @@
   },
   "lint-staged": {
     "**/*": "prettier --write --ignore-unknown"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "@swc/core@1.16.18": true,
+    "authenticate-pam@1.0.5": true,
+    "bcrypt@6.0.0": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true,
+    "nx@23.2.1": true,
+    "unrs-resolver@1.12.2": true,
+    "userid@1.2.5": true
   }
 }

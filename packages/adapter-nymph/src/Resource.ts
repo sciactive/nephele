@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileTypeFromFile } from 'file-type';
-import checkDiskSpace from 'check-disk-space';
+import checkDiskSpaceImport from 'check-disk-space';
 import { BackPressureTransform } from '@sciactive/back-pressure-transform';
 import { v4 as uuidv4 } from 'uuid';
 import { TilmeldAccessLevels } from '@nymphjs/nymph';
@@ -30,6 +30,10 @@ import type Adapter from './Adapter.js';
 import Properties from './Properties.js';
 import Lock from './Lock.js';
 import { EMPTY_HASH } from './constants.js';
+
+// TODO: Remove this if this package is fixed.
+const checkDiskSpace =
+  checkDiskSpaceImport as unknown as typeof checkDiskSpaceImport.default;
 
 export default class Resource implements ResourceInterface {
   adapter: Adapter;
@@ -181,7 +185,9 @@ export default class Resource implements ResourceInterface {
 
     // Save the entity, so it exists in the file structure if it's new. (Also,
     // make sure we have write permission.)
-    if (!(await this.nymphResource.$save())) {
+    try {
+      await this.nymphResource.$save();
+    } catch (e: any) {
       throw new InternalServerError("Couldn't save resource entity.");
     }
 
@@ -245,7 +251,9 @@ export default class Resource implements ResourceInterface {
             (await fileTypeFromFile(tempFilename))?.mime ??
             mediaType ??
             'application/octet-stream';
-          if (!(await this.nymphResource.$save())) {
+          try {
+            await this.nymphResource.$save();
+          } catch (e: any) {
             throw new InternalServerError("Couldn't save resource entity.");
           }
 
@@ -313,7 +321,9 @@ export default class Resource implements ResourceInterface {
     this.nymphResource.hash = EMPTY_HASH;
     this.nymphResource.size = 0;
 
-    if (!(await this.nymphResource.$save())) {
+    try {
+      await this.nymphResource.$save();
+    } catch (e: any) {
       throw new InternalServerError("Couldn't save resource entity.");
     }
   }
@@ -339,9 +349,10 @@ export default class Resource implements ResourceInterface {
       throw new ForbiddenError('This resource is not empty.');
     }
 
-    if (await this.nymphResource.$delete()) {
+    try {
+      await this.nymphResource.$delete();
       await this.deleteBlobIfOrphaned(this.nymphResource.hash);
-    } else {
+    } catch (e: any) {
       throw new InternalServerError("Couldn't delete resource entity.");
     }
   }

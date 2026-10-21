@@ -154,7 +154,9 @@ export default class Adapter implements AdapterInterface {
             rootResource.hash = EMPTY_HASH;
             rootResource.parent = null;
 
-            if (!(await rootResource.$save())) {
+            try {
+              await rootResource.$save();
+            } catch (e: any) {
               throw new InternalServerError(
                 'Root resource could not be created.',
               );

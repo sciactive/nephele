@@ -10,7 +10,7 @@
     "build": "tsc",
     "watch": "tsc --watch",
     "prepublish": "npm run clean && npm run build",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch"
   },
   "publishConfig": {
@@ -36,18 +36,19 @@
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
   "devDependencies": {
+    "@swc/core": "^1.16.1",
+    "@swc/jest": "^0.2.39",
     "@tsconfig/recommended": "^1.0.13",
-    "@types/express": "^5.0.5",
+    "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/mime": "^4.0.0",
-    "express": "^5.1.0",
-    "jest": "^30.2.0",
-    "ts-jest": "^29.4.5",
-    "typescript": "^5.9.3"
+    "express": "^5.3.0",
+    "jest": "^30.5.2",
+    "typescript": "^7.0.2"
   },
   "dependencies": {
     "cyclic-32": "^1.2.0",
-    "mime": "^4.1.0",
+    "mime": "^4.1.1",
     "nephele": "^1.0.0-alpha.67"
   },
   "engines": {
