@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.68](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.67...v1.0.0-alpha.68) (2026-10-21)
+
+### Features
+
+* update typescript, nymph, all other packages ([e29a0ac](https://github.com/sciactive/nephele/commit/e29a0ac2e28fef43afacb453f5eff4329c5df889))
+
+
 # [1.0.0-alpha.67](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.66...v1.0.0-alpha.67) (2025-11-29)
 
 **Note:** Version bump only for package @nephele/authenticator-none

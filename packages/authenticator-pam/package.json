@@ -1,6 +1,6 @@
 {
   "name": "@nephele/authenticator-pam",
-  "version": "1.0.0-alpha.67",
+  "version": "1.0.0-alpha.68",
   "description": "PAM based authenticator (local system users) for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -48,7 +48,7 @@
   "dependencies": {
     "authenticate-pam": "^1.0.5",
     "basic-auth": "^3.0.0",
-    "nephele": "^1.0.0-alpha.67",
+    "nephele": "^1.0.0-alpha.68",
     "userid": "^1.2.5"
   },
   "engines": {
