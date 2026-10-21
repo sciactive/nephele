@@ -1,5 +1,5 @@
 services:
-  rustfs:
+  blob:
     image: 'rustfs/rustfs'
     restart: on-failure
     ports:
@@ -14,7 +14,7 @@ services:
       - RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9001
       - RUSTFS_ACCESS_KEY=nephele
       - RUSTFS_SECRET_KEY=nephele
-  mysql:
+  db:
     image: 'mysql'
     restart: on-failure
     ports:
@@ -26,3 +26,8 @@ services:
       MYSQL_PASSWORD: nephele
     volumes:
       - ./testroot-mysql:/var/lib/mysql
+  adminer:
+    image: adminer
+    restart: always
+    ports:
+      - 9002:8080
