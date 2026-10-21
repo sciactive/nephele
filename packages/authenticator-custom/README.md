@@ -100,9 +100,15 @@ The returned promise should resolve to the password or hash if the user exists, 
 
 The Digest mechansism requires the user to cryptographically hash their password with the request, so it will not divulge their password to eaves droppers. However, it is still less safe than using TLS and Basic authentication. If you provide `authDigest`, the server will advertise support for the Digest mechanism.
 
+# Human Authorship
+
+This project adheres to the [SciActive Human Contribution Policy 2-NE](https://sciactive.com/human-contribution-policy/version-2-ne/).
+
+[![Seal of Human Authorship](https://sciactive.com/wp-content/uploads/2026/03/Seal-of-Human-Authorship-300.png)](https://sciactive.com/human-contribution-policy/)
+
 # License
 
-Copyright 2022-2025 SciActive Inc
+Copyright 2022-2026 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

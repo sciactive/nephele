@@ -1,6 +1,7 @@
 # SciActive Human Contribution Policy
 
-Version 1, 14 March 2026 <https://sciactive.com/human-contribution-policy/>
+Version 2-NE (No Exceptions), 2 September 2026
+<https://sciactive.com/human-contribution-policy/>
 
 ## Preamble
 
@@ -9,26 +10,31 @@ meant to safeguard projects from the inherent legal and security risks of AI
 generated contributions. It is also meant to ensure that the trust projects'
 users place in the projects and their maintainers is not inadvertently violated
 by the inclusion of untrusted material. The inclusion of AI generated material
-in a project presents significant known and unknown risks to the longevity and
-security of the project. This policy is meant to ensure and declare that the
-human authorship of the material in covered projects is both desired and
-maintained.
+in projects presents significant known and unknown risks to the longevity and
+security of the projects. This policy is meant to declare that the human
+authorship of any material introduced in covered projects is both desired and
+ensured.
 
 The purpose of this document is to define a clear boundary between human
 authorship and machine generation, and clearly declare that a project will only
 accept contributions that are human authored. If a project chooses to adopt and
 adhere to this policy, it is a clear indication that the project will not accept
-AI generated contributions and that its users can be assured that the products
-of that project are authored by humans, and humans alone.
+AI generated contributions and that its users can be assured that, once adopted,
+the contributions to the project are authored by humans, and humans alone,
+except when this policy allows specific exceptions.
 
 ## Definitions
 
-"This policy" refers to version 1 of the SciActive Human Contribution Policy.
+"This policy" refers to version 2-NE of the SciActive Human Contribution Policy.
 
 "The project" means the collective body of work covered by this policy,
 including but not limited to, the source code, object code, documentation,
 scripts, configuration files, graphical assets, supporting material, policy
-documents, translations, and processes.
+documents, translations, and processes. This does not include source codes and
+object codes of dependencies that are merely linked to, not stored, within the
+project, and any portions of object code resulting from the compilation of the
+imported source codes of linked dependencies when compiled during the normal
+build process of the project.
 
 "AI generated" means that the subject material is in whole, or in meaningful
 part, the output of a generative AI model or models, such as a Large Language
@@ -56,14 +62,11 @@ ultimately use the project or its product.
 ## Policy
 
 1. Contributions must be human authored. AI generated contributions are not
-   permitted and will not be accepted. This includes, but is not limited to, AI
-   generated source code, object code, documentation, scripts, configuration
-   files, graphical assets, supporting material, policy documents, and
-   translations.
+   permitted and will not be accepted.
+   a. There are no exceptions to this requirement.
 2. If a contributor attempts to submit AI generated material without disclosing
    that the material is AI generated, the contribution will be considered a
-   deceptive contribution, and the contributor may be permanently banned from
-   contributing to the project.
+   deceptive contribution, and action may be taken against the contributor.
 
 ## Reasoning
 

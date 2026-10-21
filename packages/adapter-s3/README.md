@@ -69,9 +69,15 @@ WebDAV properties and locks are stored in the metadata of objects. There is no s
 
 S3 does not have the concept of an empty directory, since "directories" are just common prefixes among keys. As such, Nephele represents an empty directory in S3 by creating an empty object under the directory with the name ".nepheleempty". It is safe to delete these objects. It is the same as deleting the empty directory.
 
+# Human Authorship
+
+This project adheres to the [SciActive Human Contribution Policy 2-NE](https://sciactive.com/human-contribution-policy/version-2-ne/).
+
+[![Seal of Human Authorship](https://sciactive.com/wp-content/uploads/2026/03/Seal-of-Human-Authorship-300.png)](https://sciactive.com/human-contribution-policy/)
+
 # License
 
-Copyright 2022-2025 SciActive Inc
+Copyright 2022-2026 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

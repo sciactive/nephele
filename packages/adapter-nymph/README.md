@@ -74,9 +74,15 @@ The file _contents_ however, are stored in a temporary file during upload and th
 
 When a file is deleted, the adapter will check for any other files that share the same hash (duplicate files). If none are found, only then will the actual file blob be deleted.
 
+# Human Authorship
+
+This project adheres to the [SciActive Human Contribution Policy 2-NE](https://sciactive.com/human-contribution-policy/version-2-ne/).
+
+[![Seal of Human Authorship](https://sciactive.com/wp-content/uploads/2026/03/Seal-of-Human-Authorship-300.png)](https://sciactive.com/human-contribution-policy/)
+
 # License
 
-Copyright 2022-2025 SciActive Inc
+Copyright 2022-2026 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

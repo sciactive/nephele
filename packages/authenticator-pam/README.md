@@ -87,9 +87,15 @@ You can set, for example, "0,1000-1999" to allow the first 1000 normal users and
 
 Root is always UID 0. On most systems, daemon users are assigned UIDs in the range 2-999, normal users are assigned UIDs in the range 1000-65533, and the "nobody" user is assigned UID 65534. On some systems (including macOS), normal users are assigned IDs starting at 500, which is why the default includes this range.
 
+# Human Authorship
+
+This project adheres to the [SciActive Human Contribution Policy 2-NE](https://sciactive.com/human-contribution-policy/version-2-ne/).
+
+[![Seal of Human Authorship](https://sciactive.com/wp-content/uploads/2026/03/Seal-of-Human-Authorship-300.png)](https://sciactive.com/human-contribution-policy/)
+
 # License
 
-Copyright 2022-2025 SciActive Inc
+Copyright 2022-2026 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

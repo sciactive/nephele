@@ -265,9 +265,15 @@ Users are extremely flexible in Nephele. Basically Nephele hands your authentica
 
 Nephele offers additional features using [plugins](https://www.npmjs.com/search?q=keywords%3A%22nephele%20plugin%22). A plugin is given the chance to alter the behavior and response throughout [the lifecycle of a Nephele request](https://github.com/sciactive/nephele/blob/master/packages/nephele/src/Interfaces/Plugin.ts).
 
+# Human Authorship
+
+This project adheres to the [SciActive Human Contribution Policy 2-NE](https://sciactive.com/human-contribution-policy/version-2-ne/).
+
+[![Seal of Human Authorship](https://sciactive.com/wp-content/uploads/2026/03/Seal-of-Human-Authorship-300.png)](https://sciactive.com/human-contribution-policy/)
+
 # License
 
-Copyright 2022-2025 SciActive Inc
+Copyright 2022-2026 SciActive Inc
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
