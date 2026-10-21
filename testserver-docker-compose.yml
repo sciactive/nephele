@@ -1,13 +1,19 @@
 services:
-  minio:
-    image: 'minio/minio'
+  rustfs:
+    image: 'rustfs/rustfs'
     restart: on-failure
-    command: server /data --console-address ":9001" --address ":80"
     ports:
-      - '8081:80'
+      - '8081:9000'
       - '9001:9001'
     volumes:
       - ./testroot-s3:/data
+    environment:
+      - RUSTFS_VOLUMES=/data
+      - RUSTFS_ADDRESS=0.0.0.0:9000
+      - RUSTFS_CONSOLE_ENABLE=true
+      - RUSTFS_CONSOLE_ADDRESS=0.0.0.0:9001
+      - RUSTFS_ACCESS_KEY=nephele
+      - RUSTFS_SECRET_KEY=nephele
   mysql:
     image: 'mysql'
     restart: on-failure
