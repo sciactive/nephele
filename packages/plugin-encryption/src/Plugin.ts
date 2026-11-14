@@ -411,32 +411,22 @@ export default class Plugin implements PluginInterface {
         decipher.destroy(err);
       }
     });
-
-    // Need the passthrough to hide the error.
-    const passthrough = new BackPressureTransform();
-    decipher.pipe(passthrough.writable);
-    decipher.on('error', (err) => {
-      // Ignore error about wrong final block length.
-      if (
-        (err as Error & { code?: string })?.code ===
-        'ERR_OSSL_WRONG_FINAL_BLOCK_LENGTH'
-      ) {
-        passthrough.writable.end();
-        return;
+    stream.on('close', () => {
+      if (!decipher.destroyed) {
+        decipher.destroy();
       }
+    });
+    decipher.on('error', (err) => {
       if (!stream.destroyed) {
         stream.destroy(err);
       }
-      if (!passthrough.writable.destroyed) {
-        passthrough.writable.destroy(err);
-      }
     });
-    passthrough.writable.on('error', (err) => {
-      if (!decipher.destroyed) {
-        decipher.destroy(err);
+    decipher.on('close', () => {
+      if (!stream.destroyed) {
+        stream.destroy();
       }
     });
 
-    return passthrough.readable;
+    return decipher;
   }
 }

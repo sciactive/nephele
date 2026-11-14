@@ -70,11 +70,16 @@ export class EncryptionProxyResource implements Resource {
     // How many bytes to send to the stream.
     let byteLength = Infinity;
     if (range) {
-      byteLength = range.end - range.start;
+      byteLength = range.end - range.start + 1; // +1 because range is inclusive.
 
       // Make sure we read a whole number of blocks.
-      if (range.end && range.end % BLOCK_SIZE) {
+      if (isFinite(range.end) && range.end % BLOCK_SIZE) {
         range.end = range.end + (BLOCK_SIZE - (range.end % BLOCK_SIZE));
+      }
+
+      // Read one block+1 past the end to account for inclusive range.
+      if (isFinite(range.end)) {
+        range.end += BLOCK_SIZE + 1;
       }
 
       // Make sure we start at the beginning of a block, and start before the
@@ -83,7 +88,7 @@ export class EncryptionProxyResource implements Resource {
         offset = range.start;
         range.start = 0;
       } else {
-        offset = (range.start % BYTE_PREFIX) + BYTE_PREFIX;
+        offset = (range.start % BLOCK_SIZE) + BYTE_PREFIX;
         range.start = range.start - offset;
       }
     }
@@ -112,16 +117,16 @@ export class EncryptionProxyResource implements Resource {
       // How many bytes we've sent to the output stream.
       let transmitted = 0;
 
-      const output = new BackPressureTransform(async (chunk) => {
+      const output = new BackPressureTransform(async (chunk: Buffer) => {
         if (transmitted >= byteLength) {
           return;
         }
 
         let newChunk = chunk;
         if (discarded < offset) {
-          if (discarded + chunk.length <= offset) {
+          if (discarded + chunk.byteLength <= offset) {
             // Discard entire chunk.
-            discarded += chunk.length;
+            discarded += chunk.byteLength;
             return;
           } else {
             // Discard part of the chunk.
@@ -130,13 +135,13 @@ export class EncryptionProxyResource implements Resource {
           }
         }
 
-        if (newChunk.length) {
-          if (transmitted + newChunk.length > byteLength) {
+        if (newChunk.byteLength) {
+          if (transmitted + newChunk.byteLength > byteLength) {
             // Truncate the chunk
             newChunk = newChunk.subarray(0, byteLength - transmitted);
           }
 
-          transmitted += newChunk.length;
+          transmitted += newChunk.byteLength;
 
           return newChunk;
         }
@@ -148,9 +153,19 @@ export class EncryptionProxyResource implements Resource {
           output.writable.destroy(err);
         }
       });
+      cipher.on('close', () => {
+        if (!output.writable.destroyed) {
+          output.writable.destroy();
+        }
+      });
       output.writable.on('error', (err) => {
         if (!cipher.destroyed) {
           cipher.destroy(err);
+        }
+      });
+      output.writable.on('close', () => {
+        if (!cipher.destroyed) {
+          cipher.destroy();
         }
       });
 
