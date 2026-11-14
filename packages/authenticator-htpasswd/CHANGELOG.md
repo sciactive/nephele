@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.69](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.68...v1.0.0-alpha.69) (2026-11-14)
+
+### Features
+
+* update packages, update code for new nymph features ([c46776a](https://github.com/sciactive/nephele/commit/c46776a3ac585ae25b72408d9c876cc8ae588ab9))
+
+
 # [1.0.0-alpha.68](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.67...v1.0.0-alpha.68) (2026-10-21)
 
 ### Features

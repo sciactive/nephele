@@ -1,6 +1,6 @@
 {
   "name": "@nephele/authenticator-none",
-  "version": "1.0.0-alpha.68",
+  "version": "1.0.0-alpha.69",
   "description": "Unrestricted authenticator for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -44,7 +44,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "nephele": "^1.0.0-alpha.68"
+    "nephele": "^1.0.0-alpha.69"
   },
   "engines": {
     "node": ">=18"
