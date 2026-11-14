@@ -36,9 +36,9 @@
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
   "devDependencies": {
-    "@swc/core": "^1.16.1",
+    "@swc/core": "^1.16.22",
     "@swc/jest": "^0.2.39",
-    "@tsconfig/recommended": "^1.0.13",
+    "@tsconfig/recommended": "^1.0.14",
     "@types/basic-auth": "^1.1.8",
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.6",
@@ -50,7 +50,7 @@
   "dependencies": {
     "apache-crypt": "^1.2.6",
     "apache-md5": "^1.1.8",
-    "basic-auth": "^3.0.0",
+    "basic-auth": "^3.1.0",
     "bcrypt": "^6.0.0",
     "nephele": "^1.0.0-alpha.68"
   },

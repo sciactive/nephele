@@ -36,9 +36,9 @@
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
   "devDependencies": {
-    "@swc/core": "^1.16.1",
+    "@swc/core": "^1.16.22",
     "@swc/jest": "^0.2.39",
-    "@tsconfig/recommended": "^1.0.13",
+    "@tsconfig/recommended": "^1.0.14",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/mime": "^4.0.0",
@@ -47,9 +47,9 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "check-disk-space": "^3.4.0",
+    "check-disk-space": "^4.0.0",
     "cyclic-32": "^1.2.0",
-    "mime": "^4.1.1",
+    "mime": "^4.1.2",
     "nephele": "^1.0.0-alpha.68"
   },
   "engines": {

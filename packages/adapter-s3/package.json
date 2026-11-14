@@ -38,9 +38,9 @@
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
   "devDependencies": {
-    "@swc/core": "^1.16.1",
+    "@swc/core": "^1.16.22",
     "@swc/jest": "^0.2.39",
-    "@tsconfig/recommended": "^1.0.13",
+    "@tsconfig/recommended": "^1.0.14",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "express": "^5.3.0",
@@ -48,8 +48,8 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1154.0",
-    "@aws-sdk/lib-storage": "^3.1154.0",
+    "@aws-sdk/client-s3": "^3.1169.0",
+    "@aws-sdk/lib-storage": "^3.1169.0",
     "debug": "^4.4.3",
     "nephele": "^1.0.0-alpha.68"
   },

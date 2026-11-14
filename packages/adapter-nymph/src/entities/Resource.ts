@@ -1,13 +1,12 @@
 import {
+  EntityConstructor,
   EntityUniqueConstraintError,
   transaction,
   transactional,
-  type Nymph,
 } from '@nymphjs/nymph';
-import { Entity, nymphJoiProps } from '@nymphjs/nymph';
-import type { AccessControlData } from '@nymphjs/tilmeld';
-import { enforceTilmeld, tilmeldJoiProps } from '@nymphjs/tilmeld';
-import Joi from 'joi';
+import { Entity, nymphValibotProps } from '@nymphjs/nymph';
+import { enforceTilmeld, tilmeldValibotProps } from '@nymphjs/tilmeld';
+import * as v from 'valibot';
 import {
   BadRequestError,
   ForbiddenError,
@@ -18,15 +17,90 @@ import {
 
 import { Lock as NymphLock } from './Lock.js';
 
-export type ResourceData = {
-  name: string;
-  size: number;
-  contentType: string;
-  collection: boolean;
-  hash: string;
-  properties: { [k: string]: string };
-  parent: (Resource & ResourceData) | null;
-} & AccessControlData;
+const ResourceSchema = v.strictObject({
+  ...nymphValibotProps,
+  ...tilmeldValibotProps,
+
+  name: v.pipe(
+    v.string(),
+    v.nonEmpty(),
+    v.check(
+      (input) => input === input.trim(),
+      'String must not contain leading or trailing whitespace.',
+    ),
+    v.check(
+      (input) => !input.match(/\//),
+      'String must not contain forward slash.',
+    ),
+    v.maxLength(255),
+  ),
+  size: v.pipe(v.number(), v.integer(), v.gtValue(-1)),
+  contentType: v.pipe(
+    v.string(),
+    v.nonEmpty(),
+    v.check(
+      (input) => input === input.trim(),
+      'String must not contain leading or trailing whitespace.',
+    ),
+    v.maxLength(255),
+  ),
+  collection: v.boolean(),
+  hash: v.pipe(
+    v.string(),
+    v.nonEmpty(),
+    v.check(
+      (input) => input === input.trim(),
+      'String must not contain leading or trailing whitespace.',
+    ),
+    v.hexadecimal(),
+    v.maxLength(96),
+  ),
+  properties: v.record(
+    v.pipe(
+      v.string(),
+      v.nonEmpty(),
+      v.check(
+        (input) => input === input.trim(),
+        'String must not contain leading or trailing whitespace.',
+      ),
+      v.maxLength(2048),
+    ),
+    v.union([
+      v.union([
+        v.pipe(
+          v.string(),
+          v.check(
+            (input) => input === input.trim(),
+            'String must not contain leading or trailing whitespace.',
+          ),
+          v.maxLength(65536),
+        ),
+        v.literal(''),
+      ]),
+      v.array(
+        v.union([
+          v.pipe(
+            v.string(),
+            v.check(
+              (input) => input === input.trim(),
+              'String must not contain leading or trailing whitespace.',
+            ),
+            v.maxLength(65536),
+          ),
+          v.literal(''),
+        ]),
+      ),
+    ]),
+  ),
+  parent: v.nullable(v.lazy(() => v.instance(Resource))),
+});
+
+type ResourceData = Omit<
+  v.InferInput<typeof ResourceSchema>,
+  keyof typeof nymphValibotProps
+>;
+
+export interface Resource extends ResourceData {}
 
 export class Resource extends Entity<ResourceData> {
   static ETYPE = 'nephele_resource';
@@ -44,34 +118,17 @@ export class Resource extends Entity<ResourceData> {
   constructor() {
     super();
 
-    this.$data.name = '';
-    this.$data.size = 0;
-    this.$data.contentType = '';
-    this.$data.collection = false;
-    this.$data.hash = '';
-    this.$data.properties = {};
-    this.$data.parent = null;
+    this.name = '';
+    this.size = 0;
+    this.contentType = '';
+    this.collection = false;
+    this.hash = '';
+    this.properties = {};
+    this.parent = null;
   }
 
   async $getUniques() {
-    return [
-      `${this.$data.user?.guid}:${this.$data.parent?.guid}:${this.$data.name}`,
-    ];
-  }
-
-  $setNymph(nymph: Nymph) {
-    this.$nymph = nymph;
-    if (!this.$asleep()) {
-      if (this.$data.user) {
-        this.$data.user.$setNymph(nymph);
-      }
-      if (this.$data.group) {
-        this.$data.group.$setNymph(nymph);
-      }
-      if (this.$data.parent) {
-        this.$data.parent.$setNymph(nymph);
-      }
-    }
+    return [`${this.user?.guid}:${this.parent?.guid}:${this.name}`];
   }
 
   async $copy(
@@ -89,7 +146,7 @@ export class Resource extends Entity<ResourceData> {
 
           if (
             await this.$nymph.getEntity(
-              { class: this.$nymph.getEntityClass(Resource), skipAc: true },
+              { class: Resource, skipAc: true },
               {
                 type: '&',
                 ref: ['parent', existingResource],
@@ -112,12 +169,12 @@ export class Resource extends Entity<ResourceData> {
           .getEntityClass(Resource)
           .factory();
         newNymphResource.name = name;
-        newNymphResource.size = this.$data.size;
-        newNymphResource.contentType = this.$data.contentType;
-        newNymphResource.collection = this.$data.collection;
-        newNymphResource.hash = this.$data.hash;
+        newNymphResource.size = this.size;
+        newNymphResource.contentType = this.contentType;
+        newNymphResource.collection = this.collection;
+        newNymphResource.hash = this.hash;
         newNymphResource.properties = JSON.parse(
-          JSON.stringify(this.$data.properties),
+          JSON.stringify(this.properties),
         );
         newNymphResource.parent = destinationParent;
 
@@ -155,7 +212,7 @@ export class Resource extends Entity<ResourceData> {
   ) {
     if (
       await this.$nymph.getEntity(
-        { class: this.$nymph.getEntityClass(Resource), skipAc: true },
+        { class: Resource, skipAc: true },
         {
           type: '&',
           ref: ['parent', this],
@@ -206,8 +263,8 @@ export class Resource extends Entity<ResourceData> {
           }
         }
 
-        this.$data.name = name;
-        this.$data.parent = destinationParent;
+        this.name = name;
+        this.parent = destinationParent;
 
         try {
           await this.$save();
@@ -236,6 +293,21 @@ export class Resource extends Entity<ResourceData> {
     );
   }
 
+  public async $validate() {
+    try {
+      v.parse(ResourceSchema, this.$getValidatable());
+    } catch (e: any) {
+      throw new BadRequestError(
+        `Invalid ${(this.constructor as EntityConstructor).class}: ` +
+          (e instanceof v.ValiError
+            ? Object.entries(v.flatten(e.issues).nested || {})
+                .map(([field, messages]) => `"${field}": ${messages}`)
+                .join(', ')
+            : e?.message),
+      );
+    }
+  }
+
   async $save() {
     try {
       const tilmeld = enforceTilmeld(this);
@@ -246,46 +318,12 @@ export class Resource extends Entity<ResourceData> {
       // No Tilmeld means auth happened elsewhere.
     }
 
-    if (!this.$data.parent) {
-      this.$data.parent = null;
+    if (!this.parent) {
+      this.parent = null;
     }
 
     // Validate the entity's data.
-    try {
-      Joi.attempt(
-        this.$getValidatable(),
-        Joi.object().keys({
-          ...nymphJoiProps,
-          ...tilmeldJoiProps,
-
-          name: Joi.string()
-            .max(255)
-            .pattern(/\//, {
-              invert: true,
-              name: 'must not contain forward slash',
-            })
-            .required(),
-          size: Joi.number().required(),
-          contentType: Joi.string().trim(false).max(255).required(),
-          collection: Joi.boolean().required(),
-          hash: Joi.string().trim(false).hex().length(96).required(),
-          properties: Joi.object().pattern(
-            Joi.string().trim(false).max(2048),
-            Joi.alternatives().try(
-              Joi.string().trim(false).allow('').max(65536),
-              Joi.array().items(Joi.string().trim(false).allow('').max(65536)),
-            ),
-          ),
-          parent: Joi.alternatives().try(
-            Joi.any().allow(null),
-            Joi.object().instance(Resource),
-          ),
-        }),
-        'Invalid Resource: ',
-      );
-    } catch (e: any) {
-      throw new BadRequestError(e.message);
-    }
+    await this.$validate();
 
     try {
       return await super.$save();
@@ -316,9 +354,9 @@ export class Resource extends Entity<ResourceData> {
   @transactional
   async $delete() {
     if (
-      this.$data.collection &&
+      this.collection &&
       (await this.$nymph.getEntity(
-        { class: this.$nymph.getEntityClass(Resource), skipAc: true },
+        { class: Resource, skipAc: true },
         { type: '&', ref: ['parent', this] },
       ))
     ) {

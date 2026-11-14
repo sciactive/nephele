@@ -1,23 +1,32 @@
-import type { Nymph } from '@nymphjs/nymph';
-import { Entity, TilmeldAccessLevels, nymphJoiProps } from '@nymphjs/nymph';
-import type { AccessControlData } from '@nymphjs/tilmeld';
-import { enforceTilmeld, tilmeldJoiProps } from '@nymphjs/tilmeld';
-import Joi from 'joi';
+import type { EntityConstructor } from '@nymphjs/nymph';
+import { Entity, TilmeldAccessLevels, nymphValibotProps } from '@nymphjs/nymph';
+import { enforceTilmeld, tilmeldValibotProps } from '@nymphjs/tilmeld';
+import * as v from 'valibot';
 import { BadRequestError, UnauthorizedError } from 'nephele';
 
-import { Resource, type ResourceData } from './Resource.js';
+import { Resource } from './Resource.js';
 
-export type LockData = {
-  token: string;
-  date: number;
-  timeout: number;
-  scope: 'exclusive' | 'shared';
-  depth: '0' | 'infinity';
-  provisional: boolean;
-  owner: any;
-  username: string;
-  resource: Resource & ResourceData;
-} & AccessControlData;
+const LockSchema = v.strictObject({
+  ...nymphValibotProps,
+  ...tilmeldValibotProps,
+
+  token: v.pipe(v.string(), v.nonEmpty()),
+  date: v.number(),
+  timeout: v.number(),
+  scope: v.picklist(['exclusive', 'shared']),
+  depth: v.picklist(['0', 'infinity']),
+  provisional: v.boolean(),
+  owner: v.any(),
+  username: v.pipe(v.string(), v.nonEmpty()),
+  resource: v.lazy(() => v.instance(Resource)),
+});
+
+type LockData = Omit<
+  v.InferInput<typeof LockSchema>,
+  keyof typeof nymphValibotProps
+>;
+
+export interface Lock extends LockData {}
 
 export class Lock extends Entity<LockData> {
   static ETYPE = 'nephele_lock';
@@ -35,29 +44,29 @@ export class Lock extends Entity<LockData> {
   constructor() {
     super();
 
-    this.$data.token = '';
-    this.$data.date = new Date().getTime();
-    this.$data.timeout = 1000 * 60 * 60 * 24 * 2; // Default to two day timeout.
-    this.$data.scope = 'exclusive';
-    this.$data.depth = '0';
-    this.$data.provisional = false;
-    this.$data.owner = {};
-    this.$data.username = '';
-    this.$data.resource = Resource.factorySync();
+    this.token = '';
+    this.date = new Date().getTime();
+    this.timeout = 1000 * 60 * 60 * 24 * 2; // Default to two day timeout.
+    this.scope = 'exclusive';
+    this.depth = '0';
+    this.provisional = false;
+    this.owner = {};
+    this.username = '';
+    this.resource = Resource.factorySync();
   }
 
-  $setNymph(nymph: Nymph) {
-    this.$nymph = nymph;
-    if (!this.$asleep()) {
-      if (this.$data.user) {
-        this.$data.user.$setNymph(nymph);
-      }
-      if (this.$data.group) {
-        this.$data.group.$setNymph(nymph);
-      }
-      if (this.$data.resource) {
-        this.$data.resource.$setNymph(nymph);
-      }
+  public async $validate() {
+    try {
+      v.parse(LockSchema, this.$getValidatable());
+    } catch (e: any) {
+      throw new BadRequestError(
+        `Invalid ${(this.constructor as EntityConstructor).class}: ` +
+          (e instanceof v.ValiError
+            ? Object.entries(v.flatten(e.issues).nested || {})
+                .map(([field, messages]) => `"${field}": ${messages}`)
+                .join(', ')
+            : e?.message),
+      );
     }
   }
 
@@ -71,37 +80,16 @@ export class Lock extends Entity<LockData> {
       // No Tilmeld means auth happened elsewhere.
     }
 
-    if (JSON.stringify(this.$data.owner).length > 8192) {
+    if (JSON.stringify(this.owner).length > 8192) {
       throw new BadRequestError('Lock owner must be less than 8KB.');
     }
 
-    this.$data.acUser = TilmeldAccessLevels.FULL_ACCESS;
-    this.$data.acGroup = TilmeldAccessLevels.READ_ACCESS;
-    this.$data.acOther = TilmeldAccessLevels.READ_ACCESS;
+    this.acUser = TilmeldAccessLevels.FULL_ACCESS;
+    this.acGroup = TilmeldAccessLevels.READ_ACCESS;
+    this.acOther = TilmeldAccessLevels.READ_ACCESS;
 
     // Validate the entity's data.
-    try {
-      Joi.attempt(
-        this.$getValidatable(),
-        Joi.object().keys({
-          ...nymphJoiProps,
-          ...tilmeldJoiProps,
-
-          token: Joi.string().required(),
-          date: Joi.number().required(),
-          timeout: Joi.number().required(),
-          scope: Joi.string().allow('exclusive', 'shared').required(),
-          depth: Joi.string().allow('0', 'infinity').required(),
-          provisional: Joi.boolean().required(),
-          owner: Joi.any().required(),
-          username: Joi.string().required(),
-          resource: Joi.object().instance(Resource).required(),
-        }),
-        'Invalid Lock: ',
-      );
-    } catch (e: any) {
-      throw new BadRequestError(e.message);
-    }
+    await this.$validate();
 
     return await super.$save();
   }

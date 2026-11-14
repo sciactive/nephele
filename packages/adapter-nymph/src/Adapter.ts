@@ -32,10 +32,7 @@ import {
 } from 'nephele';
 
 import { Lock as NymphLock } from './entities/Lock.js';
-import {
-  Resource as NymphResource,
-  ResourceData as NymphResourceData,
-} from './entities/Resource.js';
+import { Resource as NymphResource } from './entities/Resource.js';
 
 import Resource from './Resource.js';
 import { EMPTY_HASH } from './constants.js';
@@ -63,7 +60,7 @@ export type AdapterConfig = {
    * resources. The first one found will be used. If this is not acceptible, you
    * must provide your own implementation.
    */
-  getRootResource?: () => Promise<NymphResource & NymphResourceData>;
+  getRootResource?: () => Promise<NymphResource>;
 };
 
 /**
@@ -72,10 +69,10 @@ export type AdapterConfig = {
 export default class Adapter implements AdapterInterface {
   root: string;
   nymph: Nymph;
-  getRootResource: () => Promise<NymphResource & NymphResourceData>;
+  getRootResource: () => Promise<NymphResource>;
   NymphLock: typeof NymphLock;
   NymphResource: typeof NymphResource;
-  _rootResource: (NymphResource & NymphResourceData) | null = null;
+  _rootResource: NymphResource | null = null;
 
   get tempRoot() {
     return path.resolve(this.root, 'temp');
@@ -236,7 +233,7 @@ export default class Adapter implements AdapterInterface {
       return true;
     }
 
-    if (!(user instanceof NymphUser)) {
+    if (!(user instanceof NymphUser) || user.guid == null) {
       return false;
     }
 
@@ -288,8 +285,7 @@ export default class Adapter implements AdapterInterface {
     }
 
     try {
-      let rootResource: NymphResource & NymphResourceData =
-        await this.getRootResource();
+      let rootResource: NymphResource = await this.getRootResource();
 
       const parent = await this.getNymphParent(pathParts, rootResource);
 
@@ -298,26 +294,34 @@ export default class Adapter implements AdapterInterface {
         return false;
       }
 
-      const curResource: (NymphResource & NymphResourceData) | null =
-        await this.nymph.getEntity(
-          { class: this.NymphResource },
-          {
-            type: '&',
-            equal: ['name', pathParts[pathParts.length - 1]],
-            ref: ['parent', parent],
-          },
-        );
+      const curResource: NymphResource | null = await this.nymph.getEntity(
+        { class: this.NymphResource },
+        {
+          type: '&',
+          equal: ['name', pathParts[pathParts.length - 1]],
+          ref: ['parent', parent],
+        },
+      );
+
+      const authNymph = this.nymph.clone();
+      const authTilmeld = enforceTilmeld(authNymph);
+      await authTilmeld.fillSession(user);
 
       if (curResource == null) {
         // Check the parent for at least write permission.
-        return tilmeld.checkPermissions(
+        parent.$setNymph(authNymph);
+        const result = authTilmeld.checkPermissions(
           parent,
           Math.max(access, TilmeldAccessLevels.WRITE_ACCESS),
-          user,
         );
+        parent.$setNymph(this.nymph);
+        return result;
       } else {
         // Check the resoure itself.
-        return tilmeld.checkPermissions(curResource, access, user);
+        curResource.$setNymph(authNymph);
+        const result = authTilmeld.checkPermissions(curResource, access);
+        curResource.$setNymph(this.nymph);
+        return result;
       }
     } catch (e: any) {
       if (e instanceof AccessControlError) {
@@ -331,10 +335,7 @@ export default class Adapter implements AdapterInterface {
     return false;
   }
 
-  async getNymphResource(
-    pathParts: string[],
-    rootResource: NymphResource & NymphResourceData,
-  ) {
+  async getNymphResource(pathParts: string[], rootResource: NymphResource) {
     if (pathParts.length === 0) {
       return rootResource;
     }
@@ -383,10 +384,7 @@ export default class Adapter implements AdapterInterface {
     return await this.nymph.getEntity(...query);
   }
 
-  async getNymphParent(
-    pathParts: string[],
-    rootResource: NymphResource & NymphResourceData,
-  ) {
+  async getNymphParent(pathParts: string[], rootResource: NymphResource) {
     if (pathParts.length <= 1) {
       return rootResource;
     }

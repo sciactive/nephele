@@ -37,9 +37,9 @@
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
   "devDependencies": {
-    "@swc/core": "^1.16.1",
+    "@swc/core": "^1.16.22",
     "@swc/jest": "^0.2.39",
-    "@tsconfig/recommended": "^1.0.13",
+    "@tsconfig/recommended": "^1.0.14",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/mime": "^4.0.0",
@@ -49,15 +49,15 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@nymphjs/driver-sqlite3": "^1.0.0-beta.131",
-    "@nymphjs/nymph": "^1.0.0-beta.131",
-    "@nymphjs/tilmeld": "^1.0.0-beta.131",
+    "@nymphjs/driver-sqlite3": "^1.0.0-beta.147",
+    "@nymphjs/nymph": "^1.0.0-beta.147",
+    "@nymphjs/tilmeld": "^1.0.0-beta.147",
     "@sciactive/back-pressure-transform": "^0.0.2",
-    "check-disk-space": "^3.4.0",
-    "file-type": "^22.2.0",
-    "joi": "^18.3.0",
+    "check-disk-space": "^4.0.0",
+    "file-type": "^22.3.0",
     "nephele": "^1.0.0-alpha.68",
-    "uuid": "^14.0.3"
+    "uuid": "^14.0.3",
+    "valibot": "^1.5.0"
   },
   "engines": {
     "node": ">=18"

@@ -35,9 +35,9 @@
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
   "devDependencies": {
-    "@swc/core": "^1.16.1",
+    "@swc/core": "^1.16.22",
     "@swc/jest": "^0.2.39",
-    "@tsconfig/recommended": "^1.0.13",
+    "@tsconfig/recommended": "^1.0.14",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "express": "^5.3.0",
@@ -45,9 +45,9 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "@nymphjs/nymph": "^1.0.0-beta.131",
-    "@nymphjs/tilmeld": "^1.0.0-beta.131",
-    "basic-auth": "^3.0.0",
+    "@nymphjs/nymph": "^1.0.0-beta.147",
+    "@nymphjs/tilmeld": "^1.0.0-beta.147",
+    "basic-auth": "^3.1.0",
     "nephele": "^1.0.0-alpha.68"
   },
   "engines": {

@@ -4,7 +4,7 @@ import type { Stats } from 'node:fs';
 import { constants } from 'node:fs';
 import path from 'node:path';
 import mime from 'mime';
-import checkDiskSpaceImport from 'check-disk-space';
+import { checkDiskSpace } from 'check-disk-space';
 import crc32 from 'cyclic-32';
 import type { Resource as ResourceInterface, User } from 'nephele';
 import {
@@ -31,10 +31,6 @@ import {
 } from './FileSystemBits.js';
 import Properties from './Properties.js';
 import Lock from './Lock.js';
-
-// TODO: Remove this if this package is fixed.
-const checkDiskSpace =
-  checkDiskSpaceImport as unknown as typeof checkDiskSpaceImport.default;
 
 export type MetaStorage = {
   props?: { [name: string]: any };

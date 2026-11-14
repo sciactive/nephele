@@ -14,7 +14,6 @@ import { PostgreSQLDriver } from '@nymphjs/driver-postgresql';
 import {
   enforceTilmeld,
   User as NymphUser,
-  UserData as NymphUserData,
   Group as NymphGroup,
   Tilmeld,
 } from '@nymphjs/tilmeld';
@@ -961,11 +960,7 @@ try {
       throw new Error('Nymph database misconfigured.');
     }
 
-    nymphInstance = new Nymph(
-      { cache: true, cacheThreshold: 1 },
-      nymphDriver,
-      tilmeld,
-    );
+    nymphInstance = new Nymph({}, nymphDriver, tilmeld);
 
     const connect = async () => {
       if (!nymphInstance) {
@@ -1122,8 +1117,7 @@ try {
                 response.locals.user.$getSData(),
               );
               await authTilmeld.fillSession(user);
-              response.locals.user = user as NymphUser &
-                NymphUserData & { username: string };
+              response.locals.user = user as NymphUser;
               adapter = new NymphAdapter({ root: directory, nymph: authNymph });
             } else {
               adapter = new NymphAdapter({

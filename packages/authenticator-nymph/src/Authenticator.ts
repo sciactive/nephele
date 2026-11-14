@@ -1,11 +1,7 @@
 import type { Request } from 'express';
 import { parse as basicAuthParse } from 'basic-auth';
 import type { Nymph } from '@nymphjs/nymph';
-import {
-  User as UserClass,
-  enforceTilmeld,
-  type UserData,
-} from '@nymphjs/tilmeld';
+import { User as UserClass, enforceTilmeld } from '@nymphjs/tilmeld';
 import type {
   Authenticator as AuthenticatorInterface,
   AuthResponse as NepheleAuthResponse,
@@ -28,10 +24,7 @@ export type AuthenticatorConfig = {
   nymph: Nymph;
 };
 
-export type AuthResponse = NepheleAuthResponse<
-  any,
-  { user: UserClass & UserData }
->;
+export type AuthResponse = NepheleAuthResponse<any, { user: UserClass }>;
 
 /**
  * Nephele Nymph.js authenticator.
@@ -78,7 +71,7 @@ export default class Authenticator implements AuthenticatorInterface {
         throw new UnauthorizedError('Username or password is invalid.');
       }
 
-      return user as UserClass & UserData & { username: string };
+      return user as UserClass;
     } catch (e: any) {
       if (e instanceof UnauthorizedError) {
         response.set(

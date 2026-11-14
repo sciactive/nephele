@@ -4,7 +4,7 @@ import { constants } from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileTypeFromFile } from 'file-type';
-import checkDiskSpaceImport from 'check-disk-space';
+import { checkDiskSpace } from 'check-disk-space';
 import { BackPressureTransform } from '@sciactive/back-pressure-transform';
 import { v4 as uuidv4 } from 'uuid';
 import { TilmeldAccessLevels } from '@nymphjs/nymph';
@@ -21,26 +21,19 @@ import {
   UnauthorizedError,
 } from 'nephele';
 
-import {
-  Resource as NymphResource,
-  ResourceData as NymphResourceData,
-} from './entities/Resource.js';
+import { Resource as NymphResource } from './entities/Resource.js';
 
 import type Adapter from './Adapter.js';
 import Properties from './Properties.js';
 import Lock from './Lock.js';
 import { EMPTY_HASH } from './constants.js';
 
-// TODO: Remove this if this package is fixed.
-const checkDiskSpace =
-  checkDiskSpaceImport as unknown as typeof checkDiskSpaceImport.default;
-
 export default class Resource implements ResourceInterface {
   adapter: Adapter;
   baseUrl: URL;
   path: string;
-  nymphResource: NymphResource & NymphResourceData;
-  rootResource: NymphResource & NymphResourceData;
+  nymphResource: NymphResource;
+  rootResource: NymphResource;
 
   constructor({
     adapter,
@@ -52,8 +45,8 @@ export default class Resource implements ResourceInterface {
     adapter: Adapter;
     baseUrl: URL;
     path: string;
-    nymphResource: NymphResource & NymphResourceData;
-    rootResource?: NymphResource & NymphResourceData;
+    nymphResource: NymphResource;
+    rootResource?: NymphResource;
   }) {
     this.adapter = adapter;
     this.baseUrl = baseUrl;
@@ -123,7 +116,10 @@ export default class Resource implements ResourceInterface {
       hash === EMPTY_HASH ||
       (await this.adapter.nymph.getEntity(
         { class: this.adapter.NymphResource, skipAc: true },
-        { type: '&', equal: ['hash', hash] },
+        {
+          type: '&',
+          equal: ['hash', hash],
+        },
       ))
     ) {
       return;
@@ -357,6 +353,25 @@ export default class Resource implements ResourceInterface {
     }
   }
 
+  private async checkPermissions(
+    resource: NymphResource,
+    permission: TilmeldAccessLevels,
+    user: NymphUser,
+  ) {
+    if (!(user instanceof NymphUser) || user.guid == null) {
+      return false;
+    }
+
+    const authNymph = this.adapter.nymph.clone();
+    const authTilmeld = enforceTilmeld(authNymph);
+    await authTilmeld.fillSession(user);
+
+    resource.$setNymph(authNymph);
+    const result = authTilmeld.checkPermissions(resource, permission);
+    resource.$setNymph(this.adapter.nymph);
+    return result;
+  }
+
   async copy(destination: URL, baseUrl: URL, user: User) {
     if (this.nymphResource.parent == null) {
       throw new ForbiddenError("This resource can't be copied.");
@@ -396,10 +411,7 @@ export default class Resource implements ResourceInterface {
     }
 
     let destinationNymphResource = await this.adapter.nymph.getEntity(
-      {
-        class: this.adapter.NymphResource,
-        skipAc: true,
-      },
+      { class: this.adapter.NymphResource, skipAc: true },
       {
         type: '&',
         equal: ['name', destinationPathParts[destinationPathParts.length - 1]],
@@ -409,15 +421,13 @@ export default class Resource implements ResourceInterface {
 
     // Check if the user can put it in the destination.
     if (user instanceof NymphUser) {
-      const tilmeld = enforceTilmeld(this.adapter.nymph);
-
       if (destinationNymphResource) {
         if (
-          !tilmeld.checkPermissions(
+          !(await this.checkPermissions(
             destinationNymphResource,
             TilmeldAccessLevels.FULL_ACCESS,
             user,
-          )
+          ))
         ) {
           throw new UnauthorizedError(
             'You do not have permission to write to the destination.',
@@ -425,11 +435,11 @@ export default class Resource implements ResourceInterface {
         }
       } else {
         if (
-          !tilmeld.checkPermissions(
+          !(await this.checkPermissions(
             destinationParent,
             TilmeldAccessLevels.READ_ACCESS,
             user,
-          )
+          ))
         ) {
           throw new UnauthorizedError(
             'You do not have permission to access the destination.',
@@ -437,11 +447,11 @@ export default class Resource implements ResourceInterface {
         }
 
         if (
-          !tilmeld.checkPermissions(
+          !(await this.checkPermissions(
             destinationParent,
             TilmeldAccessLevels.WRITE_ACCESS,
             user,
-          )
+          ))
         ) {
           throw new UnauthorizedError(
             'You do not have permission to write to the destination.',
@@ -500,10 +510,7 @@ export default class Resource implements ResourceInterface {
     }
 
     let destinationNymphResource = await this.adapter.nymph.getEntity(
-      {
-        class: this.adapter.NymphResource,
-        skipAc: true,
-      },
+      { class: this.adapter.NymphResource, skipAc: true },
       {
         type: '&',
         equal: ['name', destinationPathParts[destinationPathParts.length - 1]],
@@ -513,15 +520,13 @@ export default class Resource implements ResourceInterface {
 
     // Check if the user can put it in the destination.
     if (user instanceof NymphUser) {
-      const tilmeld = enforceTilmeld(this.adapter.nymph);
-
       if (destinationNymphResource) {
         if (
-          !tilmeld.checkPermissions(
+          !(await this.checkPermissions(
             destinationNymphResource,
             TilmeldAccessLevels.FULL_ACCESS,
             user,
-          )
+          ))
         ) {
           throw new UnauthorizedError(
             'You do not have permission to write to the destination.',
@@ -529,11 +534,11 @@ export default class Resource implements ResourceInterface {
         }
       } else {
         if (
-          !tilmeld.checkPermissions(
+          !(await this.checkPermissions(
             destinationParent,
             TilmeldAccessLevels.READ_ACCESS,
             user,
-          )
+          ))
         ) {
           throw new UnauthorizedError(
             'You do not have permission to access the destination.',
@@ -541,11 +546,11 @@ export default class Resource implements ResourceInterface {
         }
 
         if (
-          !tilmeld.checkPermissions(
+          !(await this.checkPermissions(
             destinationParent,
             TilmeldAccessLevels.WRITE_ACCESS,
             user,
-          )
+          ))
         ) {
           throw new UnauthorizedError(
             'You do not have permission to write to the destination.',

@@ -37,9 +37,9 @@
   },
   "homepage": "https://github.com/sciactive/nephele#readme",
   "devDependencies": {
-    "@swc/core": "^1.16.1",
+    "@swc/core": "^1.16.22",
     "@swc/jest": "^0.2.39",
-    "@tsconfig/recommended": "^1.0.13",
+    "@tsconfig/recommended": "^1.0.14",
     "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "express": "^5.3.0",
@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "nephele": "^1.0.0-alpha.68",
-    "svelte": "^5.57.2"
+    "svelte": "^5.57.3"
   },
   "engines": {
     "node": ">=18"

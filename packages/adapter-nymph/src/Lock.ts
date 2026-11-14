@@ -1,15 +1,12 @@
 import { InternalServerError, type Lock as LockInterface } from 'nephele';
 
-import {
-  Lock as NymphLock,
-  LockData as NymphLockData,
-} from './entities/Lock.js';
+import { Lock as NymphLock } from './entities/Lock.js';
 
 import Resource from './Resource.js';
 
 export default class Lock implements LockInterface {
   resource: Resource;
-  nymphLock: NymphLock & NymphLockData;
+  nymphLock: NymphLock;
 
   get token() {
     return this.nymphLock.token;
@@ -72,7 +69,7 @@ export default class Lock implements LockInterface {
     nymphLock,
   }: {
     resource: Resource;
-    nymphLock: NymphLock & NymphLockData;
+    nymphLock: NymphLock;
   }) {
     this.resource = resource;
     this.nymphLock = nymphLock;
