@@ -68,9 +68,11 @@ export default function createServer(
     next: NextFunction,
   ) {
     response.locals.requestId = nanoid(5);
-    response.locals.debug = debug.extend(`${response.locals.requestId}`);
+    response.locals.debug = debug
+      .extend(`${response.locals.requestId}`)
+      .extend(`${request.ip}`, ' ');
     response.locals.debug(
-      `IP: ${request.ip}, Method: ${request.method}, URL: ${request.originalUrl}`,
+      `Method: ${request.method}, URL: ${request.originalUrl}`,
     );
     response.locals.errors = [];
     next();
