@@ -3,6 +3,17 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.70](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.69...v1.0.0-alpha.70) (2026-11-15)
+
+### Bug Fixes
+
+* encryption range requests ([4a3ff19](https://github.com/sciactive/nephele/commit/4a3ff1976adb82f1a914fd36370204096e85213b))
+* error reporting of aborted requests ([8949334](https://github.com/sciactive/nephele/commit/8949334b60bf611cd0af32974f977ab7c3b2917c))
+* log response status before sending body stream ([8281f41](https://github.com/sciactive/nephele/commit/8281f41551d7188202801e722a02dc9a94f5a46f))
+* range header end byte calculation off by one ([657dc33](https://github.com/sciactive/nephele/commit/657dc3321db640bdad6c043452db8d71603e7e38))
+* stream pipeline handling and encryption range requests ([2f66a2d](https://github.com/sciactive/nephele/commit/2f66a2db0e82b5102f871f7e670c093b1bf11bf6))
+
+
 # [1.0.0-alpha.69](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.68...v1.0.0-alpha.69) (2026-11-14)
 
 ### Features

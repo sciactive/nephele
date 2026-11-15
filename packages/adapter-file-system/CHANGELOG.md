@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.70](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.69...v1.0.0-alpha.70) (2026-11-15)
+
+### Bug Fixes
+
+* stream pipeline handling and encryption range requests ([2f66a2d](https://github.com/sciactive/nephele/commit/2f66a2db0e82b5102f871f7e670c093b1bf11bf6))
+
+
 # [1.0.0-alpha.69](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.68...v1.0.0-alpha.69) (2026-11-14)
 
 ### Features
