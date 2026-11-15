@@ -87,11 +87,9 @@ export class EncryptionProxyResource implements Resource {
 
         // Read one block-1 past the end to account for inclusive range.
         newRange.end += BLOCK_SIZE - 1;
-        if (newRange.end > length) {
-          newRange.end = length;
-        }
-
-        if (newRange.end < length) {
+        if (newRange.end > length - 1) {
+          newRange.end = length - 1;
+        } else if (newRange.end < length - 1) {
           nonEOF = true;
         }
       }
