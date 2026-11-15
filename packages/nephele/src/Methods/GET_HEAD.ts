@@ -1,5 +1,6 @@
 import zlib from 'node:zlib';
 import { Transform } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import type { Request } from 'express';
 import vary from 'vary';
 import parseRange from 'range-parser';
@@ -188,9 +189,9 @@ export class GET_HEAD extends Method {
         const stream = await resource.getStream(range);
 
         request.on('close', () => {
-          if (!stream.readableEnded || !stream.destroyed) {
+          if (!response.destroyed) {
             // This happens when the request is aborted.
-            stream.destroy(new Error('Request aborted.'));
+            response.destroy(new Error('Request aborted.'));
           }
         });
 
@@ -199,21 +200,11 @@ export class GET_HEAD extends Method {
           'Content-Range': `bytes ${range.start}-${range.end}/${contentLength}`,
         });
 
-        await new Promise<void>((resolve, reject) => {
-          stream.on('error', reject);
-
-          stream.on('end', () => {
-            response.locals.debug('Response stream finished.');
-          });
-
-          stream.on('close', resolve);
-
-          if (stream.errored) {
-            reject(stream.errored);
-          } else {
-            stream.pipe(response);
-          }
-        });
+        if (stream.errored) {
+          throw stream.errored;
+        }
+        await pipeline(stream, response);
+        response.locals.debug('Response stream finished.');
       } else {
         const boundary = uuid();
 
@@ -227,9 +218,9 @@ export class GET_HEAD extends Method {
           const stream = await resource.getStream(range);
 
           request.on('close', () => {
-            if (!stream.readableEnded || !stream.destroyed) {
+            if (!response.destroyed) {
               // This happens when the request is aborted.
-              stream.destroy(new Error('Request aborted.'));
+              response.destroy(new Error('Request aborted.'));
             }
           });
 
@@ -289,9 +280,9 @@ export class GET_HEAD extends Method {
         let stream = await resource.getStream();
 
         request.on('close', () => {
-          if (!stream.readableEnded || !stream.destroyed) {
+          if (!response.destroyed) {
             // This happens when the request is aborted.
-            stream.destroy(new Error('Request aborted.'));
+            response.destroy(new Error('Request aborted.'));
           }
         });
 
@@ -301,21 +292,11 @@ export class GET_HEAD extends Method {
             'Content-Length': `${await resource.getLength()}`,
           });
 
-          await new Promise<void>((resolve, reject) => {
-            stream.on('error', reject);
-
-            stream.on('end', () => {
-              response.locals.debug('Response stream finished.');
-            });
-
-            stream.on('close', resolve);
-
-            if (stream.errored) {
-              reject(stream.errored);
-            } else {
-              stream.pipe(response);
-            }
-          });
+          if (stream.errored) {
+            throw stream.errored;
+          }
+          await pipeline(stream, response);
+          response.locals.debug('Response stream finished.');
         } else {
           response.set({
             'Content-Encoding': encoding,
@@ -336,7 +317,7 @@ export class GET_HEAD extends Method {
               break;
           }
 
-          await new Promise<void>((resolve, reject) => {
+          await new Promise<void>(async (resolve, reject) => {
             encodingStream.on('data', (chunk) => {
               response.write(
                 ('length' in chunk ? chunk.length : chunk.size).toString(16) +
@@ -362,17 +343,11 @@ export class GET_HEAD extends Method {
             if (stream.errored) {
               reject(stream.errored);
             } else {
-              stream.pipe(encodingStream);
-              stream.on('error', (err) => {
-                if (!encodingStream.destroyed) {
-                  encodingStream.destroy(err);
-                }
-              });
-              encodingStream.on('error', (err) => {
-                if (!stream.destroyed) {
-                  stream.destroy(err);
-                }
-              });
+              try {
+                await pipeline(stream, encodingStream);
+              } catch (e: any) {
+                reject(e);
+              }
             }
           });
         }

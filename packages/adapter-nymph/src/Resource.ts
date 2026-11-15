@@ -1,4 +1,4 @@
-import { Readable } from 'node:stream';
+import { pipeline, Readable } from 'node:stream';
 import fsp from 'node:fs/promises';
 import { constants } from 'node:fs';
 import path from 'node:path';
@@ -222,91 +222,91 @@ export default class Resource implements ResourceInterface {
       },
     );
 
-    input.pipe(hashStream.writable);
-    hashStream.readable.pipe(stream);
+    const { promise, resolve, reject } = Promise.withResolvers<void>();
 
-    return await new Promise<void>((resolve, reject) => {
-      stream.on('close', async () => {
-        await handle.close();
-        hashStream.writable.destroy();
-        hashStream.readable.destroy();
+    stream.on('close', async () => {
+      await handle.close();
+      hashStream.writable.destroy();
+      hashStream.readable.destroy();
 
-        const hash = await hashPromise;
-        const transaction = `nephele-hash-${hash}`;
-        const nymph = this.nymphResource.$nymph;
-        const tnymph =
-          await this.nymphResource.$nymph.startTransaction(transaction);
-        this.nymphResource.$setNymph(tnymph);
+      const hash = await hashPromise;
+      const transaction = `nephele-hash-${hash}`;
+      const nymph = this.nymphResource.$nymph;
+      const tnymph =
+        await this.nymphResource.$nymph.startTransaction(transaction);
+      this.nymphResource.$setNymph(tnymph);
 
-        const oldHash = this.nymphResource.hash;
+      const oldHash = this.nymphResource.hash;
+
+      try {
+        this.nymphResource.hash = hash;
+        this.nymphResource.size = size;
+        this.nymphResource.contentType =
+          (await fileTypeFromFile(tempFilename))?.mime ??
+          mediaType ??
+          'application/octet-stream';
+        try {
+          await this.nymphResource.$save();
+        } catch (e: any) {
+          throw new InternalServerError("Couldn't save resource entity.");
+        }
+
+        // Move temp file to final destination.
+        const dirname = this.getBlobDirname();
+        const filename = path.resolve(dirname, hash);
 
         try {
-          this.nymphResource.hash = hash;
-          this.nymphResource.size = size;
-          this.nymphResource.contentType =
-            (await fileTypeFromFile(tempFilename))?.mime ??
-            mediaType ??
-            'application/octet-stream';
-          try {
-            await this.nymphResource.$save();
-          } catch (e: any) {
-            throw new InternalServerError("Couldn't save resource entity.");
-          }
-
-          // Move temp file to final destination.
-          const dirname = this.getBlobDirname();
-          const filename = path.resolve(dirname, hash);
-
-          try {
-            await fsp.access(dirname, constants.F_OK);
-          } catch (e: any) {
-            await fsp.mkdir(dirname, { recursive: true });
-          }
-
-          await fsp.rename(tempFilename, filename);
-
-          await tnymph.commit(transaction);
-          this.nymphResource.$setNymph(nymph);
+          await fsp.access(dirname, constants.F_OK);
         } catch (e: any) {
-          await tnymph.rollback(transaction);
-          this.nymphResource.$setNymph(nymph);
-
-          try {
-            await fsp.unlink(tempFilename);
-          } catch (e: any) {
-            // ignore error
-          }
-
-          reject(e);
+          await fsp.mkdir(dirname, { recursive: true });
         }
 
-        if (oldHash !== hash) {
-          await this.deleteBlobIfOrphaned(oldHash);
+        await fsp.rename(tempFilename, filename);
+
+        await tnymph.commit(transaction);
+        this.nymphResource.$setNymph(nymph);
+      } catch (e: any) {
+        await tnymph.rollback(transaction);
+        this.nymphResource.$setNymph(nymph);
+
+        try {
+          await fsp.unlink(tempFilename);
+        } catch (e: any) {
+          // ignore error
         }
 
-        resolve();
-      });
+        reject(e);
+      }
 
-      stream.on('error', async (err) => {
-        input.destroy(err);
-        cryptoHash.destroy();
-        await handle.close();
+      if (oldHash !== hash) {
+        await this.deleteBlobIfOrphaned(oldHash);
+      }
 
-        await fsp.unlink(tempFilename);
-
-        reject(err);
-      });
-
-      input.on('error', async (err) => {
-        stream.destroy(err);
-        cryptoHash.destroy();
-        await handle.close();
-
-        await fsp.unlink(tempFilename);
-
-        reject(err);
-      });
+      resolve();
     });
+
+    pipeline(input, hashStream.writable, async (err) => {
+      if (err) {
+        cryptoHash.destroy();
+        await handle.close();
+
+        await fsp.unlink(tempFilename);
+
+        reject(err);
+      }
+    });
+    pipeline(hashStream.readable, stream, async (err) => {
+      if (err) {
+        cryptoHash.destroy();
+        await handle.close();
+
+        await fsp.unlink(tempFilename);
+
+        reject(err);
+      }
+    });
+
+    return promise;
   }
 
   async create(_user: User) {

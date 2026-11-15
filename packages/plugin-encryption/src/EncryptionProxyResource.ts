@@ -1,4 +1,4 @@
-import { Readable } from 'node:stream';
+import { pipeline, Readable } from 'node:stream';
 import { basename } from 'node:path';
 import type { Properties, Resource, User } from 'nephele';
 import { InternalServerError } from 'nephele';
@@ -61,6 +61,8 @@ export class EncryptionProxyResource implements Resource {
       return await this.targetResource.getStream(range);
     }
 
+    const newRange = range ? { ...range } : undefined;
+
     // The encryption block size.
     const BLOCK_SIZE = 16;
     // How many bytes to read in first to start decrypting correctly.
@@ -69,27 +71,39 @@ export class EncryptionProxyResource implements Resource {
     let offset = 0;
     // How many bytes to send to the stream.
     let byteLength = Infinity;
-    if (range) {
-      byteLength = range.end - range.start + 1; // +1 because range is inclusive.
+    // This needs to be true if the eof is not included in the range.
+    let nonEOF = false;
+    if (newRange) {
+      byteLength = newRange.end - newRange.start + 1; // +1 because range is inclusive.
 
       // Make sure we read a whole number of blocks.
-      if (isFinite(range.end) && range.end % BLOCK_SIZE) {
-        range.end = range.end + (BLOCK_SIZE - (range.end % BLOCK_SIZE));
+      if (isFinite(newRange.end) && newRange.end % BLOCK_SIZE) {
+        newRange.end =
+          newRange.end + (BLOCK_SIZE - (newRange.end % BLOCK_SIZE));
       }
 
-      // Read one block+1 past the end to account for inclusive range.
-      if (isFinite(range.end)) {
-        range.end += BLOCK_SIZE + 1;
+      if (isFinite(newRange.end)) {
+        const length = await this.targetResource.getLength();
+
+        // Read one block-1 past the end to account for inclusive range.
+        newRange.end += BLOCK_SIZE - 1;
+        if (newRange.end > length) {
+          newRange.end = length;
+        }
+
+        if (newRange.end < length) {
+          nonEOF = true;
+        }
       }
 
       // Make sure we start at the beginning of a block, and start before the
       // request to allow data to start decrypting correctly.
-      if (range.start < BYTE_PREFIX) {
-        offset = range.start;
-        range.start = 0;
+      if (newRange.start < BYTE_PREFIX) {
+        offset = newRange.start;
+        newRange.start = 0;
       } else {
-        offset = (range.start % BLOCK_SIZE) + BYTE_PREFIX;
-        range.start = range.start - offset;
+        offset = (newRange.start % BLOCK_SIZE) + BYTE_PREFIX;
+        newRange.start = newRange.start - offset;
       }
     }
 
@@ -104,14 +118,16 @@ export class EncryptionProxyResource implements Resource {
 
     // TODO: handle a range request that ends at the end of the file.
     // (need to request the padding at the end)
-    const stream = await this.targetResource.getStream(range);
+    const stream = await this.targetResource.getStream(newRange);
     const cipher = await this.plugin.getDecryptedStream(
       this.keys.content,
       iv,
       stream,
+      BLOCK_SIZE,
+      nonEOF,
     );
 
-    if (range) {
+    if (newRange) {
       // How many bytes we've discarded from the front of the encryption stream.
       let discarded = 0;
       // How many bytes we've sent to the output stream.
@@ -124,9 +140,9 @@ export class EncryptionProxyResource implements Resource {
 
         let newChunk = chunk;
         if (discarded < offset) {
-          if (discarded + chunk.byteLength <= offset) {
+          if (discarded + chunk.length <= offset) {
             // Discard entire chunk.
-            discarded += chunk.byteLength;
+            discarded += chunk.length;
             return;
           } else {
             // Discard part of the chunk.
@@ -135,40 +151,23 @@ export class EncryptionProxyResource implements Resource {
           }
         }
 
-        if (newChunk.byteLength) {
-          if (transmitted + newChunk.byteLength > byteLength) {
+        if (newChunk.length) {
+          if (transmitted + newChunk.length > byteLength) {
             // Truncate the chunk
             newChunk = newChunk.subarray(0, byteLength - transmitted);
           }
 
-          transmitted += newChunk.byteLength;
+          transmitted += newChunk.length;
 
           return newChunk;
         }
       });
 
-      cipher.pipe(output.writable);
-      cipher.on('error', (err) => {
-        if (!output.writable.destroyed) {
-          output.writable.destroy(err);
+      pipeline(cipher, output.writable, (e: any) => {
+        if (e) {
+          output.readable.destroy(e);
         }
       });
-      cipher.on('close', () => {
-        if (!output.writable.destroyed) {
-          output.writable.destroy();
-        }
-      });
-      output.writable.on('error', (err) => {
-        if (!cipher.destroyed) {
-          cipher.destroy(err);
-        }
-      });
-      output.writable.on('close', () => {
-        if (!cipher.destroyed) {
-          cipher.destroy();
-        }
-      });
-
       return output.readable;
     }
 

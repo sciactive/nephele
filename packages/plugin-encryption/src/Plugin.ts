@@ -5,7 +5,7 @@ import {
   createDecipheriv,
   createHash,
 } from 'node:crypto';
-import type { Readable } from 'node:stream';
+import { pipeline, type Readable } from 'node:stream';
 import type { Request } from 'express';
 import type { Plugin as PluginInterface, AuthResponse, Adapter } from 'nephele';
 import { UnauthorizedError, InternalServerError } from 'nephele';
@@ -345,46 +345,19 @@ export default class Plugin implements PluginInterface {
       streamLength += chunk?.length ?? 0;
       return chunk;
     });
-    stream.pipe(streamWithCounter.writable);
-    stream.on('error', (err) => {
-      if (!streamWithCounter.writable.destroyed) {
-        streamWithCounter.writable.destroy(err);
-      }
-    });
-    streamWithCounter.writable.on('error', (err) => {
-      if (!stream.destroyed) {
-        stream.destroy(err);
-      }
+    pipeline(stream, streamWithCounter.writable, (e: any) => {
+      streamWithCounter.readable.destroy(e);
     });
 
     const cipher = createCipheriv(this.algorithm, key, iv);
-
-    streamWithCounter.readable.pipe(cipher);
-    streamWithCounter.readable.on('error', (err) => {
-      if (!cipher.destroyed) {
-        cipher.destroy(err);
-      }
-    });
-    cipher.on('error', (err) => {
-      if (!streamWithCounter.readable.destroyed) {
-        streamWithCounter.readable.destroy(err);
-      }
-    });
+    pipeline(streamWithCounter.readable, cipher, (e: any) => {});
 
     const cipherWithCounter = new BackPressureTransform(async (chunk) => {
       cipherLength += chunk?.length ?? 0;
       return chunk;
     });
-    cipher.pipe(cipherWithCounter.writable);
-    cipher.on('error', (err) => {
-      if (!cipherWithCounter.writable.destroyed) {
-        cipherWithCounter.writable.destroy(err);
-      }
-    });
-    cipherWithCounter.writable.on('error', (err) => {
-      if (!cipher.destroyed) {
-        cipher.destroy(err);
-      }
+    pipeline(cipher, cipherWithCounter.writable, (e: any) => {
+      cipherWithCounter.readable.destroy(e);
     });
 
     cipherWithCounter.readable.on('close', () => {
@@ -398,32 +371,34 @@ export default class Plugin implements PluginInterface {
     };
   }
 
-  async getDecryptedStream(key: Buffer, iv: string, stream: Readable) {
+  async getDecryptedStream(
+    key: Buffer,
+    iv: string,
+    stream: Readable,
+    BLOCK_SIZE: number,
+    nonEOF: boolean,
+  ) {
+    const ivBuffer = Buffer.from(iv, 'base64');
+    if (ivBuffer.length !== BLOCK_SIZE) {
+      throw new Error(
+        `Invalid IV byte length: expected ${BLOCK_SIZE}, got ${ivBuffer.length}`,
+      );
+    }
+
     const decipher = createDecipheriv(
       this.algorithm,
       key,
-      new Uint8Array(Buffer.from(iv, 'base64')),
+      new Uint8Array(ivBuffer),
     );
 
-    stream.pipe(decipher);
-    stream.on('error', (err) => {
-      if (!decipher.destroyed) {
-        decipher.destroy(err);
-      }
-    });
-    stream.on('close', () => {
-      if (!decipher.destroyed) {
-        decipher.destroy();
-      }
-    });
-    decipher.on('error', (err) => {
-      if (!stream.destroyed) {
-        stream.destroy(err);
-      }
-    });
-    decipher.on('close', () => {
-      if (!stream.destroyed) {
-        stream.destroy();
+    // This means the range will not include the end of the file.
+    if (nonEOF) {
+      decipher.setAutoPadding(false);
+    }
+
+    pipeline(stream, decipher, (e: any) => {
+      if (e && e.code !== 'ERR_STREAM_PREMATURE_CLOSE') {
+        console.error(`Decryption Error: ${e.message}`);
       }
     });
 

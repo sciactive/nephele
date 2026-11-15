@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
 import fsp from 'node:fs/promises';
 import type { Stats } from 'node:fs';
 import { constants } from 'node:fs';
@@ -201,7 +202,13 @@ export default class Resource implements ResourceInterface {
     // Reset stats, since they are going to change.
     this.stats = undefined;
 
-    input.pipe(stream);
+    try {
+      await pipeline(input, stream);
+      await handle.close();
+    } catch (e: any) {
+      await handle.close();
+      throw e;
+    }
 
     // Throttle throughput. Maybe add this as an option.
 
@@ -218,25 +225,6 @@ export default class Resource implements ResourceInterface {
     // input.on('end', async () => {
     //   await stream.close();
     // });
-
-    return await new Promise<void>((resolve, reject) => {
-      stream.on('close', async () => {
-        await handle.close();
-        resolve();
-      });
-
-      stream.on('error', async (err) => {
-        input.destroy(err);
-        await handle.close();
-        reject(err);
-      });
-
-      input.on('error', async (err) => {
-        stream.destroy(err);
-        await handle.close();
-        reject(err);
-      });
-    });
   }
 
   async create(user: User) {
@@ -697,13 +685,24 @@ export default class Resource implements ResourceInterface {
       }
       try {
         etag = await new Promise(async (resolve, reject) => {
-          const stream = (await this.getStream()).pipe(
-            crc32.createHash({ seed: 0, table: crc32.TABLE.CASTAGNOLI }),
-          );
-          stream.on('error', reject);
-          stream.on('data', (buffer: Buffer) => {
-            resolve(buffer.toString('hex'));
-          });
+          const chunks: Buffer[] = [];
+          try {
+            await pipeline(
+              await this.getStream(),
+              crc32.createHash({ seed: 0, table: crc32.TABLE.CASTAGNOLI }),
+              async function* (source) {
+                for await (const chunk of source) {
+                  chunks.push(
+                    Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as any),
+                  );
+                }
+              },
+            );
+          } catch (e: any) {
+            reject(e);
+          }
+          const fullBuffer = Buffer.concat(chunks);
+          resolve(fullBuffer.toString('hex'));
         });
       } catch (e: any) {
         throw new Error('Etag could not be calculated.');
