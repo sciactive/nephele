@@ -35,4 +35,3 @@ CMD pm2-runtime start -i $WORKERS nephele-serve -- $SERVER_ROOT
 #  VERSION=$(docker run --rm -i ghcr.io/jqlang/jq:latest < lerna.json -r '.version') docker buildx build --build-arg VERSION=$VERSION --platform linux/amd64,linux/arm64 -t sciactive/nephele:latest -t sciactive/nephele:$VERSION --push .
 # You need buildx and qemu: https://stackoverflow.com/a/76129784/664915
 #  sudo dnf install qemu-system-arm qemu-system-aarch64
-#  docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
