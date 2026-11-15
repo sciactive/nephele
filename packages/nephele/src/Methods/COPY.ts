@@ -359,7 +359,7 @@ export class COPY extends Method {
     const existed = await recursivelyCopy(resource, destination);
 
     if (multiStatus.statuses.length === 0) {
-      response.status(existed ? 204 : 201); // No Content : Created
+      this.setAndLogStatus(response, existed ? 204 : 201); // No Content : Created
       if (!existed) {
         response.set({
           Location: destination.toString(),
@@ -368,7 +368,7 @@ export class COPY extends Method {
       response.end();
     } else {
       const responseXml = await this.renderXml(multiStatus.render());
-      response.status(207); // Multi-Status
+      this.setAndLogStatus(response, 207); // Multi-Status
       response.set({
         'Content-Type': `${contentType}; charset=utf-8`,
       });

@@ -105,7 +105,7 @@ export class UNLOCK extends Method {
       multiStatus.addStatus(status);
 
       const responseXml = await this.renderXml(multiStatus.render());
-      response.status(207); // Multi-Status
+      this.setAndLogStatus(response, 207); // Multi-Status
       response.set({
         'Content-Type': `${contentType}; charset=utf-8`,
       });
@@ -136,7 +136,7 @@ export class UNLOCK extends Method {
 
     await lock.delete();
 
-    response.status(204); // No Content
+    this.setAndLogStatus(response, 204); // No Content
     response.end();
 
     await this.runPlugins(request, response, 'afterUnlock', {

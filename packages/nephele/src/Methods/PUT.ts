@@ -131,7 +131,7 @@ export class PUT extends Method {
     let stream = await this.getBodyStream(request, response);
     await resource.setStream(stream, response.locals.user, contentType);
 
-    response.status(newResource ? 201 : 204); // Created or No Content
+    this.setAndLogStatus(response, newResource ? 201 : 204); // Created or No Content
     if (newResource) {
       response.set({
         Location: (await resource.getCanonicalUrl()).toString(),

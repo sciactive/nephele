@@ -228,7 +228,7 @@ export class PROPPATCH extends Method {
     multiStatus.addStatus(status);
 
     const responseXml = await this.renderXml(multiStatus.render(), prefixes);
-    response.status(207); // Multi-Status
+    this.setAndLogStatus(response, 207); // Multi-Status
     response.set({
       'Content-Type': `${contentType}; charset=utf-8`,
     });

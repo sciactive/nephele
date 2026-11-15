@@ -15,6 +15,7 @@ import {
   getPlugins,
 } from './Options.js';
 import { catchErrors } from './catchErrors.js';
+import { HTTPStatusMessages } from './HTTPStatusMessages.js';
 import { ForbiddenError, UnauthorizedError } from './Errors/index.js';
 import {
   COPY,
@@ -83,10 +84,11 @@ export default function createServer(
     response: AuthResponse,
     next: NextFunction,
   ) {
+    response.on('finish', () => {
+      response.locals.debug(`Response finished.`);
+    });
     response.on('close', () => {
-      response.locals.debug(
-        `Response: ${response.statusCode} ${response.statusMessage || ''}`,
-      );
+      response.locals.debug(`Connection closed.`);
 
       for (let error of response.locals.errors) {
         response.locals.debug(
@@ -254,18 +256,30 @@ export default function createServer(
       response.locals.errors.push(e);
       if (e instanceof UnauthorizedError) {
         response.status(401);
+        response.statusMessage = HTTPStatusMessages[401];
+        response.locals.debug(
+          `Response: ${response.statusCode} ${response.statusMessage || ''}`,
+        );
         opts.errorHandler(401, 'Unauthorized.', request, response, e);
         return;
       }
 
       if (e instanceof ForbiddenError) {
         response.status(403);
+        response.statusMessage = HTTPStatusMessages[403];
+        response.locals.debug(
+          `Response: ${response.statusCode} ${response.statusMessage || ''}`,
+        );
         opts.errorHandler(403, 'Forbidden.', request, response, e);
         return;
       }
 
       response.locals.debug('Error: %o', e);
       response.status(500);
+      response.statusMessage = HTTPStatusMessages[500];
+      response.locals.debug(
+        `Response: ${response.statusCode} ${response.statusMessage || ''}`,
+      );
       opts.errorHandler(500, 'Internal server error.', request, response, e);
       return;
     }
@@ -344,6 +358,10 @@ export default function createServer(
     const splitPath = request.path.split('/');
     if (splitPath.includes('..') || splitPath.includes('.')) {
       response.status(400);
+      response.statusMessage = HTTPStatusMessages[400];
+      response.locals.debug(
+        `Response: ${response.statusCode} ${response.statusMessage || ''}`,
+      );
       opts.errorHandler(400, 'Bad request.', request, response);
       return;
     }

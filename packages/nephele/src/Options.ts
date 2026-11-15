@@ -8,6 +8,7 @@ import type {
   AuthResponse,
   Plugin,
 } from './Interfaces/index.js';
+import { HTTPStatusMessages } from './HTTPStatusMessages.js';
 
 export type AdapterConfig = Adapter | { [k: string]: Adapter };
 
@@ -114,6 +115,11 @@ export const defaults: Options = {
 
       // Not really errors.
       response.status(code);
+      response.statusMessage =
+        (HTTPStatusMessages as Record<number, string>)[code] ?? 'Unknown';
+      response.locals.debug(
+        `Response: ${response.statusCode} ${response.statusMessage || ''}`,
+      );
       if (error && 'etag' in error && error.etag) {
         response.set({
           ETag: error.etag,
@@ -163,6 +169,11 @@ export const defaults: Options = {
     }
     if (!response.headersSent) {
       response.status(code);
+      response.statusMessage =
+        (HTTPStatusMessages as Record<number, string>)[code] ?? 'Unknown';
+      response.locals.debug(
+        `Response: ${response.statusCode} ${response.statusMessage || ''}`,
+      );
       response.set({
         'Content-Type': `${contentType}; charset=utf-8`,
         'Content-Length': body.length,

@@ -176,7 +176,7 @@ export class GET_HEAD extends Method {
     };
 
     if (sendPartialContent) {
-      response.status(206); // Partial Content
+      this.setAndLogStatus(response, 206); // Partial Content
       response.set({
         ETag: JSON.stringify(etag),
         'Last-Modified': lastModified.toUTCString(),
@@ -204,7 +204,6 @@ export class GET_HEAD extends Method {
           throw stream.errored;
         }
         await pipeline(stream, response);
-        response.locals.debug('Response stream finished.');
       } else {
         const boundary = uuid();
 
@@ -243,7 +242,6 @@ export class GET_HEAD extends Method {
 
             stream.on('end', () => {
               writeText(`\n--${boundary}`);
-              response.locals.debug('Response stream finished.');
             });
 
             stream.on('close', resolve);
@@ -251,7 +249,7 @@ export class GET_HEAD extends Method {
         }
       }
     } else {
-      response.status(mediaType == null ? 204 : 200); // No Content or Ok
+      this.setAndLogStatus(response, mediaType == null ? 204 : 200); // No Content or Ok
 
       response.set({
         ETag: JSON.stringify(etag),
@@ -296,7 +294,6 @@ export class GET_HEAD extends Method {
             throw stream.errored;
           }
           await pipeline(stream, response);
-          response.locals.debug('Response stream finished.');
         } else {
           response.set({
             'Content-Encoding': encoding,
@@ -335,7 +332,6 @@ export class GET_HEAD extends Method {
 
             encodingStream.on('end', () => {
               writeText('0\r\n\r\n');
-              response.locals.debug('Response stream finished.');
             });
 
             encodingStream.on('close', resolve);

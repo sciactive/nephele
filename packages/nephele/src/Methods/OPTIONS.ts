@@ -97,7 +97,7 @@ export class OPTIONS extends Method {
       return;
     }
 
-    response.status(200); // OK
+    this.setAndLogStatus(response, 200); // OK
     response.set({
       'Cache-Control': cacheControl,
       Date: new Date().toUTCString(),

@@ -388,7 +388,7 @@ export class MOVE extends Method {
     };
 
     if (multiStatus.statuses.length === 0) {
-      response.status(existed ? 204 : 201); // No Content : Created
+      this.setAndLogStatus(response, existed ? 204 : 201); // No Content : Created
       if (!existed) {
         response.set({
           'Content-Length': 0,
@@ -398,7 +398,7 @@ export class MOVE extends Method {
       response.end();
     } else {
       const responseXml = await this.renderXml(multiStatus.render());
-      response.status(207); // Multi-Status
+      this.setAndLogStatus(response, 207); // Multi-Status
       response.set({
         'Content-Type': `${contentType}; charset=utf-8`,
       });

@@ -146,7 +146,7 @@ export class LOCK extends Method {
         multiStatus.addStatus(status);
 
         const responseXml = await this.renderXml(multiStatus.render());
-        response.status(207); // Multi-Status
+        this.setAndLogStatus(response, 207); // Multi-Status
         response.set({
           'Content-Type': `${contentType}; charset=utf-8`,
         });
@@ -179,7 +179,7 @@ export class LOCK extends Method {
         },
       };
       const responseXml = await this.renderXml(responseObj);
-      response.status(200); // OK
+      this.setAndLogStatus(response, 200); // OK
       response.set({
         'Content-Type': `${contentType}; charset=utf-8`,
       });
@@ -506,7 +506,7 @@ export class LOCK extends Method {
       multiStatus.addStatus(status);
 
       const responseXml = await this.renderXml(multiStatus.render(), prefixes);
-      response.status(207); // Multi-Status
+      this.setAndLogStatus(response, 207); // Multi-Status
       response.set({
         'Content-Type': `${contentType}; charset=utf-8`,
       });
@@ -550,7 +550,7 @@ export class LOCK extends Method {
       },
     };
     const responseXml = await this.renderXml(responseObj, prefixes);
-    response.status(newResource ? 201 : 200); // Created or OK
+    this.setAndLogStatus(response, newResource ? 201 : 200); // Created or OK
     response.set({
       'Lock-Token': `<${lock.token}>`,
       'Content-Type': `${contentType}; charset=utf-8`,

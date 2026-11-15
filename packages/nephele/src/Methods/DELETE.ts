@@ -122,13 +122,13 @@ export class DELETE extends Method {
 
         await resource.delete(response.locals.user);
 
-        response.status(204); // No Content
+        this.setAndLogStatus(response, 204); // No Content
         response.end();
       } else {
         // If there were errors, don't delete the top level resource, respond
         // with the errors.
         const responseXml = await this.renderXml(multiStatus.render());
-        response.status(207); // Multi-Status
+        this.setAndLogStatus(response, 207); // Multi-Status
         response.set({
           'Content-Type': `${contentType}; charset=utf-8`,
         });
@@ -143,7 +143,7 @@ export class DELETE extends Method {
 
       await resource.delete(response.locals.user);
 
-      response.status(204); // No Content
+      this.setAndLogStatus(response, 204); // No Content
       response.end();
     }
 

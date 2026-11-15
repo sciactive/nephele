@@ -127,7 +127,7 @@ export class MKCOL extends Method {
       throw e;
     }
 
-    response.status(201); // Created
+    this.setAndLogStatus(response, 201); // Created
     response.set({
       Location: (await resource.getCanonicalUrl()).toString(),
     });

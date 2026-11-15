@@ -26,6 +26,7 @@ import {
 } from '../Errors/index.js';
 import type { Options } from '../Options.js';
 import { getAdapter, _getAdapter } from '../Options.js';
+import { HTTPStatusMessages } from '../HTTPStatusMessages.js';
 
 // The following regexes are used in parsing the If header.
 
@@ -79,6 +80,17 @@ export class Method {
 
   constructor(opts: Options) {
     this.opts = opts;
+  }
+
+  setAndLogStatus(response: AuthResponse, code: number, message?: string) {
+    response.status(code);
+    response.statusMessage =
+      message ??
+      (HTTPStatusMessages as Record<number, string>)[code] ??
+      'Unknown';
+    response.locals.debug(
+      `Response: ${response.statusCode} ${response.statusMessage || ''}`,
+    );
   }
 
   /**
