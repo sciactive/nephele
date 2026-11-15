@@ -133,7 +133,11 @@ export const defaults: Options = {
     }
 
     if (code === 500 && error) {
-      response.locals.debug('Unknown Error: %o', error);
+      if ((error as any)?.code === 'ERR_STREAM_PREMATURE_CLOSE') {
+        response.locals.debug('Stream Ended Early: %s', error.message);
+      } else {
+        response.locals.debug('Unknown Error: %o', error);
+      }
     }
 
     if (response.headersSent || response.destroyed) {
