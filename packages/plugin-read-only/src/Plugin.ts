@@ -25,4 +25,36 @@ export default class Plugin implements PluginInterface {
       throw new UnauthorizedError('Unauthorized.');
     }
   }
+
+  async beforeOptions(
+    _request: Request,
+    _res: AuthResponse,
+    { allowedMethods }: { allowedMethods: string[] },
+  ) {
+    for (let i = 0; i < allowedMethods.length; i++) {
+      // Explicitly allowed methods:
+      // 'OPTIONS'
+      // 'GET'
+      // 'HEAD'
+      if (
+        [
+          'POST',
+          'PUT',
+          'DELETE',
+          'COPY',
+          'MOVE',
+          'MKCOL',
+          'PROPFIND',
+          'PROPPATCH',
+          'LOCK',
+          'UNLOCK',
+        ].includes(allowedMethods[i])
+      ) {
+        allowedMethods.splice(i, 1);
+        i--;
+      }
+    }
+
+    console.log({ allowedMethods });
+  }
 }
