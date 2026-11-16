@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.71](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.70...v1.0.0-alpha.71) (2026-11-16)
+
+### Bug Fixes
+
+* remove write methods from allowed methods on options request for read only plugin ([8988bd2](https://github.com/sciactive/nephele/commit/8988bd264192d5f902ca8a0d94e31b80626b6521))
+
+
 # [1.0.0-alpha.70](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.69...v1.0.0-alpha.70) (2026-11-15)
 
 **Note:** Version bump only for package @nephele/plugin-read-only

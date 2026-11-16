@@ -3,6 +3,19 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.71](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.70...v1.0.0-alpha.71) (2026-11-16)
+
+### Bug Fixes
+
+* another encryption issue ([3ffdffa](https://github.com/sciactive/nephele/commit/3ffdffabdd18394db843b3958283bf242a820a4e))
+* handle failed encrypted resources gracefully ([d5d10ab](https://github.com/sciactive/nephele/commit/d5d10abd4b8e3931745d7bfd9d34742cdef39bcd))
+* remove write methods from allowed methods on options request for read only plugin ([8988bd2](https://github.com/sciactive/nephele/commit/8988bd264192d5f902ca8a0d94e31b80626b6521))
+
+### Features
+
+* add read only option to nephele-serve ([591becc](https://github.com/sciactive/nephele/commit/591becc033ce97ac752ae21859f584c99adf8ee2))
+
+
 # [1.0.0-alpha.70](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.69...v1.0.0-alpha.70) (2026-11-15)
 
 ### Bug Fixes

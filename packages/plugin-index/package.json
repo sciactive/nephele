@@ -1,6 +1,6 @@
 {
   "name": "@nephele/plugin-index",
-  "version": "1.0.0-alpha.70",
+  "version": "1.0.0-alpha.71",
   "description": "Index file and directory contents listing plugin (browser support) for the Nephele WebDAV server.",
   "type": "module",
   "main": "dist/index.js",
@@ -47,7 +47,7 @@
     "typescript": "^7.0.2"
   },
   "dependencies": {
-    "nephele": "^1.0.0-alpha.70",
+    "nephele": "^1.0.0-alpha.71",
     "svelte": "^5.57.3"
   },
   "engines": {

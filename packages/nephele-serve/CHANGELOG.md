@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+# [1.0.0-alpha.71](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.70...v1.0.0-alpha.71) (2026-11-16)
+
+### Features
+
+* add read only option to nephele-serve ([591becc](https://github.com/sciactive/nephele/commit/591becc033ce97ac752ae21859f584c99adf8ee2))
+
+
 # [1.0.0-alpha.70](https://github.com/sciactive/nephele/compare/v1.0.0-alpha.69...v1.0.0-alpha.70) (2026-11-15)
 
 **Note:** Version bump only for package nephele-serve
