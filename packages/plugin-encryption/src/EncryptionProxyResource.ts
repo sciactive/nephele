@@ -35,6 +35,16 @@ export class EncryptionProxyResource implements Resource {
       return false;
     }
 
+    const properties = await this.targetResource.getProperties();
+    const iv = await properties.get('nephele-encryption-iv');
+
+    if (typeof iv !== 'string') {
+      // This will happen if an upload is interrupted with an error. Rather than
+      // cause the server to throw errors for the entire directory, just
+      // consider it a non-encrypted resource.
+      return false;
+    }
+
     const path = await this.targetResource.getCanonicalPath();
     return this.adapter.shouldEncryptPath(path);
   }
@@ -224,15 +234,16 @@ export class EncryptionProxyResource implements Resource {
     }
 
     const properties = await this.targetResource.getProperties();
-    const paddingBytes = await properties.get(
-      'nephele-encryption-padding-bytes',
-    );
-
-    if (typeof paddingBytes !== 'string') {
-      return length;
+    let paddingBytes = 0;
+    try {
+      paddingBytes = parseInt(
+        `${await properties.get('nephele-encryption-padding-bytes')}`,
+      );
+    } catch (e: any) {
+      // Ignore error here.
     }
 
-    return length - parseInt(paddingBytes);
+    return length - paddingBytes;
   }
 
   async getEtag() {

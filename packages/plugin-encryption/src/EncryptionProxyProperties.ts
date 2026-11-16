@@ -27,11 +27,15 @@ export class EncryptionProxyProperties implements Properties {
         name === 'getcontentlength' &&
         !(await this.resource.isCollection())
       ) {
-        let padding = await this.targetProperties.get(
-          'nephele-encryption-padding-bytes',
-        );
-        if (typeof prop === 'string' && typeof padding === 'string') {
-          prop = `${parseFloat(prop) - parseFloat(padding)}`;
+        try {
+          let padding = await this.targetProperties.get(
+            'nephele-encryption-padding-bytes',
+          );
+          if (typeof prop === 'string' && typeof padding === 'string') {
+            prop = `${parseFloat(prop) - parseFloat(padding)}`;
+          }
+        } catch (e: any) {
+          // Ignore error here.
         }
       }
 
@@ -52,11 +56,15 @@ export class EncryptionProxyProperties implements Properties {
 
     if (await this.resource.shouldEncrypt()) {
       if (name === 'getcontentlength') {
-        let padding = await this.targetProperties.get(
-          'nephele-encryption-padding-bytes',
-        );
-        if (typeof prop === 'string' && typeof padding === 'string') {
-          prop = `${parseFloat(prop) - parseFloat(padding)}`;
+        try {
+          let padding = await this.targetProperties.get(
+            'nephele-encryption-padding-bytes',
+          );
+          if (typeof prop === 'string' && typeof padding === 'string') {
+            prop = `${parseFloat(prop) - parseFloat(padding)}`;
+          }
+        } catch (e: any) {
+          // Ignore error here.
         }
       }
 
