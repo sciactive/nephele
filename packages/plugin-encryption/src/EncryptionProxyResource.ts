@@ -36,12 +36,18 @@ export class EncryptionProxyResource implements Resource {
     }
 
     const properties = await this.targetResource.getProperties();
-    const iv = await properties.get('nephele-encryption-iv');
 
-    if (typeof iv !== 'string') {
-      // This will happen if an upload is interrupted with an error. Rather than
-      // cause the server to throw errors for the entire directory, just
-      // consider it a non-encrypted resource.
+    try {
+      const iv = await properties.get('nephele-encryption-iv');
+
+      if (typeof iv !== 'string') {
+        // This will happen if an upload is interrupted with an error. Rather than
+        // cause the server to throw errors for the entire directory, just
+        // consider it a non-encrypted resource.
+        return false;
+      }
+    } catch (e: any) {
+      // Same here.
       return false;
     }
 
