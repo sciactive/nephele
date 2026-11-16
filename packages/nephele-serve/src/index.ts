@@ -33,6 +33,7 @@ import NymphAuthenticator from '@nephele/authenticator-nymph';
 import InsecureAuthenticator from '@nephele/authenticator-none';
 import IndexPlugin from '@nephele/plugin-index';
 import EncryptionPlugin from '@nephele/plugin-encryption';
+import ReadOnlyPlugin from '@nephele/plugin-read-only';
 import updateNotifier from 'update-notifier';
 
 type Hosts = { name: string; family: string; address: string }[];
@@ -57,6 +58,7 @@ type Conf = {
   userDirectories: boolean;
   serveIndexes: boolean;
   serveListings: boolean;
+  readOnly: boolean;
   followLinks: boolean;
   fileProperties: 'meta-files' | 'disallow' | 'emulate';
   fileLocks: 'meta-files' | 'disallow' | 'emulate';
@@ -178,6 +180,11 @@ program
     ['true', 'on', '1'].includes(
       (process.env.SERVE_LISTINGS || '').toLowerCase(),
     ),
+  )
+  .option(
+    '--read-only',
+    'Serve files as read only.',
+    ['true', 'on', '1'].includes((process.env.READ_ONLY || '').toLowerCase()),
   )
   .option(
     '--no-follow-links',
@@ -388,6 +395,7 @@ Environment Variables:
   USER_DIRECTORIES                           Same as --user-directories when set to "true", "on" or "1".
   SERVE_INDEXES                              Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS                             Same as --serve-listings when set to "true", "on" or "1".
+  READ_ONLY                                  Same as --read-only when set to "true", "on" or "1".
   FOLLOW_LINKS                               Same as --no-follow-links when set to "false", "off" or "0".
   FILE_PROPERTIES                            Same as --file-properties.
   FILE_LOCKS                                 Same as --file-locks.
@@ -588,7 +596,7 @@ program.addHelpText(
   'afterAll',
   `
 Nephele repo: https://github.com/sciactive/nephele
-Copyright (C) 2022-2025 SciActive, Inc
+Copyright (C) 2022-2026 SciActive, Inc
 https://sciactive.com/`,
 );
 
@@ -623,6 +631,7 @@ try {
     userDirectories,
     serveIndexes,
     serveListings,
+    readOnly,
     followLinks,
     fileProperties,
     fileLocks,
@@ -1281,6 +1290,7 @@ try {
       },
 
       plugins: [
+        ...(readOnly ? [new ReadOnlyPlugin()] : []),
         ...(encryption &&
         encryptionSalt &&
         encryptionFilenameSalt &&

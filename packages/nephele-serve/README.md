@@ -148,7 +148,8 @@ Here's a copy of the help output:
 ```
 Usage: nephele-serve [options] [directory]
 
-Command line WebDAV server with browser support. Serves from file system or S3 compatible object store.
+Command line WebDAV server with browser support. Serves from file system or S3
+compatible object store.
 
 Arguments:
   directory                                  The path of the directory to use as the server root. When using S3, this is the path within the bucket.
@@ -167,6 +168,7 @@ Options:
   --user-directories                         Serve users their own directory under the server root when they log in. (default: false)
   --serve-indexes                            Serve index.html and index.htm files when the user requests a directory. (default: false)
   --serve-listings                           Serve directory listings with file management forms when the user requests a directory. (default: false)
+  --read-only                                Serve files as read only. (default: false)
   --no-follow-links                          Don't follow symlinks.
   --file-properties <setting>                How to deal with properties on a real file system. ('meta-files', 'disallow', or 'emulate') (Defaults to 'meta-files'.) (choices: "meta-files", "disallow", "emulate", default: "meta-files")
   --file-locks <setting>                     How to deal with locks on a real file system. ('meta-files', 'disallow', or 'emulate') (Defaults to 'meta-files'.) (choices: "meta-files", "disallow", "emulate", default: "meta-files")
@@ -228,6 +230,7 @@ Environment Variables:
   USER_DIRECTORIES                           Same as --user-directories when set to "true", "on" or "1".
   SERVE_INDEXES                              Same as --serve-indexes when set to "true", "on" or "1".
   SERVE_LISTINGS                             Same as --serve-listings when set to "true", "on" or "1".
+  READ_ONLY                                  Same as --read-only when set to "true", "on" or "1".
   FOLLOW_LINKS                               Same as --no-follow-links when set to "false", "off" or "0".
   FILE_PROPERTIES                            Same as --file-properties.
   FILE_LOCKS                                 Same as --file-locks.
@@ -408,7 +411,7 @@ Nymph and File Deduplication:
   https://nymph.io
 
 Nephele repo: https://github.com/sciactive/nephele
-Copyright (C) 2022-2025 SciActive, Inc
+Copyright (C) 2022-2026 SciActive, Inc
 https://sciactive.com/
 ```
 
